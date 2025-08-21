@@ -64,40 +64,43 @@ const quizData = [
 export default function Quiz() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
-  
+
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
   const totalQuestions = quizData.length;
   const answeredCount = Object.keys(selectedAnswers).length;
   const progress = (answeredCount / totalQuestions) * 100;
-  
+
   const handleAnswerSelect = (answerId) => {
     setSelectedAnswers(prev => ({
       ...prev,
       [currentQuestion]: answerId
     }));
   };
-  
+
   const handleNext = () => {
     if (currentQuestion < totalQuestions - 1) {
       setCurrentQuestion(prev => prev + 1);
     }
   };
-  
+
   const handlePrevious = () => {
     if (currentQuestion > 0) {
       setCurrentQuestion(prev => prev - 1);
     }
   };
-  
+
   const handleQuestionNavigation = (questionIndex) => {
     setCurrentQuestion(questionIndex);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  
+
   const currentQuestionData = quizData[currentQuestion];
   const selectedAnswer = selectedAnswers[currentQuestion];
-  
+
   return (
-    // <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
       <div
         className="min-h-screen bg-gradient-to-br p-4 relative"
         style={{
@@ -117,6 +120,7 @@ export default function Quiz() {
           zIndex: 1
         }} />
         <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
+
         {/* Header with Progress */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -140,9 +144,6 @@ export default function Quiz() {
           <div className="text-center text-sm font-semibold text-gray-700">
             {answeredCount} of {totalQuestions} answered ({Math.round(progress)}%)
           </div>
-        {/* </div> */}
-        
-      
         
         {/* Question Card */}
           <div className="my-8">
@@ -254,7 +255,6 @@ export default function Quiz() {
         
         {/* Question Navigation */}
         <div className="bg-white rounded-2xl shadow-lg p-6 my-6">
-        {/* <div className='p-6'> */}
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Navigation</h3>
           <div className="grid grid-cols-5 sm:grid-cols-10 md:grid-cols-15 gap-2">
             {Array.from({ length: totalQuestions }, (_, index) => (
