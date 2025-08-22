@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 // Sample quiz data with different question and answer types
@@ -64,6 +64,44 @@ const quizData = [
 export default function Quiz() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
+  useEffect(() => {
+    // 3. Disable Copy/Paste
+    const handleCopyPaste = (e) => {
+      e.preventDefault();
+      alert("Copy/Paste is disabled during the quiz.");
+    };
+    document.addEventListener("copy", handleCopyPaste);
+    document.addEventListener("paste", handleCopyPaste);
+
+    // 4. Monitor Tab Switching
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        alert("Tab switching detected! Please stay on the quiz page.");
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // 7. Full-Screen Mode Detection
+    const handleFullScreenChange = () => {
+      if (!document.fullscreenElement) {
+        alert("You exited full-screen mode. Please return to full-screen.");
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullScreenChange);
+
+    // Request full-screen on mount
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen();
+    }
+
+    // Cleanup
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("fullscreenchange", handleFullScreenChange);      
+      document.removeEventListener("copy", handleCopyPaste);
+      document.removeEventListener("paste", handleCopyPaste);
+    };
+  }, []);
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
