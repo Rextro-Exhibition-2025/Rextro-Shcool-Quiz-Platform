@@ -89,11 +89,6 @@ export default function Quiz() {
     };
     document.addEventListener("fullscreenchange", handleFullScreenChange);
 
-    // Request full-screen on mount
-    if (document.documentElement.requestFullscreen) {
-      document.documentElement.requestFullscreen();
-    }
-
     // Cleanup
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
@@ -138,6 +133,8 @@ export default function Quiz() {
   const currentQuestionData = quizData[currentQuestion];
   const selectedAnswer = selectedAnswers[currentQuestion];
 
+  const { useRouter } = require('next/navigation');
+  const router = useRouter();
   return (
       <div
         className="min-h-screen bg-gradient-to-br p-4 relative"
@@ -337,6 +334,7 @@ export default function Quiz() {
             <button 
               className="text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-200"
               style={{ backgroundColor: '#651321' }}
+              onClick={() => router.push('/landingpage')}
             >
               Submit Quiz
             </button>
