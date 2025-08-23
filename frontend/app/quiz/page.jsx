@@ -64,6 +64,8 @@ const quizData = [
 export default function Quiz() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
+  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+
   useEffect(() => {
     // 3. Disable Copy/Paste
     const handleCopyPaste = (e) => {
@@ -83,8 +85,8 @@ export default function Quiz() {
 
     // 7. Full-Screen Mode Detection
     const handleFullScreenChange = () => {
-      if (!document.fullscreenElement) {
-        alert("You exited full-screen mode. Please return to full-screen.");
+      if (!document.fullscreenElement && currentQuestion !== quizData.length - 1) {
+        setShowFullscreenPrompt(true);
       }
     };
     document.addEventListener("fullscreenchange", handleFullScreenChange);
@@ -96,7 +98,7 @@ export default function Quiz() {
       document.removeEventListener("copy", handleCopyPaste);
       document.removeEventListener("paste", handleCopyPaste);
     };
-  }, []);
+  }, [currentQuestion]);
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -128,6 +130,20 @@ export default function Quiz() {
   const handleQuestionNavigation = (questionIndex) => {
     setCurrentQuestion(questionIndex);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleReEnterFullscreen = () => {
+    setShowFullscreenPrompt(false);
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) {
+      elem.requestFullscreen();
+    } else if (elem.mozRequestFullScreen) { /* Firefox */
+      elem.mozRequestFullScreen();
+    } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+      elem.webkitRequestFullscreen();
+    } else if (elem.msRequestFullscreen) { /* IE/Edge */
+      elem.msRequestFullscreen();
+    }
   };
 
   const currentQuestionData = quizData[currentQuestion];
@@ -266,27 +282,31 @@ export default function Quiz() {
         </div>
         
         {/* Navigation Buttons */}
-        <div className="flex justify-end items-center gap-5">
-          {currentQuestion !== 0 && (
-            <button
-              onClick={handlePrevious}
-              className="flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 bg-white text-gray-700 hover:bg-gray-50 shadow-lg hover:shadow-xl"
-            >
-              <ChevronLeft size={20} />
-              <span>Previous</span>
-            </button>
-          )}
-          {currentQuestion !== totalQuestions - 1 && (
-            <button
-              onClick={handleNext}
-              className="flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 text-white hover:opacity-90 shadow-lg hover:shadow-xl"
-              style={{ backgroundColor: '#651321' }}
-            >
-              <span>Next</span>
-              <ChevronRight size={20} />
-            </button>
-          )}
-        </div>
+        <div className="flex justify-between items-center gap-5">
+          <div>
+            {currentQuestion !== 0 && (
+              <button
+                onClick={handlePrevious}
+                className="flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 bg-white text-gray-700 hover:bg-gray-50 shadow-lg hover:shadow-xl"
+              >
+                <ChevronLeft size={20} />
+                <span>Previous</span>
+              </button>
+            )}
+          </div>
+          <div className="ml-auto">
+            {currentQuestion !== totalQuestions - 1 && (
+              <button
+                onClick={handleNext}
+                className="flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 text-white hover:opacity-90 shadow-lg hover:shadow-xl"
+                style={{ backgroundColor: '#651321' }}
+              >
+                <span>Next</span>
+                <ChevronRight size={20} />
+              </button>
+            )}
+          </div>
+  </div>
         
         {/* Question Navigation */}
         <div className="bg-white rounded-2xl shadow-lg p-6 my-6">
@@ -334,13 +354,34 @@ export default function Quiz() {
             <button 
               className="text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-200"
               style={{ backgroundColor: '#651321' }}
-              onClick={() => router.push('/leaderboard')}
+              onClick={() => {
+                if (document.fullscreenElement) {
+                  document.exitFullscreen();
+                }
+                router.push('/leaderboard');
+              }}
             >
               Submit Quiz
             </button>
           </div>
         )}
       </div>
+
+      {/* Full-Screen Prompt */}
+      {showFullscreenPrompt && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center">
+          <div className="bg-white p-8 rounded-xl shadow-xl text-center text-black">
+            <h2 className="text-lg font-bold mb-4">Full Screen Required</h2>
+            <p className="mb-6">Please click the button below to return to full-screen mode and continue your quiz.</p>
+            <button
+              className="px-6 py-3 bg-[#651321] text-white rounded-lg font-semibold"
+              onClick={handleReEnterFullscreen}
+            >
+              Re-enter Full Screen
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
