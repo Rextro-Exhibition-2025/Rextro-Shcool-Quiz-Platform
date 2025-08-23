@@ -334,7 +334,7 @@ export default function Quiz() {
             <button 
               className="text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-200"
               style={{ backgroundColor: '#651321' }}
-              onClick={() => router.push('/landingpage')}
+              onClick={() => router.push('/leaderboard')}
             >
               Submit Quiz
             </button>
