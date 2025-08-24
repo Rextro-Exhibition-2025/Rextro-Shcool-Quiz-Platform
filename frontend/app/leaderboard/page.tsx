@@ -24,10 +24,10 @@ const Leaderboard: React.FC = () => {
     }
   }, []);
   const [schools] = useState<SchoolData[]>([
-    { 
-      id: 1, 
-      name: "St. Mary's International School", 
-      score: 150, 
+    {
+      id: 1,
+      name: "St. Mary's International School",
+      score: 150,
       rank: 1,
       students: [
         { id: 1, name: "Emma Johnson", score: 50 },
@@ -35,10 +35,10 @@ const Leaderboard: React.FC = () => {
         { id: 3, name: "Olivia Davis", score: 50 }
       ]
     },
-    { 
-      id: 2, 
-      name: "Greenwood Academy", 
-      score: 149, 
+    {
+      id: 2,
+      name: "Greenwood Academy",
+      score: 149,
       rank: 2,
       students: [
         { id: 4, name: "Noah Wilson", score: 50 },
@@ -46,10 +46,10 @@ const Leaderboard: React.FC = () => {
         { id: 6, name: "Ethan Taylor", score: 50 }
       ]
     },
-    { 
-      id: 3, 
-      name: "Riverside High School", 
-      score: 148, 
+    {
+      id: 3,
+      name: "Riverside High School",
+      score: 148,
       rank: 3,
       students: [
         { id: 7, name: "Sophia Anderson", score: 49 },
@@ -57,10 +57,10 @@ const Leaderboard: React.FC = () => {
         { id: 9, name: "Isabella Jackson", score: 49 }
       ]
     },
-    { 
-      id: 4, 
-      name: "Oakwood Preparatory School", 
-      score: 146, 
+    {
+      id: 4,
+      name: "Oakwood Preparatory School",
+      score: 146,
       rank: 4,
       students: [
         { id: 10, name: "William White", score: 48 },
@@ -68,10 +68,10 @@ const Leaderboard: React.FC = () => {
         { id: 12, name: "James Martin", score: 49 }
       ]
     },
-    { 
-      id: 5, 
-      name: "Sunrise Elementary School", 
-      score: 143, 
+    {
+      id: 5,
+      name: "Sunrise Elementary School",
+      score: 143,
       rank: 5,
       students: [
         { id: 13, name: "Benjamin Garcia", score: 47 },
@@ -79,10 +79,10 @@ const Leaderboard: React.FC = () => {
         { id: 15, name: "Lucas Rodriguez", score: 48 }
       ]
     },
-    { 
-      id: 6, 
-      name: "Mountain View School", 
-      score: 142, 
+    {
+      id: 6,
+      name: "Mountain View School",
+      score: 142,
       rank: 6,
       students: [
         { id: 16, name: "Mia Lopez", score: 47 },
@@ -90,10 +90,10 @@ const Leaderboard: React.FC = () => {
         { id: 18, name: "Harper Gonzalez", score: 48 }
       ]
     },
-    { 
-      id: 7, 
-      name: "Central High School", 
-      score: 138, 
+    {
+      id: 7,
+      name: "Central High School",
+      score: 138,
       rank: 7,
       students: [
         { id: 19, name: "Evelyn Wilson", score: 46 },
@@ -101,10 +101,10 @@ const Leaderboard: React.FC = () => {
         { id: 21, name: "Abigail Taylor", score: 46 }
       ]
     },
-    { 
-      id: 8, 
-      name: "Northside Academy", 
-      score: 135, 
+    {
+      id: 8,
+      name: "Northside Academy",
+      score: 135,
       rank: 8,
       students: [
         { id: 22, name: "Michael Anderson", score: 45 },
@@ -113,51 +113,69 @@ const Leaderboard: React.FC = () => {
       ]
     }
     ,
-    { id: 9, name: "Eastwood School", score: 132, rank: 9, students: [
-      { id: 25, name: "Ella King", score: 44 },
-      { id: 26, name: "Henry Wright", score: 44 },
-      { id: 27, name: "Grace Scott", score: 44 }
-    ] },
-    { id: 10, name: "Westfield Academy", score: 130, rank: 10, students: [
-      { id: 28, name: "Jack Young", score: 43 },
-      { id: 29, name: "Lily Green", score: 43 },
-      { id: 30, name: "Samuel Hall", score: 44 }
-    ] },
-    { id: 11, name: "Southgate School", score: 128, rank: 11, students: [
-      { id: 31, name: "Chloe Adams", score: 43 },
-      { id: 32, name: "Matthew Nelson", score: 42 },
-      { id: 33, name: "Sofia Carter", score: 43 }
-    ] },
-    { id: 12, name: "Hillcrest Academy", score: 126, rank: 12, students: [
-      { id: 34, name: "Ryan Mitchell", score: 42 },
-      { id: 35, name: "Zoe Perez", score: 42 },
-      { id: 36, name: "David Roberts", score: 42 }
-    ] },
-    { id: 13, name: "Lakeside School", score: 124, rank: 13, students: [
-      { id: 37, name: "Layla Turner", score: 41 },
-      { id: 38, name: "Luke Phillips", score: 41 },
-      { id: 39, name: "Scarlett Campbell", score: 42 }
-    ] },
-    { id: 14, name: "Maplewood Academy", score: 122, rank: 14, students: [
-      { id: 40, name: "Mila Parker", score: 41 },
-      { id: 41, name: "Nathan Evans", score: 40 },
-      { id: 42, name: "Avery Edwards", score: 41 }
-    ] },
-    { id: 15, name: "Brookside School", score: 120, rank: 15, students: [
-      { id: 43, name: "Eleanor Collins", score: 40 },
-      { id: 44, name: "Gabriel Stewart", score: 40 },
-      { id: 45, name: "Victoria Morris", score: 40 }
-    ] },
-    { id: 16, name: "Cedar Grove Academy", score: 118, rank: 16, students: [
-      { id: 46, name: "Penelope Rogers", score: 39 },
-      { id: 47, name: "Julian Reed", score: 39 },
-      { id: 48, name: "Hazel Cook", score: 40 }
-    ] },
-    { id: 17, name: "Silver Oak School", score: 116, rank: 17, students: [
-      { id: 49, name: "Aurora Morgan", score: 39 },
-      { id: 50, name: "Adam Bailey", score: 38 },
-      { id: 51, name: "Savannah Bell", score: 39 }
-    ] }
+    {
+      id: 9, name: "Eastwood School", score: 132, rank: 9, students: [
+        { id: 25, name: "Ella King", score: 44 },
+        { id: 26, name: "Henry Wright", score: 44 },
+        { id: 27, name: "Grace Scott", score: 44 }
+      ]
+    },
+    {
+      id: 10, name: "Westfield Academy", score: 130, rank: 10, students: [
+        { id: 28, name: "Jack Young", score: 43 },
+        { id: 29, name: "Lily Green", score: 43 },
+        { id: 30, name: "Samuel Hall", score: 44 }
+      ]
+    },
+    {
+      id: 11, name: "Southgate School", score: 128, rank: 11, students: [
+        { id: 31, name: "Chloe Adams", score: 43 },
+        { id: 32, name: "Matthew Nelson", score: 42 },
+        { id: 33, name: "Sofia Carter", score: 43 }
+      ]
+    },
+    {
+      id: 12, name: "Hillcrest Academy", score: 126, rank: 12, students: [
+        { id: 34, name: "Ryan Mitchell", score: 42 },
+        { id: 35, name: "Zoe Perez", score: 42 },
+        { id: 36, name: "David Roberts", score: 42 }
+      ]
+    },
+    {
+      id: 13, name: "Lakeside School", score: 124, rank: 13, students: [
+        { id: 37, name: "Layla Turner", score: 41 },
+        { id: 38, name: "Luke Phillips", score: 41 },
+        { id: 39, name: "Scarlett Campbell", score: 42 }
+      ]
+    },
+    {
+      id: 14, name: "Maplewood Academy", score: 122, rank: 14, students: [
+        { id: 40, name: "Mila Parker", score: 41 },
+        { id: 41, name: "Nathan Evans", score: 40 },
+        { id: 42, name: "Avery Edwards", score: 41 }
+      ]
+    },
+    {
+      id: 15, name: "Brookside School", score: 120, rank: 15, students: [
+        { id: 43, name: "Eleanor Collins", score: 40 },
+        { id: 44, name: "Gabriel Stewart", score: 40 },
+        { id: 45, name: "Victoria Morris", score: 40 }
+      ]
+    },
+    {
+      id: 16, name: "Cedar Grove Academy", score: 118, rank: 16, students: [
+        { id: 46, name: "Penelope Rogers", score: 39 },
+        { id: 47, name: "Julian Reed", score: 39 },
+        { id: 48, name: "Hazel Cook", score: 40 }
+      ]
+    },
+    {
+      id: 17, name: "Silver Oak School", score: 116, rank: 17, students: [
+        { id: 49, name: "Aurora Morgan", score: 39 },
+        { id: 50, name: "Adam Bailey", score: 38 },
+        { id: 51, name: "Savannah Bell", score: 39 }
+      ]
+    }
   ]);
 
   const getRankBadgeStyle = (rank: number): string => {
@@ -202,14 +220,14 @@ const Leaderboard: React.FC = () => {
         }}
       />
       <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          background: 'rgba(255,255,255,0.6)',
-          zIndex: 1
-        }} />
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        background: 'rgba(255,255,255,0.6)',
+        zIndex: 1
+      }} />
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
         {/* Header */}
         <div className=" mb-8">
@@ -229,47 +247,48 @@ const Leaderboard: React.FC = () => {
                 alt="Second Place"
               />
             </div>
-              <h3 className="font-semibold text-sm text-center text-gray-800 mb-2">
-                {schools[1]?.name.split(' ').slice(0, 2).join(' ')}
-              </h3>
+            <h3 className="font-semibold text-sm text-center text-gray-800 mb-2">
+              {schools[1]?.name.split(' ').slice(0, 2).join(' ')}
+            </h3>
           </div>
 
           {/* First Place */}
           <div className="text-center mb-10 p-10 bg-white shadow-xl" style={{ borderRadius: '50px' }}>
             <div className="relative">
-                <img
-                  src="/Rank_1.png"
-                  alt="First Place"
-                />
+              <img
+                src="/Rank_1.png"
+                alt="First Place"
+              />
             </div>
-              <h3 className="font-semibold text-s text-center text-gray-800 mb-2">
-                {schools[0]?.name.split(' ').slice(0, 2).join(' ')}
-              </h3>
+            <h3 className="font-semibold text-s text-center text-gray-800 mb-2">
+              {schools[0]?.name.split(' ').slice(0, 2).join(' ')}
+            </h3>
           </div>
 
           {/* Third Place */}
           <div className="text-center bg-white p-8 shadow-lg" style={{ borderRadius: '50px' }}>
             <div className="relative">
-                <img
-                  src="/Rank_3.png"
-                  alt="First Place"
-                />
+              <img
+                src="/Rank_3.png"
+                alt="First Place"
+              />
             </div>
-              <h3 className="font-semibold text-sm text-center text-gray-800 mb-2">
-                {schools[2]?.name.split(' ').slice(0, 2).join(' ')}
-              </h3>
+            <h3 className="font-semibold text-sm text-center text-gray-800 mb-2">
+              {schools[2]?.name.split(' ').slice(0, 2).join(' ')}
+            </h3>
           </div>
         </div>
 
         {/* Full Rankings Table */}
         <div className="bg-white rounded-xl shadow-xl overflow-hidden">
-          <div className="p-6 border-b" style={{ backgroundColor: '#651321' }}>
+          <div className="p-6 border-b flex justify-center items-center" style={{ backgroundColor: '#651321' }}>
             <h2 className="text-xl font-bold text-white">Ranks</h2>
           </div>
-          
-          <div className="divide-y divide-gray-100">
+
+          {/* Add a max height and make it scrollable */}
+          <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
             {schools.map((school, index) => (
-              <div 
+              <div
                 key={school.id}
                 className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
                 onClick={() => setSelectedSchool(school)}
@@ -287,7 +306,7 @@ const Leaderboard: React.FC = () => {
                       school.rank
                     )}
                   </div>
-                  
+
                   {/* School Name */}
                   <div>
                     <h3 className="font-semibold text-gray-800 group-hover:text-orange-600 transition-colors">
@@ -295,7 +314,7 @@ const Leaderboard: React.FC = () => {
                     </h3>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-4">
                   {/* Score */}
                   <div className="text-right">
@@ -303,7 +322,7 @@ const Leaderboard: React.FC = () => {
                       {school.score}
                     </span>
                   </div>
-                  
+
                 </div>
               </div>
             ))}
@@ -330,33 +349,33 @@ const Leaderboard: React.FC = () => {
               {/* Modal Content */}
               <div className="p-4" >
                 <div className="flex items-center gap-6">
-                    {/* Trophy Icon (Left) */}
+                  {/* Trophy Icon (Left) */}
+                  <div>
                     <div>
-                        <div>
-                            {selectedSchool.rank === 1 ? (
-                                <img src="/Rank_1.png" alt="1st Place" className="w-25 h-25 object-contain" />
-                            ) : selectedSchool.rank === 2 ? (
-                                <img src="/Rank_2.png" alt="2nd Place" className="w-25 h-25 object-contain" />
-                            ) : selectedSchool.rank === 3 ? (
-                                <img src="/Rank_3.png" alt="3rd Place" className="w-25 h-25 object-contain" />
-                            ) : (
-                                <Trophy size={60} color="#DF7500" />
-                            )}
-                        </div>
+                      {selectedSchool.rank === 1 ? (
+                        <img src="/Rank_1.png" alt="1st Place" className="w-25 h-25 object-contain" />
+                      ) : selectedSchool.rank === 2 ? (
+                        <img src="/Rank_2.png" alt="2nd Place" className="w-25 h-25 object-contain" />
+                      ) : selectedSchool.rank === 3 ? (
+                        <img src="/Rank_3.png" alt="3rd Place" className="w-25 h-25 object-contain" />
+                      ) : (
+                        <Trophy size={60} color="#DF7500" />
+                      )}
                     </div>
-                    {/* Students List (Right) */}
-                    <div className="flex-1 space-y-3">
-                        {selectedSchool.students.map((student) => (
-                            <div key={student.id} className="flex items-center justify-between py-2 px-3 bg-white bg-opacity-70 rounded-lg">
-                                <span className="text-gray-800 font-medium">
-                                    {student.name}
-                                </span>
-                                <span className="font-bold text-lg" style={{ color: '#df7500' }}>
-                                    {student.score}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
+                  </div>
+                  {/* Students List (Right) */}
+                  <div className="flex-1 space-y-3">
+                    {selectedSchool.students.map((student) => (
+                      <div key={student.id} className="flex items-center justify-between py-2 px-3 bg-white bg-opacity-70 rounded-lg">
+                        <span className="text-gray-800 font-medium">
+                          {student.name}
+                        </span>
+                        <span className="font-bold text-lg" style={{ color: '#df7500' }}>
+                          {student.score}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* School Total */}
