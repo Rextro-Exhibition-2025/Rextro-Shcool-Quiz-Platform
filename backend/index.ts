@@ -4,6 +4,7 @@ import express from "express";
 import connectDB from "./config/db.js";
 import UserRouter from "./routes/userRoutes.js";
 import AuthRouter from "./routes/authRoutes.js";
+import SchoolTeamRouter from "./routes/schoolTeamRoutes.js";
 
 dotenv.config();
 
@@ -23,6 +24,7 @@ app.get("/", (req, res) => {
 // API Routes
 app.use("/api/users", UserRouter);
 app.use("/api/auth", AuthRouter);
+app.use("/api/school-teams", SchoolTeamRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
