@@ -18,9 +18,26 @@ interface SchoolData {
 
 const Leaderboard: React.FC = () => {
   const [selectedSchool, setSelectedSchool] = useState<SchoolData | null>(null);
+  const [userQuizResult, setUserQuizResult] = useState<any>(null);
+  
   React.useEffect(() => {
     if (document.fullscreenElement && document.exitFullscreen) {
       document.exitFullscreen();
+    }
+    
+    // Check for user's quiz result
+    const quizResult = localStorage.getItem('quizResult');
+    if (quizResult) {
+      try {
+        const parsedResult = JSON.parse(quizResult);
+        setUserQuizResult(parsedResult);
+        // Clear the result after showing it
+        setTimeout(() => {
+          localStorage.removeItem('quizResult');
+        }, 5000); // Remove after 5 seconds
+      } catch (error) {
+        console.error('Error parsing quiz result:', error);
+      }
     }
   }, []);
   const [schools] = useState<SchoolData[]>([
@@ -236,6 +253,35 @@ const Leaderboard: React.FC = () => {
           </h1>
           <p className="text-gray-600">Quiz Rankings</p>
         </div>
+
+        {/* User Quiz Result (if just completed) */}
+        {userQuizResult && (
+          <div className="mb-8 p-6 bg-gradient-to-r from-[#df7500]/10 to-[#651321]/10 rounded-2xl border-2 border-[#df7500]/20 shadow-lg">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-[#df7500] to-[#651321] rounded-full mb-4">
+                <Trophy className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-[#651321] mb-2">Quiz Completed!</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
+                <div className="bg-white/50 rounded-lg p-4">
+                  <div className="text-sm text-gray-600">Student ID</div>
+                  <div className="font-semibold text-[#651321]">{userQuizResult.studentId}</div>
+                </div>
+                <div className="bg-white/50 rounded-lg p-4">
+                  <div className="text-sm text-gray-600">School</div>
+                  <div className="font-semibold text-[#651321]">{userQuizResult.schoolName}</div>
+                </div>
+                <div className="bg-white/50 rounded-lg p-4">
+                  <div className="text-sm text-gray-600">Score</div>
+                  <div className="font-bold text-2xl text-[#df7500]">{userQuizResult.score}%</div>
+                </div>
+              </div>
+              <div className="mt-4 text-sm text-gray-600">
+                Answered {userQuizResult.answeredQuestions} of {userQuizResult.totalQuestions} questions
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Top 3 Podium */}
         <div className="flex justify-center items-end mb-12 space-x-6">

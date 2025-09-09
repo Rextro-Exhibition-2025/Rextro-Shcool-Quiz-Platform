@@ -54,11 +54,8 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
             <button 
               className="group bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:from-[#df7500]/80 hover:to-[#651321]/80 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
-              onClick={async () => {
-                if (document.documentElement.requestFullscreen) {
-                  await document.documentElement.requestFullscreen();
-                }
-                router.push('/quiz');
+              onClick={() => {
+                router.push('/login');
               }}
             >
               <Zap className="w-5 h-5 group-hover:animate-pulse" />

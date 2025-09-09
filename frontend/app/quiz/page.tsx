@@ -1,9 +1,42 @@
 "use client";
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
+interface Answer {
+  id: string;
+  text: string | null;
+  image: string | null;
+}
+
+interface QuizQuestion {
+  id: number;
+  question: string;
+  image: string | null;
+  answers: Answer[];
+}
+
+interface StudentData {
+  studentId: string;
+  schoolName: string;
+}
+
+interface SelectedAnswers {
+  [questionIndex: number]: string;
+}
+
+interface CompletionData {
+  studentId: string;
+  schoolName: string;
+  answers: SelectedAnswers;
+  score: number;
+  completedAt: string;
+  totalQuestions: number;
+  answeredQuestions: number;
+}
+
 // Sample quiz data with different question and answer types
-const quizData = [
+const quizData: QuizQuestion[] = [
   {
     id: 1,
     question: "What is the capital of France?",
@@ -48,7 +81,7 @@ const quizData = [
       { id: 'd', text: 'Handles events', image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=100&h=60&fit=crop' }
     ]
   },
-  ...Array.from({ length: 11 }, (_, i) => ({
+  ...Array.from({ length: 11 }, (_, i): QuizQuestion => ({
     id: i + 5,
     question: `This is a sample question with different formats.`,
     image: i % 3 === 0 ? "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=200&fit=crop" : null,
@@ -61,14 +94,46 @@ const quizData = [
   }))
 ];
 
-export default function Quiz() {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [selectedAnswers, setSelectedAnswers] = useState({});
-  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState(false);
+export default function Quiz(): React.JSX.Element | null {
+  const [currentQuestion, setCurrentQuestion] = useState<number>(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>({});
+  const [showFullscreenPrompt, setShowFullscreenPrompt] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [showCompletionCard, setShowCompletionCard] = useState<boolean>(false);
+  const [completionData, setCompletionData] = useState<CompletionData | null>(null);
+  const router = useRouter();
+
+  // Check authentication status
+  useEffect(() => {
+    const studentData = localStorage.getItem('studentData');
+    if (!studentData) {
+      router.push('/login');
+      return;
+    }
+    
+    try {
+      const parsedData: StudentData = JSON.parse(studentData);
+      if (parsedData.studentId && parsedData.schoolName) {
+        setIsAuthenticated(true);
+      } else {
+        router.push('/login');
+        return;
+      }
+    } catch (error) {
+      router.push('/login');
+      return;
+    }
+    
+    setLoading(false);
+  }, [router]);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
+    
     // 3. Disable Copy/Paste
-    const handleCopyPaste = (e) => {
+    const handleCopyPaste = (e: Event): void => {
       e.preventDefault();
       alert("Copy/Paste is disabled during the quiz.");
     };
@@ -76,16 +141,38 @@ export default function Quiz() {
     document.addEventListener("paste", handleCopyPaste);
 
     // 4. Monitor Tab Switching
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = (): void => {
       if (document.visibilityState === "hidden") {
         alert("Tab switching detected! Please stay on the quiz page.");
       }
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
+    // Cleanup
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("copy", handleCopyPaste);
+      document.removeEventListener("paste", handleCopyPaste);
+    };
+  }, [isAuthenticated]);
+
+  // Separate useEffect for fullscreen detection that depends on currentQuestion
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
     // 7. Full-Screen Mode Detection
-    const handleFullScreenChange = () => {
-      if (!document.fullscreenElement && currentQuestion !== quizData.length - 1) {
+    const handleFullScreenChange = (): void => {
+      console.log('Fullscreen change detected:', {
+        isFullscreen: !!document.fullscreenElement,
+        currentQuestion: currentQuestion,
+        totalQuestions: quizData.length - 1,
+        isSubmitting: isSubmitting,
+        shouldShowPrompt: !document.fullscreenElement && !isSubmitting
+      });
+      
+      // Show fullscreen prompt on ALL questions (including the last one)
+      // BUT NOT during quiz submission
+      if (!document.fullscreenElement && !isSubmitting) {
         setShowFullscreenPrompt(true);
       }
     };
@@ -93,12 +180,9 @@ export default function Quiz() {
 
     // Cleanup
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      document.removeEventListener("fullscreenchange", handleFullScreenChange);      
-      document.removeEventListener("copy", handleCopyPaste);
-      document.removeEventListener("paste", handleCopyPaste);
+      document.removeEventListener("fullscreenchange", handleFullScreenChange);
     };
-  }, [currentQuestion]);
+  }, [isAuthenticated, currentQuestion, isSubmitting]);
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -108,49 +192,158 @@ export default function Quiz() {
   const answeredCount = Object.keys(selectedAnswers).length;
   const progress = (answeredCount / totalQuestions) * 100;
 
-  const handleAnswerSelect = (answerId) => {
+  // Calculate quiz score
+  const calculateScore = (): number => {
+    let correctAnswers = 0;
+    const correctAnswerKey: { [key: number]: string } = {
+      0: 'c', // Paris
+      1: 'd', // All of the above
+      2: 'a', // React logo (assuming first option is correct)
+      3: 'a', // Creates a function (assuming first option is correct)
+    };
+    
+    Object.keys(selectedAnswers).forEach(questionIndex => {
+      const questionNum = parseInt(questionIndex);
+      const selectedAnswer = selectedAnswers[questionNum];
+      if (correctAnswerKey[questionNum] && selectedAnswer === correctAnswerKey[questionNum]) {
+        correctAnswers++;
+      } else if (questionNum >= 4) {
+        // For sample questions (5+), assume 'a' is correct
+        if (selectedAnswer === 'a') {
+          correctAnswers++;
+        }
+      }
+    });
+    
+    return Math.round((correctAnswers / totalQuestions) * 100);
+  };
+
+  // Handle quiz submission
+  const handleSubmitQuiz = async (): Promise<void> => {
+    try {
+      // Set submitting flag to prevent fullscreen prompt during submission
+      setIsSubmitting(true);
+      
+      // Check if user is still authenticated
+      const studentData = localStorage.getItem('studentData');
+      if (!studentData) {
+        alert('Session expired. Please login again.');
+        router.push('/login');
+        return;
+      }
+
+      const parsedStudentData: StudentData = JSON.parse(studentData);
+      
+      // Calculate score
+      const score = calculateScore();
+      
+      // Prepare submission data
+      const submissionData: CompletionData = {
+        studentId: parsedStudentData.studentId,
+        schoolName: parsedStudentData.schoolName,
+        answers: selectedAnswers,
+        score: score,
+        completedAt: new Date().toISOString(),
+        totalQuestions: quizData.length,
+        answeredQuestions: answeredCount
+      };
+
+      // Store results (you can also send to backend here)
+      localStorage.setItem('quizResult', JSON.stringify(submissionData));
+      
+      // Exit fullscreen first
+      if (document.fullscreenElement) {
+        await document.exitFullscreen();
+      }
+      
+      // Set completion data and show completion card
+      setCompletionData(submissionData);
+      setShowCompletionCard(true);
+      
+      // Clear authentication after successful submission
+      localStorage.removeItem('studentData');
+      
+    } catch (error) {
+      alert('Error submitting quiz. Please try again.');
+      console.error('Submit quiz error:', error);
+      // Reset submitting flag on error
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle navigation to leaderboard from completion card
+  const handleGoToLeaderboard = (): void => {
+    setShowCompletionCard(false);
+    router.push('/leaderboard');
+  };
+
+  const handleAnswerSelect = (answerId: string): void => {
     setSelectedAnswers(prev => ({
       ...prev,
       [currentQuestion]: answerId
     }));
   };
 
-  const handleNext = () => {
+  const handleNext = (): void => {
     if (currentQuestion < totalQuestions - 1) {
       setCurrentQuestion(prev => prev + 1);
     }
   };
 
-  const handlePrevious = () => {
+  const handlePrevious = (): void => {
     if (currentQuestion > 0) {
       setCurrentQuestion(prev => prev - 1);
     }
   };
 
-  const handleQuestionNavigation = (questionIndex) => {
+  const handleQuestionNavigation = (questionIndex: number): void => {
     setCurrentQuestion(questionIndex);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleReEnterFullscreen = () => {
+  const handleReEnterFullscreen = (): void => {
     setShowFullscreenPrompt(false);
     const elem = document.documentElement;
-    if (elem.requestFullscreen) {
-      elem.requestFullscreen();
-    } else if (elem.mozRequestFullScreen) { /* Firefox */
-      elem.mozRequestFullScreen();
-    } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari & Opera */
-      elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) { /* IE/Edge */
-      elem.msRequestFullscreen();
-    }
+    
+    const requestFullscreen = (): Promise<void> => {
+      if (elem.requestFullscreen) {
+        return elem.requestFullscreen();
+      } else if ((elem as any).mozRequestFullScreen) { /* Firefox */
+        return (elem as any).mozRequestFullScreen();
+      } else if ((elem as any).webkitRequestFullscreen) { /* Chrome, Safari & Opera */
+        return (elem as any).webkitRequestFullscreen();
+      } else if ((elem as any).msRequestFullscreen) { /* IE/Edge */
+        return (elem as any).msRequestFullscreen();
+      }
+      return Promise.reject(new Error('Fullscreen not supported'));
+    };
+
+    requestFullscreen().catch((error: Error) => {
+      console.error('Error entering fullscreen:', error);
+      // Show the prompt again if fullscreen fails
+      setTimeout(() => {
+        setShowFullscreenPrompt(true);
+      }, 1000);
+    });
   };
 
   const currentQuestionData = quizData[currentQuestion];
   const selectedAnswer = selectedAnswers[currentQuestion];
 
-  const { useRouter } = require('next/navigation');
-  const router = useRouter();
+  // Show loading spinner while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#df7500]"></div>
+      </div>
+    );
+  }
+
+  // Don't render the quiz if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
       <div
         className="min-h-screen bg-gradient-to-br p-4 relative"
@@ -354,12 +547,7 @@ export default function Quiz() {
             <button 
               className="text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-200"
               style={{ backgroundColor: '#651321' }}
-              onClick={() => {
-                if (document.fullscreenElement) {
-                  document.exitFullscreen();
-                }
-                router.push('/leaderboard');
-              }}
+              onClick={handleSubmitQuiz}
             >
               Submit Quiz
             </button>
@@ -382,7 +570,51 @@ export default function Quiz() {
           </div>
         </div>
       )}
+
+      {/* Quiz Completion Card */}
+      {showCompletionCard && completionData && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4">
+          <div className="max-w-2xl w-full mx-4">
+            <div className="p-6 bg-gradient-to-r from-[#df7500]/10 to-[#651321]/10 rounded-2xl border-2 border-[#df7500]/20 shadow-lg bg-white">
+              <div className="text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-[#df7500] to-[#651321] rounded-full mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-[#651321] mb-2">Quiz Completed!</h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
+                  <div className="bg-white/50 rounded-lg p-4">
+                    <div className="text-sm text-gray-600">Student ID</div>
+                    <div className="font-semibold text-[#651321]">{completionData.studentId}</div>
+                  </div>
+                  <div className="bg-white/50 rounded-lg p-4">
+                    <div className="text-sm text-gray-600">School</div>
+                    <div className="font-semibold text-[#651321]">{completionData.schoolName}</div>
+                  </div>
+                  <div className="bg-white/50 rounded-lg p-4">
+                    <div className="text-sm text-gray-600">Score</div>
+                    <div className="font-bold text-2xl text-[#df7500]">{completionData.score}%</div>
+                  </div>
+                </div>
+                <div className="mt-4 text-sm text-gray-600">
+                  Answered {completionData.answeredQuestions} of {completionData.totalQuestions} questions
+                </div>
+                
+                {/* Action Button */}
+                <div className="mt-6">
+                  <button
+                    onClick={handleGoToLeaderboard}
+                    className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white py-3 px-8 rounded-full font-semibold text-lg hover:opacity-90 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                  >
+                    View Leaderboard
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
