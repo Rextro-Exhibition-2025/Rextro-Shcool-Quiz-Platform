@@ -3,6 +3,8 @@ import type { Application } from "express";
 import express from "express";
 import connectDB from "./config/db.js";
 import UserRouter from "./routes/userRoutes.js";
+import QuestionRouter from "./routes/questionRoute.js";
+import QuizRouter from "./routes/quizRoute.js";
 
 dotenv.config();
 
@@ -21,6 +23,8 @@ app.get("/", (req, res) => {
 
 // API Routes
 app.use("/api/users", UserRouter);
+app.use("/api/questions", QuestionRouter);
+app.use("/api/quizzes", QuizRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
