@@ -1,7 +1,8 @@
 "use client";
-import React, { useState } from 'react';
-import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Trash2, Save, ArrowLeft, LogOut, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useSession, signOut } from 'next-auth/react';
 
 interface Answer {
   id: string;
@@ -16,8 +17,17 @@ interface Question {
   correctAnswer: string;
 }
 
-export default function AddQuestion(): React.JSX.Element {
+export default function AddQuestion(): React.ReactElement | null {
   const router = useRouter();
+  const { data: session, status } = useSession();
+  
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.push('/admin/login');
+    }
+  }, [status, router]);
+
   const [question, setQuestion] = useState<Question>({
     question: '',
     image: '',
@@ -104,6 +114,24 @@ export default function AddQuestion(): React.JSX.Element {
     });
   };
 
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: '/admin/login' });
+  };
+
+  // Show loading while checking authentication
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#df7500]"></div>
+      </div>
+    );
+  }
+
+  // Don't render if not authenticated (redirect will happen)
+  if (status === 'unauthenticated') {
+    return null;
+  }
+
   return (
     <div
       className="min-h-screen bg-gradient-to-br p-4 relative"
@@ -125,6 +153,28 @@ export default function AddQuestion(): React.JSX.Element {
       }} />
       
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
+        {/* Admin Header */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-[#df7500] to-[#651321] rounded-full flex items-center justify-center">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Logged in as</p>
+                <p className="font-semibold text-gray-800">{session?.user?.email}</p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            >
+              <LogOut size={16} />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -163,7 +213,7 @@ export default function AddQuestion(): React.JSX.Element {
             <textarea
               value={question.question}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleQuestionChange(e.target.value)}
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-100 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-orange-50 transition-all duration-200 resize-none placeholder-gray-400 text-gray-800 font-medium text-left shadow-sm focus:shadow-md"
+              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 resize-none placeholder-gray-400 text-gray-800 font-medium text-left shadow-sm focus:shadow-md"
               rows={3}
               placeholder="Enter your question here..."
             />
@@ -178,7 +228,7 @@ export default function AddQuestion(): React.JSX.Element {
               type="url"
               value={question.image}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleQuestionImageChange(e.target.value)}
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-100 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-orange-50 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
+              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
               placeholder="https://example.com/image.jpg"
             />
             {question.image && (
@@ -221,7 +271,7 @@ export default function AddQuestion(): React.JSX.Element {
                       value={answer.id}
                       checked={question.correctAnswer === answer.id}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleCorrectAnswerChange(e.target.value)}
-                      className="text-orange-500 focus:ring-orange-500"
+                      className="text-[#df7500] focus:ring-[#df7500]"
                     />
                     <span className="text-sm text-gray-600">Correct Answer</span>
                   </label>
@@ -233,7 +283,7 @@ export default function AddQuestion(): React.JSX.Element {
                     type="text"
                     value={answer.text}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleAnswerChange(answer.id, 'text', e.target.value)}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-100 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-orange-50 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
+                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
                     placeholder={`Enter text for option ${answer.id.toUpperCase()}`}
                   />
                 </div>
@@ -244,7 +294,7 @@ export default function AddQuestion(): React.JSX.Element {
                     type="url"
                     value={answer.image}
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleAnswerChange(answer.id, 'image', e.target.value)}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-100 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-orange-50 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
+                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
                     placeholder={`Image URL for option ${answer.id.toUpperCase()} (optional)`}
                   />
                   {answer.image && (

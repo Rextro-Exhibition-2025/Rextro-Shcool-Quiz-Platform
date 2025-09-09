@@ -1,7 +1,7 @@
 "use client";
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Lock, LogIn, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, LogIn, Eye, EyeOff, Shield } from 'lucide-react';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -226,12 +226,20 @@ export default function LoginPage() {
           </form>
 
           {/* Back to Home */}
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
             <button
               onClick={() => router.push('/')}
-              className="text-[#651321] hover:text-[#df7500] font-medium transition-colors"
+              className="text-[#651321] hover:text-[#df7500] font-medium transition-colors block w-full"
             >
-            Back to Home
+              Back to Home
+            </button>
+            <div className="text-gray-400">•</div>
+            <button
+              onClick={() => router.push('/admin/login')}
+              className="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors flex items-center justify-center space-x-1"
+            >
+              <Shield className="w-4 h-4" />
+              <span>Admin Login</span>
             </button>
           </div>
         </div>
