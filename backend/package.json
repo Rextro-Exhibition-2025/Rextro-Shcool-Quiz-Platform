@@ -4,13 +4,7 @@
   "description": "",
   "main": "index.js",
   "type": "module",
-  "type": "module",
   "scripts": {
-    "start": "nodemon --exec tsx index.ts",
-    "start:prod": "node dist/index.js",
-    "dev": "nodemon --exec tsx index.ts",
-    "build": "tsc",
-    "build:watch": "tsc -w",
     "start": "nodemon --exec tsx index.ts",
     "start:prod": "node dist/index.js",
     "dev": "nodemon --exec tsx index.ts",
@@ -28,8 +22,6 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/mongoose": "^5.11.97",
     "@types/node": "^24.2.1",
-    "nodemon": "^3.1.10",
-    "tsx": "^4.20.4",
     "nodemon": "^3.1.10",
     "tsx": "^4.20.4",
     "typescript": "^5.9.2"

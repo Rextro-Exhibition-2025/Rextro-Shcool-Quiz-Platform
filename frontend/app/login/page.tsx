@@ -5,7 +5,7 @@ import { User, Lock, LogIn, Eye, EyeOff, Shield } from 'lucide-react';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
-    studentId: '',
+    memberName: '',
     password: '',
     schoolName: ''
   });
@@ -29,7 +29,7 @@ export default function LoginPage() {
     setError('');
 
     // Basic validation
-    if (!formData.studentId || !formData.password || !formData.schoolName) {
+    if (!formData.memberName || !formData.password || !formData.schoolName) {
       setError('Please fill in all fields');
       setLoading(false);
       return;
@@ -39,19 +39,30 @@ export default function LoginPage() {
     try {
       // You can add your authentication logic here
       // For now, we'll simulate a successful login after 1 second
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const url = "http://localhost:3000/api/auth/login";
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          teamName: formData.schoolName, // Backend expects 'teamName'
+          memberName: formData.memberName,
+          password: formData.password
+        })
+      });
+
       // Store user data in localStorage (or use proper state management)
       localStorage.setItem('studentData', JSON.stringify({
-        studentId: formData.studentId,
+        memberName: formData.memberName,
         schoolName: formData.schoolName,
         loginTime: new Date().toISOString()
       }));
 
       // Request fullscreen and redirect to quiz
-      if (document.documentElement.requestFullscreen) {
-        await document.documentElement.requestFullscreen();
-      }
+      // if (document.documentElement.requestFullscreen) {
+      //   await document.documentElement.requestFullscreen();
+      // }
       router.push('/quiz');
     } catch (error) {
       setError('Login failed. Please check your credentials.');
@@ -63,6 +74,7 @@ export default function LoginPage() {
   // Sample school names for the dropdown
   const schools = [
     'Select your school',
+    'Sunrise High School',
     'Greenwood High School',
     'Riverside Academy',
     'Maple Valley School',
@@ -97,8 +109,8 @@ export default function LoginPage() {
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden" style={{ zIndex: 1 }}>
         <div className="absolute w-96 h-96 bg-[#df7500]/10 rounded-full blur-3xl animate-pulse top-1/4 left-1/4" />
-        <div className="absolute w-64 h-64 bg-[#651321]/10 rounded-full blur-2xl animate-bounce top-3/4 right-1/4" 
-             style={{ animationDuration: '4s' }} />
+        <div className="absolute w-64 h-64 bg-[#651321]/10 rounded-full blur-2xl animate-bounce top-3/4 right-1/4"
+          style={{ animationDuration: '4s' }} />
       </div>
 
       {/* Login Form */}
@@ -133,12 +145,12 @@ export default function LoginPage() {
                 </div>
                 <input
                   type="text"
-                  id="studentId"
-                  name="studentId"
-                  value={formData.studentId}
+                  id="memberName"
+                  name="memberName"
+                  value={formData.memberName}
                   onChange={handleInputChange}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321] placeholder-gray-500"
-                  placeholder="Enter your student ID"
+                  placeholder="Enter your member name"
                   required
                 />
               </div>
@@ -158,9 +170,9 @@ export default function LoginPage() {
                 required
               >
                 {schools.map((school, index) => (
-                  <option 
-                    key={index} 
-                    value={index === 0 ? '' : school} 
+                  <option
+                    key={index}
+                    value={index === 0 ? '' : school}
                     disabled={index === 0}
                     className={index === 0 ? "text-gray-500" : "text-[#651321]"}
                   >
@@ -207,9 +219,8 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full bg-gradient-to-r from-[#df7500] to-[#651321] text-white py-3 px-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-105 hover:shadow-lg ${
-                loading ? 'opacity-70 cursor-not-allowed' : ''
-              }`}
+              className={`w-full bg-gradient-to-r from-[#df7500] to-[#651321] text-white py-3 px-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-105 hover:shadow-lg ${loading ? 'opacity-70 cursor-not-allowed' : ''
+                }`}
             >
               {loading ? (
                 <>

@@ -3,17 +3,17 @@ import SchoolTeam from "../models/SchoolTeam.js";
 
 export const loginMember = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { teamName, password, memberName } = req.body;
+        const { schoolName, password, memberName } = req.body;
 
-        if (!teamName || !password || !memberName) {
+        if (!schoolName || !password || !memberName) {
             res.status(400).json({
                 success: false,
-                message: "Team name, password, and member name are required",
+                message: "School name, password, and member name are required",
             });
             return;
         }
 
-        const schoolTeam = await SchoolTeam.findOne({ teamName });
+        const schoolTeam = await SchoolTeam.findOne({ schoolName });
         if (!schoolTeam) {
             res.status(404).json({
                 success: false,
@@ -53,9 +53,11 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
             data: {
                 teamName: schoolTeam.teamName,
                 memberName: member.name,
+                schoolName: schoolTeam.schoolName,
                 authToken,
             },
         });
+        console.log("Member logged in:", memberName, "from school:", schoolTeam.schoolName);
     } catch (error) {
         console.error("Error logging in member:", error);
         res.status(500).json({

@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import cors from "cors";
 import type { Application } from "express";
 import express from "express";
 import connectDB from "./config/db.js";
@@ -9,6 +10,14 @@ import SchoolTeamRouter from "./routes/schoolTeamRoutes.js";
 dotenv.config();
 
 const app: Application = express();
+
+//CORS
+app.use(cors({
+  origin: ['http://localhost:3001', 'http://localhost:3000'], // Allow both frontend ports
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}))
 
 // Middleware
 app.use(express.json());

@@ -17,7 +17,7 @@ interface QuizQuestion {
 }
 
 interface StudentData {
-  studentId: string;
+  memberName: string;
   schoolName: string;
 }
 
@@ -26,7 +26,7 @@ interface SelectedAnswers {
 }
 
 interface CompletionData {
-  studentId: string;
+  memberName: string;
   schoolName: string;
   answers: SelectedAnswers;
   score: number;
@@ -112,10 +112,10 @@ export default function Quiz(): React.JSX.Element | null {
       router.push('/login');
       return;
     }
-    
+
     try {
       const parsedData: StudentData = JSON.parse(studentData);
-      if (parsedData.studentId && parsedData.schoolName) {
+      if (parsedData.memberName && parsedData.schoolName) {
         setIsAuthenticated(true);
       } else {
         router.push('/login');
@@ -125,13 +125,26 @@ export default function Quiz(): React.JSX.Element | null {
       router.push('/login');
       return;
     }
-    
+
     setLoading(false);
   }, [router]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    
+
+    // Request fullscreen - handle async operation inside useEffect
+    const requestFullscreen = async () => {
+      try {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (error) {
+        console.error('Error entering fullscreen:', error);
+      }
+    };
+
+    requestFullscreen();
+
     // 3. Disable Copy/Paste
     const handleCopyPaste = (e: Event): void => {
       e.preventDefault();
@@ -159,7 +172,7 @@ export default function Quiz(): React.JSX.Element | null {
   // Separate useEffect for fullscreen detection that depends on currentQuestion
   useEffect(() => {
     if (!isAuthenticated) return;
-    
+
     // 7. Full-Screen Mode Detection
     const handleFullScreenChange = (): void => {
       console.log('Fullscreen change detected:', {
@@ -169,7 +182,7 @@ export default function Quiz(): React.JSX.Element | null {
         isSubmitting: isSubmitting,
         shouldShowPrompt: !document.fullscreenElement && !isSubmitting
       });
-      
+
       // Show fullscreen prompt on ALL questions (including the last one)
       // BUT NOT during quiz submission
       if (!document.fullscreenElement && !isSubmitting) {
@@ -201,7 +214,7 @@ export default function Quiz(): React.JSX.Element | null {
       2: 'a', // React logo (assuming first option is correct)
       3: 'a', // Creates a function (assuming first option is correct)
     };
-    
+
     Object.keys(selectedAnswers).forEach(questionIndex => {
       const questionNum = parseInt(questionIndex);
       const selectedAnswer = selectedAnswers[questionNum];
@@ -214,7 +227,7 @@ export default function Quiz(): React.JSX.Element | null {
         }
       }
     });
-    
+
     return Math.round((correctAnswers / totalQuestions) * 100);
   };
 
@@ -223,7 +236,7 @@ export default function Quiz(): React.JSX.Element | null {
     try {
       // Set submitting flag to prevent fullscreen prompt during submission
       setIsSubmitting(true);
-      
+
       // Check if user is still authenticated
       const studentData = localStorage.getItem('studentData');
       if (!studentData) {
@@ -233,13 +246,13 @@ export default function Quiz(): React.JSX.Element | null {
       }
 
       const parsedStudentData: StudentData = JSON.parse(studentData);
-      
+
       // Calculate score
       const score = calculateScore();
-      
+
       // Prepare submission data
       const submissionData: CompletionData = {
-        studentId: parsedStudentData.studentId,
+        memberName: parsedStudentData.memberName,
         schoolName: parsedStudentData.schoolName,
         answers: selectedAnswers,
         score: score,
@@ -250,19 +263,19 @@ export default function Quiz(): React.JSX.Element | null {
 
       // Store results (you can also send to backend here)
       localStorage.setItem('quizResult', JSON.stringify(submissionData));
-      
+
       // Exit fullscreen first
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       }
-      
+
       // Set completion data and show completion card
       setCompletionData(submissionData);
       setShowCompletionCard(true);
-      
+
       // Clear authentication after successful submission
       localStorage.removeItem('studentData');
-      
+
     } catch (error) {
       alert('Error submitting quiz. Please try again.');
       console.error('Submit quiz error:', error);
@@ -304,7 +317,7 @@ export default function Quiz(): React.JSX.Element | null {
   const handleReEnterFullscreen = (): void => {
     setShowFullscreenPrompt(false);
     const elem = document.documentElement;
-    
+
     const requestFullscreen = (): Promise<void> => {
       if (elem.requestFullscreen) {
         return elem.requestFullscreen();
@@ -345,25 +358,25 @@ export default function Quiz(): React.JSX.Element | null {
   }
 
   return (
-      <div
-        className="min-h-screen bg-gradient-to-br p-4 relative"
-        style={{
-          backgroundImage: 'url("/Container.png")',
-          backgroundSize: 'cover',
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'center'
-        }}
-      >
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          background: 'rgba(255,255,255,0.6)',
-          zIndex: 1
-        }} />
-        <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
+    <div
+      className="min-h-screen bg-gradient-to-br p-4 relative"
+      style={{
+        backgroundImage: 'url("/Container.png")',
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center'
+      }}
+    >
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        background: 'rgba(255,255,255,0.6)',
+        zIndex: 1
+      }} />
+      <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
 
         {/* Header with Progress */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
@@ -373,29 +386,29 @@ export default function Quiz(): React.JSX.Element | null {
               Question {currentQuestion + 1} of {totalQuestions}
             </div>
           </div>
-          
+
           {/* Progress Bar */}
           <div className="w-full rounded-full h-3 mb-4" style={{ background: 'rgba(223,117,0,0.1)' }}>
-            <div 
+            <div
               className="h-3 rounded-full transition-all duration-500 ease-out"
-              style={{ 
+              style={{
                 width: `${progress}%`,
                 backgroundColor: '#651321'
               }}
             ></div>
           </div>
-          
+
           <div className="text-center text-sm font-semibold text-gray-700">
             {answeredCount} of {totalQuestions} answered ({Math.round(progress)}%)
           </div>
-        
-        {/* Question Card */}
+
+          {/* Question Card */}
           <div className="my-8">
-                      
+
             <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6">
-                {currentQuestion + 1}. {currentQuestionData.question}
+              {currentQuestion + 1}. {currentQuestionData.question}
             </h2>
-            
+
             {currentQuestionData.image && (
               <div className="mb-6">
                 <img
@@ -406,30 +419,28 @@ export default function Quiz(): React.JSX.Element | null {
               </div>
             )}
           </div>
-          
+
           {/* Answers */}
           <div className="grid gap-4">
             {currentQuestionData.answers.map((answer) => (
               <button
                 key={answer.id}
                 onClick={() => handleAnswerSelect(answer.id)}
-                className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
-                  selectedAnswer === answer.id
-                    ? 'shadow-md'
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                }`}
+                className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${selectedAnswer === answer.id
+                  ? 'shadow-md'
+                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
                 style={selectedAnswer === answer.id ? {
                   borderColor: '#DF7500',
                   backgroundColor: '#DF750008'
                 } : {}}
               >
                 <div className="flex items-center space-x-4">
-                  <div 
-                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                      selectedAnswer === answer.id
-                        ? 'text-white'
-                        : 'border-gray-300'
-                    }`}
+                  <div
+                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedAnswer === answer.id
+                      ? 'text-white'
+                      : 'border-gray-300'
+                      }`}
                     style={selectedAnswer === answer.id ? {
                       borderColor: '#DF7500',
                       backgroundColor: '#DF7500'
@@ -439,7 +450,7 @@ export default function Quiz(): React.JSX.Element | null {
                       <Check size={16} className="text-white" />
                     )}
                   </div>
-                  
+
                   <div className="flex-1">
                     {answer.image && !answer.text && (
                       <img
@@ -448,13 +459,13 @@ export default function Quiz(): React.JSX.Element | null {
                         className="w-32 h-20 object-cover rounded-lg"
                       />
                     )}
-                    
+
                     {answer.text && !answer.image && (
                       <span className="text-gray-800 font-medium">
                         {answer.text}
                       </span>
                     )}
-                    
+
                     {answer.text && answer.image && (
                       <div className="flex items-center space-x-3">
                         <img
@@ -473,7 +484,7 @@ export default function Quiz(): React.JSX.Element | null {
             ))}
           </div>
         </div>
-        
+
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center gap-5">
           <div>
@@ -499,8 +510,8 @@ export default function Quiz(): React.JSX.Element | null {
               </button>
             )}
           </div>
-  </div>
-        
+        </div>
+
         {/* Question Navigation */}
         <div className="bg-white rounded-2xl shadow-lg p-6 my-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Navigation</h3>
@@ -509,27 +520,26 @@ export default function Quiz(): React.JSX.Element | null {
               <button
                 key={index}
                 onClick={() => handleQuestionNavigation(index)}
-                className={`w-10 h-10 rounded-lg font-medium text-sm transition-all duration-200 ${
-                  index === currentQuestion
-                    ? 'text-white shadow-lg scale-105'
-                    : selectedAnswers[index]
+                className={`w-10 h-10 rounded-lg font-medium text-sm transition-all duration-200 ${index === currentQuestion
+                  ? 'text-white shadow-lg scale-105'
+                  : selectedAnswers[index]
                     ? 'text-white shadow-lg scale-105'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
+                  }`}
                 style={
                   index === currentQuestion
                     ? { backgroundColor: '#DF7500' }
                     : selectedAnswers[index]
-                    ? { backgroundColor: '#651321' }
-                    : {}
+                      ? { backgroundColor: '#651321' }
+                      : {}
                 }
               >
-              {selectedAnswers[index] ? (
-                  <span style={{position: 'relative', display: 'block', width: '100%', height: '100%'}}>
-                    <span style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)'}}>
+                {selectedAnswers[index] ? (
+                  <span style={{ position: 'relative', display: 'block', width: '100%', height: '100%' }}>
+                    <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
                       {index + 1}
                     </span>
-                    <span style={{position: 'absolute', right: 2, bottom: 2}}>
+                    <span style={{ position: 'absolute', right: 2, bottom: 2 }}>
                       <Check size={14} />
                     </span>
                   </span>
@@ -544,7 +554,7 @@ export default function Quiz(): React.JSX.Element | null {
         {/* Submit Button (appears on last question) */}
         {currentQuestion === totalQuestions - 1 && (
           <div className="mt-6 text-center">
-            <button 
+            <button
               className="text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-200"
               style={{ backgroundColor: '#651321' }}
               onClick={handleSubmitQuiz}
@@ -586,7 +596,7 @@ export default function Quiz(): React.JSX.Element | null {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
                   <div className="bg-white/50 rounded-lg p-4">
                     <div className="text-sm text-gray-600">Student ID</div>
-                    <div className="font-semibold text-[#651321]">{completionData.studentId}</div>
+                    <div className="font-semibold text-[#651321]">{completionData.memberName}</div>
                   </div>
                   <div className="bg-white/50 rounded-lg p-4">
                     <div className="text-sm text-gray-600">School</div>
@@ -600,7 +610,7 @@ export default function Quiz(): React.JSX.Element | null {
                 <div className="mt-4 text-sm text-gray-600">
                   Answered {completionData.answeredQuestions} of {completionData.totalQuestions} questions
                 </div>
-                
+
                 {/* Action Button */}
                 <div className="mt-6">
                   <button
