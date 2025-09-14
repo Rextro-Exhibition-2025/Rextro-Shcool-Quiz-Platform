@@ -136,30 +136,11 @@ export const getAllSchoolTeams = async (req: Request, res: Response): Promise<vo
 
 export const getMe = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { teamName, memberName } = req.body;
-
-        if (!teamName || !memberName) {
-            res.status(400).json({
+        // User data is already attached to req.user by the protect middleware
+        if (!req.user) {
+            res.status(401).json({
                 success: false,
-                message: "Team name and member name are required",
-            });
-            return;
-        }
-
-        const schoolTeam = await SchoolTeam.findOne({ teamName });
-        if (!schoolTeam) {
-            res.status(404).json({
-                success: false,
-                message: "School team not found",
-            });
-            return;
-        }
-
-        const member = schoolTeam.members.find((m) => m.name === memberName);
-        if (!member) {
-            res.status(404).json({
-                success: false,
-                message: "Member not found in the team",
+                message: 'User not found'
             });
             return;
         }
@@ -167,22 +148,19 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         res.status(200).json({
             success: true,
             data: {
-                teamName: schoolTeam.teamName,
-                schoolName: schoolTeam.schoolName,
-                totalMarks: schoolTeam.totalMarks,
-                member: {
-                    name: member.name,
-                    marks: member.marks,
-                    isLoggedIn: member.isLoggedIn,
-                },
-            },
+                memberName: req.user.memberName,
+                schoolName: req.user.schoolName,
+                teamName: req.user.teamName,
+                marks: req.user.marks,
+                authToken: req.headers.authorization?.split(' ')[1] // Include token in response
+            }
         });
     } catch (error) {
-        console.error("Error in getMe:", error);
+        console.error('Get me error:', error);
         res.status(500).json({
             success: false,
-            message: "Internal server error",
-            error: error instanceof Error ? error.message : "Unknown error",
+            message: 'Server error',
+            error: error instanceof Error ? error.message : 'Unknown error'
         });
     }
 };
