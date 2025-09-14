@@ -70,17 +70,18 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
 
 export const logoutMember = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { teamName, memberName } = req.body;
-
-        if (!teamName || !memberName) {
-            res.status(400).json({
+        // User data is already attached to req.user by the protect middleware
+        if (!req.user) {
+            res.status(401).json({
                 success: false,
-                message: "Team name and member name are required",
+                message: 'User not found'
             });
             return;
         }
 
-        const schoolTeam = await SchoolTeam.findOne({ teamName });
+        const { schoolName, memberName } = req.user;
+
+        const schoolTeam = await SchoolTeam.findOne({ schoolName });
         if (!schoolTeam) {
             res.status(404).json({
                 success: false,
