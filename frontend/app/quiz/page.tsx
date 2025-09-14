@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
 
 interface Answer {
   id: string;
@@ -104,6 +105,9 @@ export default function Quiz(): React.JSX.Element | null {
   const [showCompletionCard, setShowCompletionCard] = useState<boolean>(false);
   const [completionData, setCompletionData] = useState<CompletionData | null>(null);
   const router = useRouter();
+  const user = useUser();
+
+  console.log(user);
 
   // Check authentication status
   useEffect(() => {

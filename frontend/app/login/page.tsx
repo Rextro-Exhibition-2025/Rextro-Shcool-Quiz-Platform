@@ -2,6 +2,18 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Lock, LogIn, Eye, EyeOff, Shield } from 'lucide-react';
+import { useUser } from '@/contexts/UserContext';
+
+interface LoginFormResponse {
+  success: boolean;
+  data: {
+    memberName: string;
+    schoolName: string;
+    teamName: string;
+    authToken: string;
+  };
+  message?: string;
+}
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
@@ -13,6 +25,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const { user, setUser } = useUser();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -46,11 +59,13 @@ export default function LoginPage() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          teamName: formData.schoolName, // Backend expects 'teamName'
+          schoolName: formData.schoolName, // Backend expects 'teamName'
           memberName: formData.memberName,
           password: formData.password
         })
       });
+
+      const responseData: LoginFormResponse = await response.json();
 
       // Store user data in localStorage (or use proper state management)
       localStorage.setItem('studentData', JSON.stringify({
@@ -63,7 +78,14 @@ export default function LoginPage() {
       // if (document.documentElement.requestFullscreen) {
       //   await document.documentElement.requestFullscreen();
       // }
-      router.push('/quiz');
+      setUser({
+        memberName: responseData.data.memberName,
+        schoolName: responseData.data.schoolName,
+        teamName: responseData.data.teamName,
+        authToken: responseData.data.authToken,
+      });
+      console.log(user);
+      // router.push('/quiz');
     } catch (error) {
       setError('Login failed. Please check your credentials.');
     } finally {
