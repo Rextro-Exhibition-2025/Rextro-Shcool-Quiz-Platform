@@ -4,12 +4,11 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from 'axios';
 
 interface User {
-    _id?: string;
     memberName: string;
     schoolName: string;
     teamName: string;
-    authToken: string;
-    marks?: number;
+    authToken: string;  // Add this field
+    marks?: number;     // Make this optional since it's not in login response
 }
 
 interface UserContextType {

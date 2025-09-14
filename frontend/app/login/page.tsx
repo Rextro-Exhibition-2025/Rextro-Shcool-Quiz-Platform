@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Lock, LogIn, Eye, EyeOff, Shield } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
@@ -26,6 +26,11 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
   const { user, setUser } = useUser();
+
+  // Add this useEffect to your login page to debug
+  useEffect(() => {
+    console.log('User from context changed:', user);
+  }, [user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -78,14 +83,18 @@ export default function LoginPage() {
       // if (document.documentElement.requestFullscreen) {
       //   await document.documentElement.requestFullscreen();
       // }
-      setUser({
-        memberName: responseData.data.memberName,
-        schoolName: responseData.data.schoolName,
-        teamName: responseData.data.teamName,
-        authToken: responseData.data.authToken,
-      });
-      console.log(user);
-      // router.push('/quiz');
+      if (response.ok && responseData.success) {
+        console.log(responseData);
+        localStorage.setItem('authToken', responseData.data.authToken);
+        setUser({
+          memberName: responseData.data.memberName,
+          schoolName: responseData.data.schoolName,
+          teamName: responseData.data.teamName,
+          authToken: responseData.data.authToken,
+        });
+        console.log(user);
+        router.push('/quiz');
+      }
     } catch (error) {
       setError('Login failed. Please check your credentials.');
     } finally {

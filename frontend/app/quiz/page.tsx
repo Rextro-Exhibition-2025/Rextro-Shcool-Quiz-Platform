@@ -107,7 +107,20 @@ export default function Quiz(): React.JSX.Element | null {
   const router = useRouter();
   const user = useUser();
 
-  console.log(user);
+  useEffect(() => {
+    console.log('User context data:', user);
+  }, [user]);
+
+  // 1. Authentication Check
+  useEffect(() => {
+    const authToken = localStorage.getItem('authToken');
+    if (!authToken) {
+      router.push('/login');
+      return;
+    }
+    setIsAuthenticated(true);
+    setLoading(false);
+  }, [router]);
 
   // Check authentication status
   useEffect(() => {
