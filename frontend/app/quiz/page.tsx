@@ -470,7 +470,11 @@ export default function Quiz(): React.JSX.Element | null {
               className="h-3 rounded-full transition-all duration-500 ease-out"
               style={{
                 width: `${progress}%`,
-                backgroundColor: '#651321'
+                backgroundColor: '#651321',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                height: '100%'
               }}
             ></div>
           </div>
