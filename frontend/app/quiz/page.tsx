@@ -111,7 +111,6 @@ export default function Quiz(): React.JSX.Element | null {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>(() => {
-    // Restore answers from localStorage if available
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('quizSelectedAnswers');
       if (saved) {
@@ -124,12 +123,6 @@ export default function Quiz(): React.JSX.Element | null {
     }
     return {};
   });
-  // Auto-save selectedAnswers to localStorage on every change
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('quizSelectedAnswers', JSON.stringify(selectedAnswers));
-    }
-  }, [selectedAnswers]);
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
