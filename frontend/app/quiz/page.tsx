@@ -20,6 +20,8 @@ interface QuizQuestion {
 interface StudentData {
   memberName: string;
   schoolName: string;
+  sessionId?: string;
+  sessionTime?: string;
 }
 
 interface SelectedAnswers {
@@ -104,6 +106,7 @@ export default function Quiz(): React.JSX.Element | null {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showCompletionCard, setShowCompletionCard] = useState<boolean>(false);
   const [completionData, setCompletionData] = useState<CompletionData | null>(null);
+  const [sessionInfo, setSessionInfo] = useState<{ sessionId: string; sessionTime: string } | null>(null);
   const router = useRouter();
   const user = useUser();
 
@@ -129,11 +132,34 @@ export default function Quiz(): React.JSX.Element | null {
       router.push('/login');
       return;
     }
-
     try {
       const parsedData: StudentData = JSON.parse(studentData);
       if (parsedData.memberName && parsedData.schoolName) {
         setIsAuthenticated(true);
+        // Determine session info based on login time or backend assignment
+        // For now, use a simple time-based mapping (should be replaced with backend logic)
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        let sessionId = "";
+        let sessionTime = "";
+        if ((hour === 8 && minute >= 30) || (hour === 9 && minute < 15)) {
+          sessionId = "1";
+          sessionTime = "8:30 AM - 9:15 AM";
+        } else if ((hour === 9 && minute >= 30) || (hour === 10 && minute < 15)) {
+          sessionId = "2";
+          sessionTime = "9:30 AM - 10:15 AM";
+        } else if ((hour === 11 && minute >= 30) || (hour === 12 && minute < 15)) {
+          sessionId = "3";
+          sessionTime = "11:30 AM - 12:15 PM";
+        } else if ((hour === 12 && minute >= 30) || (hour === 13 && minute < 15)) {
+          sessionId = "4";
+          sessionTime = "12:30 PM - 1:15 PM";
+        } else {
+          sessionId = "-";
+          sessionTime = "Not in a valid session window";
+        }
+        setSessionInfo({ sessionId, sessionTime });
       } else {
         router.push('/login');
         return;
@@ -142,7 +168,6 @@ export default function Quiz(): React.JSX.Element | null {
       router.push('/login');
       return;
     }
-
     setLoading(false);
   }, [router]);
 

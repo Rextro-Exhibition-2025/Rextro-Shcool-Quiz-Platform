@@ -4,6 +4,14 @@ import { useRouter } from 'next/navigation';
 import { User, Lock, LogIn, Eye, EyeOff, Shield } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 
+interface ActiveSession {
+  id: string;
+  time: string;
+  isActive: boolean;
+  isFull: boolean;
+  spotsLeft: number;
+}
+
 interface LoginFormResponse {
   success: boolean;
   data: {
@@ -24,6 +32,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [session, setSession] = useState<ActiveSession | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const router = useRouter();
   const { user, setUser } = useUser();
 
@@ -31,6 +41,25 @@ export default function LoginPage() {
   useEffect(() => {
     console.log('User from context changed:', user);
   }, [user]);
+
+  // Fetch current session info from backend
+  useEffect(() => {
+    const fetchSession = async () => {
+      setSessionLoading(true);
+      try {
+        // Replace with your backend endpoint
+        const res = await fetch('/api/sessions/active');
+        if (!res.ok) throw new Error('Failed to fetch session');
+        const data = await res.json();
+        setSession(data.session || null);
+      } catch (e) {
+        setSession(null);
+      } finally {
+        setSessionLoading(false);
+      }
+    };
+    fetchSession();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -49,6 +78,13 @@ export default function LoginPage() {
     // Basic validation
     if (!formData.memberName || !formData.password || !formData.schoolName) {
       setError('Please fill in all fields');
+      setLoading(false);
+      return;
+    }
+
+    // Check session status before allowing login
+    if (!session || session.isFull || !session.isActive) {
+      setError('Cannot login: No active session or session is full.');
       setLoading(false);
       return;
     }
@@ -76,7 +112,9 @@ export default function LoginPage() {
       localStorage.setItem('studentData', JSON.stringify({
         memberName: formData.memberName,
         schoolName: formData.schoolName,
-        loginTime: new Date().toISOString()
+        loginTime: new Date().toISOString(),
+        sessionId: session.id,
+        sessionTime: session.time
       }));
 
       // Request fullscreen and redirect to quiz
@@ -144,17 +182,27 @@ export default function LoginPage() {
           style={{ animationDuration: '4s' }} />
       </div>
 
-      {/* Login Form */}
+      {/* Session Info Banner */}
       <div className="relative z-10 w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl p-8 backdrop-blur-sm">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-[#df7500] to-[#651321] rounded-full mb-4">
-              <LogIn className="w-8 h-8 text-white" />
+          {/* Session Status */}
+          {sessionLoading ? (
+            <div className="mb-6 text-center text-[#651321] font-semibold">Checking session status...</div>
+          ) : session && session.isActive && !session.isFull ? (
+            <div className="mb-6 text-center bg-gradient-to-r from-[#df7500]/20 to-[#651321]/20 rounded-xl px-6 py-3 shadow text-[#651321] font-semibold">
+              <span className="mr-2">Current Session:</span>
+              <span className="bg-[#df7500]/10 text-[#651321] px-4 py-1 rounded-full font-bold">{session.time}</span>
+              <span className="ml-4">Spots Left: <span className="font-bold">{session.spotsLeft}</span></span>
             </div>
-            <h1 className="text-3xl font-bold text-[#651321] mb-2">Student Login</h1>
-            <p className="text-gray-600">Enter your credentials to start the quiz</p>
-          </div>
+          ) : session && session.isFull ? (
+            <div className="mb-6 text-center bg-red-100 text-red-700 rounded-xl px-6 py-3 shadow font-semibold">
+              Session Full. Please try again in the next session.
+            </div>
+          ) : (
+            <div className="mb-6 text-center bg-yellow-100 text-yellow-700 rounded-xl px-6 py-3 shadow font-semibold">
+              No session is currently running. Please come back at your assigned time.
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
@@ -275,14 +323,14 @@ export default function LoginPage() {
             >
               Back to Home
             </button>
-            <div className="text-gray-400">•</div>
+            {/* <div className="text-gray-400">•</div>
             <button
               onClick={() => router.push('/admin/login')}
               className="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors flex items-center justify-center space-x-1"
             >
               <Shield className="w-4 h-4" />
               <span>Admin Login</span>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
