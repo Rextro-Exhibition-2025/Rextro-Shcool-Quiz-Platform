@@ -16,7 +16,7 @@ interface Question {
   answers: Answer[];
   correctAnswer: string;
   quizSet: string;
-}
+
 
 export default function AddQuestion(): React.ReactElement | null {
   const router = useRouter();
@@ -38,12 +38,14 @@ export default function AddQuestion(): React.ReactElement | null {
       { id: 'c', text: '', image: '' },
       { id: 'd', text: '', image: '' }
     ],
+
     correctAnswer: '',
     quizSet: '',
   });
   const handleQuizSetChange = (value: string): void => {
     setQuestion(prev => ({ ...prev, quizSet: value }));
   };
+
 
   const handleQuestionChange = (value: string): void => {
     setQuestion(prev => ({ ...prev, question: value }));
@@ -86,6 +88,7 @@ export default function AddQuestion(): React.ReactElement | null {
       alert('Please select the correct answer');
       return;
     }
+
 
     if (!question.quizSet) {
       alert('Please select a quiz set');
@@ -216,7 +219,6 @@ export default function AddQuestion(): React.ReactElement | null {
         {/* Question Form */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Question Details</h2>
-          
           {/* Quiz Set Selection */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -234,7 +236,6 @@ export default function AddQuestion(): React.ReactElement | null {
               <option value="set4">Set 4</option>
             </select>
           </div>
-
           {/* Question Text */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
