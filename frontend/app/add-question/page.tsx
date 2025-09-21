@@ -16,7 +16,7 @@ interface Question {
   answers: Answer[];
   correctAnswer: string;
   quizSet: string;
-
+}
 
 export default function AddQuestion(): React.ReactElement | null {
   const router = useRouter();

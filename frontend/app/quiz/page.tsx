@@ -1,8 +1,15 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+// Helper to format time as mm:ss
+function formatTime(seconds: number): string {
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+}
 import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
+
 import { useUser } from '@/contexts/UserContext';
+import { ChevronLeft, ChevronRight, Check, Clock } from 'lucide-react';
 
 interface Answer {
   id: string;
@@ -98,6 +105,10 @@ const quizData: QuizQuestion[] = [
 ];
 
 export default function Quiz(): React.JSX.Element | null {
+  // 45 minutes in seconds
+  const QUIZ_DURATION = 45 * 60;
+  const [timeLeft, setTimeLeft] = useState<number>(QUIZ_DURATION);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>({});
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState<boolean>(false);
@@ -125,6 +136,27 @@ export default function Quiz(): React.JSX.Element | null {
     setLoading(false);
   }, [router]);
 
+  // Timer countdown effect
+  useEffect(() => {
+    if (!isAuthenticated || showCompletionCard) return;
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          // Auto-submit when timer hits zero
+          handleSubmitQuiz();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, showCompletionCard]);
+
   // Check authentication status
   useEffect(() => {
     const studentData = localStorage.getItem('studentData');
@@ -137,7 +169,7 @@ export default function Quiz(): React.JSX.Element | null {
       if (parsedData.memberName && parsedData.schoolName) {
         setIsAuthenticated(true);
         // Determine session info based on login time or backend assignment
-        // For now, use a simple time-based mapping (should be replaced with backend logic)
+        // Match login page session logic
         const now = new Date();
         const hour = now.getHours();
         const minute = now.getMinutes();
@@ -152,9 +184,9 @@ export default function Quiz(): React.JSX.Element | null {
         } else if ((hour === 11 && minute >= 30) || (hour === 12 && minute < 15)) {
           sessionId = "3";
           sessionTime = "11:30 AM - 12:15 PM";
-        } else if ((hour === 12 && minute >= 30) || (hour === 13 && minute < 15)) {
+        } else if ((hour === 16 && minute >= 30) || (hour > 16 && hour < 23) || (hour === 23 && minute <= 15)) {
           sessionId = "4";
-          sessionTime = "12:30 PM - 1:15 PM";
+          sessionTime = "4:30 PM - 11:15 PM";
         } else {
           sessionId = "-";
           sessionTime = "Not in a valid session window";
@@ -274,6 +306,7 @@ export default function Quiz(): React.JSX.Element | null {
 
   // Handle quiz submission
   const handleSubmitQuiz = async (): Promise<void> => {
+    if (timerRef.current) clearInterval(timerRef.current);
     try {
       // Set submitting flag to prevent fullscreen prompt during submission
       setIsSubmitting(true);
@@ -397,6 +430,9 @@ export default function Quiz(): React.JSX.Element | null {
   if (!isAuthenticated) {
     return null;
   }
+
+  // Timer warning color
+  const timerColor = timeLeft <= 60 ? '#df7500' : '#651321';
 
   return (
     <div

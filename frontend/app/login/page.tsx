@@ -1,16 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Lock, LogIn, Eye, EyeOff, Shield } from 'lucide-react';
-import { useUser } from '@/contexts/UserContext';
+import { User, Lock, LogIn, Eye, EyeOff, Shield, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 
-interface ActiveSession {
-  id: string;
-  time: string;
-  isActive: boolean;
-  isFull: boolean;
-  spotsLeft: number;
-}
 
 interface LoginFormResponse {
   success: boolean;
@@ -32,34 +24,12 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [session, setSession] = useState<ActiveSession | null>(null);
-  const [sessionLoading, setSessionLoading] = useState(true);
+  // Removed session state
   const router = useRouter();
-  const { user, setUser } = useUser();
+
 
   // Add this useEffect to your login page to debug
-  useEffect(() => {
-    console.log('User from context changed:', user);
-  }, [user]);
 
-  // Fetch current session info from backend
-  useEffect(() => {
-    const fetchSession = async () => {
-      setSessionLoading(true);
-      try {
-        // Replace with your backend endpoint
-        const res = await fetch('/api/sessions/active');
-        if (!res.ok) throw new Error('Failed to fetch session');
-        const data = await res.json();
-        setSession(data.session || null);
-      } catch (e) {
-        setSession(null);
-      } finally {
-        setSessionLoading(false);
-      }
-    };
-    fetchSession();
-  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -82,12 +52,7 @@ export default function LoginPage() {
       return;
     }
 
-    // Check session status before allowing login
-    if (!session || session.isFull || !session.isActive) {
-      setError('Cannot login: No active session or session is full.');
-      setLoading(false);
-      return;
-    }
+
 
     // Simulate authentication (replace with actual authentication logic)
     try {
@@ -109,28 +74,14 @@ export default function LoginPage() {
       const responseData: LoginFormResponse = await response.json();
 
       // Store user data in localStorage (or use proper state management)
-      localStorage.setItem('studentData', JSON.stringify({
-        memberName: formData.memberName,
-        schoolName: formData.schoolName,
-        loginTime: new Date().toISOString(),
-        sessionId: session.id,
-        sessionTime: session.time
-      }));
+
 
       // Request fullscreen and redirect to quiz
       // if (document.documentElement.requestFullscreen) {
       //   await document.documentElement.requestFullscreen();
       // }
       if (response.ok && responseData.success) {
-        console.log(responseData);
         localStorage.setItem('authToken', responseData.data.authToken);
-        setUser({
-          memberName: responseData.data.memberName,
-          schoolName: responseData.data.schoolName,
-          teamName: responseData.data.teamName,
-          authToken: responseData.data.authToken,
-        });
-        console.log(user);
         router.push('/quiz');
       }
     } catch (error) {
@@ -182,27 +133,17 @@ export default function LoginPage() {
           style={{ animationDuration: '4s' }} />
       </div>
 
-      {/* Session Info Banner */}
+
       <div className="relative z-10 w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl p-8 backdrop-blur-sm">
-          {/* Session Status */}
-          {sessionLoading ? (
-            <div className="mb-6 text-center text-[#651321] font-semibold">Checking session status...</div>
-          ) : session && session.isActive && !session.isFull ? (
-            <div className="mb-6 text-center bg-gradient-to-r from-[#df7500]/20 to-[#651321]/20 rounded-xl px-6 py-3 shadow text-[#651321] font-semibold">
-              <span className="mr-2">Current Session:</span>
-              <span className="bg-[#df7500]/10 text-[#651321] px-4 py-1 rounded-full font-bold">{session.time}</span>
-              <span className="ml-4">Spots Left: <span className="font-bold">{session.spotsLeft}</span></span>
+          {/* Login Icon and Heading */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-14 h-14 rounded-full bg-gradient-to-r from-[#df7500] to-[#651321] flex items-center justify-center mb-3 shadow-lg">
+              <LogIn className="w-7 h-7 text-white" />
             </div>
-          ) : session && session.isFull ? (
-            <div className="mb-6 text-center bg-red-100 text-red-700 rounded-xl px-6 py-3 shadow font-semibold">
-              Session Full. Please try again in the next session.
-            </div>
-          ) : (
-            <div className="mb-6 text-center bg-yellow-100 text-yellow-700 rounded-xl px-6 py-3 shadow font-semibold">
-              No session is currently running. Please come back at your assigned time.
-            </div>
-          )}
+            <h2 className="text-2xl font-bold text-[#651321] mb-1">Student Login</h2>
+            <p className="text-sm text-[#651321] opacity-80">Enter your credentials to start the quiz</p>
+          </div>
 
           {/* Error Message */}
           {error && (
