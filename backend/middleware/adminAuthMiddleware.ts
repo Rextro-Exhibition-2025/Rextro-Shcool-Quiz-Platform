@@ -1,21 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
-// Add user property to Express Request interface
-declare global {
-    namespace Express {
-        interface Request {
-            user?: {
-                id: string;
-                teamName: string;
-                schoolName: string;
-                memberName: string;
-                marks: number;
-            };
-        }
-    }
-}
-
 export const adminOnly = async (
     req: Request,
     res: Response,
@@ -40,9 +25,6 @@ export const adminOnly = async (
             });
             return;
         }
-
-   
-
         // Verify token
         const decoded = jwt.verify(
             token,
@@ -52,16 +34,16 @@ export const adminOnly = async (
             exp?: number;
         };
 
-     
-      if (decoded.exp && Date.now() >= decoded.exp * 1000) {
-        res.status(401).json({ error: 'Token expired' });
-        return;
-      }
+
+        if (decoded.exp && Date.now() >= decoded.exp * 1000) {
+            res.status(401).json({ error: 'Token expired' });
+            return;
+        }
         // Find the team by ID
         next();
 
     } catch (error) {
-    
+
         res.status(500).json({
             success: false,
             message: 'Authentication error',
