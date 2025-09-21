@@ -1,9 +1,8 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Zap } from "lucide-react";
-
-// Admin session management: fetch sessions, show capacity, add session
-import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 
 
@@ -19,6 +18,17 @@ interface AdminSession {
 }
 
 export default function AdminSessionMonitor() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/admin/login");
+    }
+  }, [status, router]);
+  if (status === "unauthenticated") {
+    return null;
+  }
+  // ...existing code...
   const [sessions, setSessions] = useState<AdminSession[]>([
     { id: "1", time: "8:30 AM - 9:15 AM", capacity: 300, participants: 120 },
     { id: "2", time: "9:30 AM - 10:15 AM", capacity: 300, participants: 200 },
