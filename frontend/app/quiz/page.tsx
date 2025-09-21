@@ -148,7 +148,6 @@ export default function Quiz(): React.JSX.Element | null {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-
     // Request fullscreen - handle async operation inside useEffect
     const requestFullscreen = async () => {
       try {
@@ -527,8 +526,7 @@ export default function Quiz(): React.JSX.Element | null {
               </button>
             )}
           </div>
-        </div>
-
+  </div>
         {/* Question Navigation */}
         <div className="bg-white rounded-2xl shadow-lg p-6 my-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Navigation</h3>
