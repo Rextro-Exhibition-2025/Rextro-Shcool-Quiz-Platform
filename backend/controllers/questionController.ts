@@ -1,12 +1,16 @@
+
+import jwt from "jsonwebtoken";
 import Question from "../models/Question.js";
 import Quiz from "../models/Quiz.js";
 import type { Request, Response } from "express";
 
-export const createQuestion = async (req: Request, res: Response): Promise<void> => {
+
+
+export const createQuestion = async (req: Request, res: Response): Promise<any> => {
   try {
-    // Find the quiz with the matching quizId first to validate
+
     const quiz = await Quiz.findOne({ quizId: req.body.quizId });
-    
+
     if (!quiz) {
       res.status(404).json({
         success: false,
@@ -28,14 +32,14 @@ export const createQuestion = async (req: Request, res: Response): Promise<void>
 
     // Create the question
     const question = await Question.create(req.body);
-    
+
     // Add the question to the quiz
     if (!quiz.questions) {
       quiz.questions = [];
     }
     quiz.questions.push(question._id as any);
     await quiz.save();
-    
+
     res.status(201).json({
       success: true,
       data: question,

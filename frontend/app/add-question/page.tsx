@@ -1,8 +1,10 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, ArrowLeft, LogOut, Shield } from 'lucide-react';
+import { createServerApi } from '@/interceptors/admins';
+import { LogOut, Save, Shield, Trash2 } from 'lucide-react';
+import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import React, { useEffect, useState } from 'react';
+import { transformQuestion } from './questionTransformer';
 
 interface Answer {
   id: string;
@@ -15,9 +17,11 @@ interface Question {
   image: string;
   answers: Answer[];
   correctAnswer: string;
+  quizId: number | null;
 }
 
 export default function AddQuestion(): React.ReactElement | null {
+
   const router = useRouter();
   const { data: session, status } = useSession();
   
@@ -37,7 +41,8 @@ export default function AddQuestion(): React.ReactElement | null {
       { id: 'c', text: '', image: '' },
       { id: 'd', text: '', image: '' }
     ],
-    correctAnswer: ''
+    correctAnswer: '',
+    quizId:1
   });
 
   const handleQuestionChange = (value: string): void => {
@@ -61,8 +66,8 @@ export default function AddQuestion(): React.ReactElement | null {
     setQuestion(prev => ({ ...prev, correctAnswer: answerId }));
   };
 
-  const handleSave = (): void => {
-    // Validate that question and at least one answer are filled
+  const handleSave = async (): Promise<void> => {
+  
     if (!question.question.trim()) {
       alert('Please enter a question');
       return;
@@ -84,6 +89,15 @@ export default function AddQuestion(): React.ReactElement | null {
 
     // Here you would typically send the data to your backend
     console.log('Saving question:', question);
+
+  question.quizId=1;
+
+    const api = await createServerApi();
+    const response = await api.post('/questions', transformQuestion(question));
+
+console.log('Response:', response);
+
+
     alert('Question saved successfully!');
     
     // Reset form
@@ -96,7 +110,8 @@ export default function AddQuestion(): React.ReactElement | null {
         { id: 'c', text: '', image: '' },
         { id: 'd', text: '', image: '' }
       ],
-      correctAnswer: ''
+      correctAnswer: '',
+      quizId:null
     });
   };
 
@@ -110,7 +125,8 @@ export default function AddQuestion(): React.ReactElement | null {
         { id: 'c', text: '', image: '' },
         { id: 'd', text: '', image: '' }
       ],
-      correctAnswer: ''
+      correctAnswer: '',
+      quizId:null
     });
   };
 
