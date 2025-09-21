@@ -4,6 +4,8 @@ import type { Application } from "express";
 import express from "express";
 import connectDB from "./config/db.js";
 import UserRouter from "./routes/userRoutes.js";
+import QuestionRouter from "./routes/questionRoute.js";
+import QuizRouter from "./routes/quizRoute.js";
 import AuthRouter from "./routes/authRoutes.js";
 import SchoolTeamRouter from "./routes/schoolTeamRoutes.js";
 
@@ -32,6 +34,8 @@ app.get("/", (req, res) => {
 
 // API Routes
 app.use("/api/users", UserRouter);
+app.use("/api/questions", QuestionRouter);
+app.use("/api/quizzes", QuizRouter);
 app.use("/api/auth", AuthRouter);
 app.use("/api/school-teams", SchoolTeamRouter);
 
