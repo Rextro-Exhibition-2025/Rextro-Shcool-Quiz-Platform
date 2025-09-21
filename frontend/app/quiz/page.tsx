@@ -1,5 +1,26 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+// Simple device fingerprint (for demo; use a library for production)
+function getDeviceFingerprint() {
+  const nav = window.navigator;
+  const fp = [
+    nav.userAgent,
+    nav.language,
+    nav.platform,
+    nav.hardwareConcurrency,
+    // nav.deviceMemory, // Removed for compatibility
+    window.screen.width,
+    window.screen.height,
+    window.screen.colorDepth
+  ].join('::');
+  // Simple hash
+  let hash = 0;
+  for (let i = 0; i < fp.length; i++) {
+    hash = ((hash << 5) - hash) + fp.charCodeAt(i);
+    hash |= 0;
+  }
+  return 'fp_' + Math.abs(hash);
+}
 // Helper to format time as mm:ss
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
@@ -249,36 +270,89 @@ export default function Quiz(): React.JSX.Element | null {
     // Cleanup
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      document.removeEventListener("copy", handleCopyPaste);
-      document.removeEventListener("paste", handleCopyPaste);
+      // No handleCopyPaste cleanup here
     };
   }, [isAuthenticated]);
 
   // Separate useEffect for fullscreen detection that depends on currentQuestion
   useEffect(() => {
     if (!isAuthenticated) return;
-
-    // 7. Full-Screen Mode Detection
-    const handleFullScreenChange = (): void => {
-      console.log('Fullscreen change detected:', {
-        isFullscreen: !!document.fullscreenElement,
-        currentQuestion: currentQuestion,
-        totalQuestions: quizData.length - 1,
-        isSubmitting: isSubmitting,
-        shouldShowPrompt: !document.fullscreenElement && !isSubmitting
+    
+    // Helper to log suspicious activity
+    function logSuspicious(event: string, details: string) {
+      const logData = {
+        user: (typeof window !== 'undefined' && localStorage.getItem('studentId')) || 'unknown',
+        event,
+        time: new Date().toISOString(),
+        details,
+        fingerprint: typeof window !== 'undefined' ? getDeviceFingerprint() : 'unknown',
+      };
+      fetch('/api/logs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(logData)
       });
+    }
 
-      // Show fullscreen prompt on ALL questions (including the last one)
-      // BUT NOT during quiz submission
-      if (!document.fullscreenElement && !isSubmitting) {
+    // 3. Disable Copy/Paste (handler now has access to logSuspicious)
+    function handleCopyPaste(e: Event): void {
+      e.preventDefault();
+      alert("Copy/Paste is disabled during the quiz.");
+      if (e.type === 'copy') {
+        logSuspicious('Copy attempt', `User tried to copy content on question ${currentQuestion + 1}`);
+      } else if (e.type === 'paste') {
+        logSuspicious('Paste attempt', `User tried to paste content on question ${currentQuestion + 1}`);
+      }
+    }
+    document.addEventListener("copy", handleCopyPaste);
+    document.addEventListener("paste", handleCopyPaste);
+
+    // Full-Screen Mode Detection
+    const handleFullScreenChange = (): void => {
+      const isFullscreen = !!document.fullscreenElement;
+      if (!isFullscreen && !isSubmitting) {
         setShowFullscreenPrompt(true);
+        logSuspicious('Fullscreen exit', `User exited fullscreen on question ${currentQuestion + 1}`);
       }
     };
     document.addEventListener("fullscreenchange", handleFullScreenChange);
 
+    // Tab switch / window blur
+    const handleBlur = (): void => {
+      if (!isSubmitting) {
+        logSuspicious('Tab switch or window blur', `User left quiz tab on question ${currentQuestion + 1}`);
+      }
+    };
+    window.addEventListener('blur', handleBlur);
+
+    // Copy/Cut/Paste attempts
+    const handleCopy = (e: ClipboardEvent) => {
+      logSuspicious('Copy attempt', `User tried to copy content on question ${currentQuestion + 1}`);
+    };
+    const handleCut = (e: ClipboardEvent) => {
+      logSuspicious('Cut attempt', `User tried to cut content on question ${currentQuestion + 1}`);
+    };
+    const handlePaste = (e: ClipboardEvent) => {
+      logSuspicious('Paste attempt', `User tried to paste content on question ${currentQuestion + 1}`);
+    };
+    window.addEventListener('copy', handleCopy);
+    window.addEventListener('cut', handleCut);
+    window.addEventListener('paste', handlePaste);
+
+    // Page reload/back navigation
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      logSuspicious('Page reload or navigation', `User tried to reload or leave the quiz page on question ${currentQuestion + 1}`);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
     // Cleanup
     return () => {
       document.removeEventListener("fullscreenchange", handleFullScreenChange);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('copy', handleCopy);
+      window.removeEventListener('cut', handleCut);
+      window.removeEventListener('paste', handlePaste);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [isAuthenticated, currentQuestion, isSubmitting]);
 
