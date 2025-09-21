@@ -15,6 +15,7 @@ interface Question {
   image: string;
   answers: Answer[];
   correctAnswer: string;
+  quizSet: string;
 }
 
 export default function AddQuestion(): React.ReactElement | null {
@@ -37,8 +38,12 @@ export default function AddQuestion(): React.ReactElement | null {
       { id: 'c', text: '', image: '' },
       { id: 'd', text: '', image: '' }
     ],
-    correctAnswer: ''
+    correctAnswer: '',
+    quizSet: '',
   });
+  const handleQuizSetChange = (value: string): void => {
+    setQuestion(prev => ({ ...prev, quizSet: value }));
+  };
 
   const handleQuestionChange = (value: string): void => {
     setQuestion(prev => ({ ...prev, question: value }));
@@ -82,6 +87,11 @@ export default function AddQuestion(): React.ReactElement | null {
       return;
     }
 
+    if (!question.quizSet) {
+      alert('Please select a quiz set');
+      return;
+    }
+
     // Here you would typically send the data to your backend
     console.log('Saving question:', question);
     alert('Question saved successfully!');
@@ -96,7 +106,8 @@ export default function AddQuestion(): React.ReactElement | null {
         { id: 'c', text: '', image: '' },
         { id: 'd', text: '', image: '' }
       ],
-      correctAnswer: ''
+      correctAnswer: '',
+      quizSet: '',
     });
   };
 
@@ -110,7 +121,8 @@ export default function AddQuestion(): React.ReactElement | null {
         { id: 'c', text: '', image: '' },
         { id: 'd', text: '', image: '' }
       ],
-      correctAnswer: ''
+      correctAnswer: '',
+      quizSet: '',
     });
   };
 
@@ -205,6 +217,24 @@ export default function AddQuestion(): React.ReactElement | null {
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Question Details</h2>
           
+          {/* Quiz Set Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Quiz Set *
+            </label>
+            <select
+              value={question.quizSet}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleQuizSetChange(e.target.value)}
+              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
+            >
+              <option value="">Select a quiz set</option>
+              <option value="set1">Set 1</option>
+              <option value="set2">Set 2</option>
+              <option value="set3">Set 3</option>
+              <option value="set4">Set 4</option>
+            </select>
+          </div>
+
           {/* Question Text */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
