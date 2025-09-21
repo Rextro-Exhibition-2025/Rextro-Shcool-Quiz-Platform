@@ -6,6 +6,7 @@ import NavBar from "@/components/NavBar/NavBar";
 import Footer from "@/components/Footer/Footer";
 import Providers from "@/components/Providers";
 import { usePathname } from "next/navigation";
+import { UserProvider } from '@/contexts/UserContext';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,9 +26,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
-          {!hideNavAndFooter && <NavBar />}
-          {children}
-          {!hideNavAndFooter && <Footer />}
+          <UserProvider>
+            {!hideNavAndFooter && <NavBar />}
+            {children}
+            {!hideNavAndFooter && <Footer />}
+          </UserProvider>
         </Providers>
       </body>
     </html>
