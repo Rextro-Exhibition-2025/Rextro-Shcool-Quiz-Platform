@@ -1,3 +1,5 @@
+import { Question } from "./page";
+
 // Type definitions for input and output
 export type InputAnswer = {
 	id: string;
@@ -5,13 +7,7 @@ export type InputAnswer = {
 	image?: string;
 };
 
-export type InputQuestion = {
-	question: string;
-	image?: string;
-	answers: InputAnswer[];
-	correctAnswer: string;
-    quizId?: number | null;
-};
+
 
 export type OutputOption = {
 	option: string;
@@ -28,7 +24,7 @@ export type OutputQuestion = {
 };
 
 // Function to transform input question to output format
-export function transformQuestion(input: InputQuestion): OutputQuestion {
+export function transformQuestion(input: Question): OutputQuestion {
 	const idToOption = ['A', 'B', 'C', 'D'];
 	const options: OutputOption[] = input.answers.map((ans, idx) => ({
 		option: idToOption[idx],
@@ -40,7 +36,7 @@ export function transformQuestion(input: InputQuestion): OutputQuestion {
 	const correctOption = idToOption[correctIdx];
 
 	return {
-		quizId: input.quizId || 1,
+		quizId: input.quizSet || 0,
 		question: input.question,
 		...(input.image ? { questionImage: input.image } : {}),
 		options,

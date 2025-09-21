@@ -26,7 +26,7 @@ export const adminOnly = async (
             return;
         }
         // Verify token
-        const decoded = jwt.verify(
+        jwt.verify(
             token,
             process.env.NEXTAUTH_SECRET || 'your_secret_key'
         ) as {
@@ -34,11 +34,6 @@ export const adminOnly = async (
             exp?: number;
         };
 
-
-        if (decoded.exp && Date.now() >= decoded.exp * 1000) {
-            res.status(401).json({ error: 'Token expired' });
-            return;
-        }
         // Find the team by ID
         next();
 

@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { getSession } from 'next-auth/react';
 
-export const createServerApi = async () => {
+export const createAdminApi = async () => {
     // Use client-side getSession instead of getServerSession
     const session = await getSession();
 
