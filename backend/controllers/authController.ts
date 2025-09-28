@@ -51,6 +51,7 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
             success: true,
             message: "Login successful",
             data: {
+                teamId: schoolTeam._id,
                 teamName: schoolTeam.teamName,
                 memberName: member.name,
                 schoolName: schoolTeam.schoolName,
