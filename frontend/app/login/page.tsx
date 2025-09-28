@@ -57,7 +57,9 @@ export default function LoginPage() {
     try {
       // You can add your authentication logic here
       // For now, we'll simulate a successful login after 1 second
-      const url = "http://localhost:3000/api/auth/login";
+      const url = "http://localhost:3001/api/auth/login";
+      console.log(formData);
+      
       const response = await fetch(url, {
         method: 'POST',
         headers: {

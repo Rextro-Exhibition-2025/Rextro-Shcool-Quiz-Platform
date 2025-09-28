@@ -1,9 +1,5 @@
 import Quiz from '../models/Quiz.js';
-import Question from '../models/Question.js';
 import type { Request, Response } from 'express';
-
-
-
 export const getQuizWithQuestions = async (req: Request, res: Response) => {
   try {
     const quizId = Number(req.params.quizId);

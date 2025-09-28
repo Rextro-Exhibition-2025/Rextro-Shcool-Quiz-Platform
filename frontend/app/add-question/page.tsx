@@ -1,8 +1,10 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, ArrowLeft, LogOut, Shield } from 'lucide-react';
+import { createAdminApi } from '@/interceptors/admins';
+import { LogOut, Save, Shield, Trash2 } from 'lucide-react';
+import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import React, { useEffect, useState } from 'react';
+import { transformQuestion } from './questionTransformer';
 
 interface Answer {
   id: string;
@@ -10,15 +12,16 @@ interface Answer {
   image: string;
 }
 
-interface Question {
+export interface Question {
   question: string;
   image: string;
   answers: Answer[];
   correctAnswer: string;
-  quizSet: string;
-
+  quizSet: number| null;
+}
 
 export default function AddQuestion(): React.ReactElement | null {
+
   const router = useRouter();
   const { data: session, status } = useSession();
   
@@ -40,10 +43,10 @@ export default function AddQuestion(): React.ReactElement | null {
     ],
 
     correctAnswer: '',
-    quizSet: '',
+    quizSet: null,
   });
   const handleQuizSetChange = (value: string): void => {
-    setQuestion(prev => ({ ...prev, quizSet: value }));
+    setQuestion(prev => ({ ...prev, quizSet: parseInt(value) }));
   };
 
 
@@ -68,8 +71,8 @@ export default function AddQuestion(): React.ReactElement | null {
     setQuestion(prev => ({ ...prev, correctAnswer: answerId }));
   };
 
-  const handleSave = (): void => {
-    // Validate that question and at least one answer are filled
+  const handleSave = async (): Promise<void> => {
+  
     if (!question.question.trim()) {
       alert('Please enter a question');
       return;
@@ -97,6 +100,15 @@ export default function AddQuestion(): React.ReactElement | null {
 
     // Here you would typically send the data to your backend
     console.log('Saving question:', question);
+
+
+
+    const api = await createAdminApi();
+    const response = await api.post('/questions', transformQuestion(question));
+
+console.log('Response:', response);
+
+
     alert('Question saved successfully!');
     
     // Reset form
@@ -110,7 +122,7 @@ export default function AddQuestion(): React.ReactElement | null {
         { id: 'd', text: '', image: '' }
       ],
       correctAnswer: '',
-      quizSet: '',
+      quizSet: null,
     });
   };
 
@@ -125,7 +137,7 @@ export default function AddQuestion(): React.ReactElement | null {
         { id: 'd', text: '', image: '' }
       ],
       correctAnswer: '',
-      quizSet: '',
+      quizSet: null,
     });
   };
 
@@ -225,15 +237,15 @@ export default function AddQuestion(): React.ReactElement | null {
               Quiz Set *
             </label>
             <select
-              value={question.quizSet}
+              value={question.quizSet ?? ""}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleQuizSetChange(e.target.value)}
               className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
             >
               <option value="">Select a quiz set</option>
-              <option value="set1">Set 1</option>
-              <option value="set2">Set 2</option>
-              <option value="set3">Set 3</option>
-              <option value="set4">Set 4</option>
+              <option value="1">Set 1</option>
+              <option value="2">Set 2</option>
+              <option value="3">Set 3</option>
+              <option value="4">Set 4</option>
             </select>
           </div>
           {/* Question Text */}
