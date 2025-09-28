@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 export const createViolation = async (req: Request, res: Response) => {
     try {
         const newViolation = await Violation.create(req.body);
+        console.log(newViolation);
         res.status(201).json({
             success: true,
             data: newViolation,
