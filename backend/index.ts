@@ -8,6 +8,7 @@ import QuestionRouter from "./routes/questionRoute.js";
 import QuizRouter from "./routes/quizRoute.js";
 import AuthRouter from "./routes/authRoutes.js";
 import SchoolTeamRouter from "./routes/schoolTeamRoutes.js";
+import ViolationRouter from "./routes/violationRoutes.js";
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.use("/api/questions", QuestionRouter);
 app.use("/api/quizzes", QuizRouter);
 app.use("/api/auth", AuthRouter);
 app.use("/api/school-teams", SchoolTeamRouter);
+app.use("/api/violations", ViolationRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
