@@ -62,6 +62,7 @@ export default function LoginPage() {
       const url = "http://localhost:3001/api/auth/login";
       console.log(formData);
 
+      
       const response = await fetch(url, {
         method: 'POST',
         headers: {

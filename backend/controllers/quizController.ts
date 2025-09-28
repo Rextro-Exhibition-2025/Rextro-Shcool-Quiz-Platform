@@ -1,7 +1,6 @@
 import Quiz from '../models/Quiz.js';
 import type { Request, Response } from 'express';
 import SchoolTeam from '../models/SchoolTeam.js';
-
 export const getQuizWithQuestions = async (req: Request, res: Response) => {
   try {
     const quizId = Number(req.params.quizId);
