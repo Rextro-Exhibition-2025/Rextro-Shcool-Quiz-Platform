@@ -1,6 +1,8 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, ArrowLeft, LogOut, Shield } from 'lucide-react';
+// Error modal state for alerts
+type ErrorModalState = { open: boolean; message: string };
+import { Plus, Trash2, Save, ArrowLeft, LogOut, Shield, RotateCcw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useSession, signOut } from 'next-auth/react';
 
@@ -19,6 +21,8 @@ interface Question {
 }
 
 export default function AddQuestion(): React.ReactElement | null {
+  const [errorModal, setErrorModal] = useState<ErrorModalState>({ open: false, message: '' });
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
   
@@ -52,8 +56,9 @@ export default function AddQuestion(): React.ReactElement | null {
   };
 
   const handleQuestionImageChange = (value: string): void => {
-    setQuestion(prev => ({ ...prev, image: value }));
+      setQuestion(prev => ({ ...prev, image: value }));
   };
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
   const handleAnswerChange = (answerId: string, field: keyof Omit<Answer, 'id'>, value: string): void => {
     setQuestion(prev => ({
@@ -71,7 +76,7 @@ export default function AddQuestion(): React.ReactElement | null {
   const handleSave = (): void => {
     // Validate that question and at least one answer are filled
     if (!question.question.trim()) {
-      alert('Please enter a question');
+      setErrorModal({ open: true, message: 'Please enter a question.' });
       return;
     }
 
@@ -80,25 +85,29 @@ export default function AddQuestion(): React.ReactElement | null {
     );
 
     if (!hasValidAnswers) {
-      alert('Please provide at least one answer option');
+      setErrorModal({ open: true, message: 'Please provide at least one answer option.' });
       return;
     }
 
     if (!question.correctAnswer) {
-      alert('Please select the correct answer');
+      setErrorModal({ open: true, message: 'Please select the correct answer.' });
+      return;
+    }
+    // Validate that the selected correct answer is not empty
+    const correct = question.answers.find(a => a.id === question.correctAnswer);
+    if (!correct || (!correct.text.trim() && !correct.image.trim())) {
+      setErrorModal({ open: true, message: 'The selected correct answer must have text or image.' });
       return;
     }
 
 
     if (!question.quizSet) {
-      alert('Please select a quiz set');
+      setErrorModal({ open: true, message: 'Please select a quiz set.' });
       return;
     }
 
     // Here you would typically send the data to your backend
     console.log('Saving question:', question);
-    alert('Question saved successfully!');
-    
     // Reset form
     setQuestion({
       question: '',
@@ -112,7 +121,9 @@ export default function AddQuestion(): React.ReactElement | null {
       correctAnswer: '',
       quizSet: '',
     });
+    setShowSaveConfirm(true);
   };
+
 
   const clearForm = (): void => {
     setQuestion({
@@ -127,6 +138,7 @@ export default function AddQuestion(): React.ReactElement | null {
       correctAnswer: '',
       quizSet: '',
     });
+    setShowClearConfirm(false);
   };
 
   const handleLogout = async () => {
@@ -157,6 +169,29 @@ export default function AddQuestion(): React.ReactElement | null {
         backgroundPosition: 'center'
       }}
     >
+      {/* Error Modal for Save Button Alerts */}
+      {errorModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border-2 border-[#df7500]">
+            <div className="mb-4 text-center">
+              <div className="w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center bg-gradient-to-r from-[#df7500] to-[#651321] shadow-lg">
+                <span className="text-white text-2xl font-bold">!</span>
+              </div>
+              <h2 className="text-xl font-bold bg-gradient-to-r from-[#df7500] to-[#651321] bg-clip-text text-transparent mb-1">Alert</h2>
+              <p className="text-[#651321]">{errorModal.message}</p>
+            </div>
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={() => setErrorModal({ open: false, message: '' })}
+                className="px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-200"
+                style={{ minWidth: 120 }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -176,16 +211,15 @@ export default function AddQuestion(): React.ReactElement | null {
             </div>
             <div className="flex space-x-3">
               <button
-                onClick={clearForm}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                onClick={() => setShowClearConfirm(true)}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
               >
-                <Trash2 size={16} />
+                <RotateCcw size={16} />
                 <span>Clear</span>
               </button>
               <button
                 onClick={handleSave}
-                className="flex items-center space-x-2 px-6 py-2 rounded-lg text-white transition-colors"
-                style={{ backgroundColor: '#651321' }}
+                className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
               >
                 <Save size={16} />
                 <span>Save Question</span>
@@ -193,6 +227,60 @@ export default function AddQuestion(): React.ReactElement | null {
             </div>
           </div>
         </div>
+
+        {/* Save confirmation popup */}
+        {showSaveConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border-2 border-[#df7500]">
+              <div className="mb-4 text-center">
+                <div className="w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center bg-gradient-to-r from-[#df7500] to-[#651321] shadow-lg">
+                  <Save size={28} className="text-white" />
+                </div>
+                <h2 className="text-xl font-bold bg-gradient-to-r from-[#df7500] to-[#651321] bg-clip-text text-transparent mb-1">Question Saved!</h2>
+                <p className="text-[#651321]">Your question has been saved successfully.</p>
+              </div>
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={() => setShowSaveConfirm(false)}
+                  className="px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-200"
+                  style={{ minWidth: 120 }}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Clear confirmation popup */}
+        {showClearConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border-2 border-[#df7500]">
+              <div className="mb-4 text-center">
+                <div className="w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center bg-gradient-to-r from-[#df7500] to-[#651321] shadow-lg">
+                  <RotateCcw size={28} className="text-white" />
+                </div>
+                <h2 className="text-xl font-bold bg-gradient-to-r from-[#df7500] to-[#651321] bg-clip-text text-transparent mb-1">Clear All Fields?</h2>
+                <p className="text-[#651321]">This will remove all question and answer data. Are you sure?</p>
+              </div>
+              <div className="flex justify-center gap-4 mt-6">
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-gray-200 to-gray-400 text-[#651321] shadow hover:scale-105 hover:shadow transition-all duration-200 border border-gray-300"
+                  style={{ minWidth: 100 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={clearForm}
+                  className="px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-200"
+                  style={{ minWidth: 100 }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Question Form */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">

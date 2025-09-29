@@ -53,7 +53,6 @@ export default function LoginPage() {
     }
 
 
-
     // Simulate authentication (replace with actual authentication logic)
     try {
       // You can add your authentication logic here
@@ -74,7 +73,11 @@ export default function LoginPage() {
       const responseData: LoginFormResponse = await response.json();
 
       // Store user data in localStorage (or use proper state management)
-
+      localStorage.setItem('studentData', JSON.stringify({
+        studentId: formData.studentId,
+        schoolName: formData.schoolName,
+        loginTime: new Date().toISOString()
+      }));
 
       // Request fullscreen and redirect to quiz
       // if (document.documentElement.requestFullscreen) {
@@ -132,7 +135,6 @@ export default function LoginPage() {
         <div className="absolute w-64 h-64 bg-[#651321]/10 rounded-full blur-2xl animate-bounce top-3/4 right-1/4"
           style={{ animationDuration: '4s' }} />
       </div>
-
 
       <div className="relative z-10 w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl p-8 backdrop-blur-sm">
