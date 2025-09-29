@@ -50,35 +50,21 @@ export default function AdminLogsPage() {
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
         <h1 className="text-3xl font-extrabold text-[#651321] text-center mb-10 drop-shadow-lg tracking-wide">Suspicious Activity Logs</h1>
       </div>
-      {/* Table Card */}
-      <div className="max-w-4xl mx-auto bg-white/90 rounded-2xl shadow-2xl overflow-hidden" style={{ position: 'relative', zIndex: 2 }}>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-[#651321] text-white">
-                <th className="py-3 px-4 text-left font-semibold">User</th>
-                <th className="py-3 px-4 text-left font-semibold">Event</th>
-                <th className="py-3 px-4 text-left font-semibold">Time</th>
-                <th className="py-3 px-4 text-left font-semibold">Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map(log => (
-                <tr
-                  key={log.id}
-                  className="group hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
-                >
-                  <td className="py-2 px-4 border-b border-gray-100 text-gray-800 group-hover:text-orange-600 font-semibold transition-colors">
-                    {log.user}
-                  </td>
-                  <td className="py-2 px-4 border-b border-gray-100 text-gray-800">{log.event}</td>
-                  <td className="py-2 px-4 border-b border-gray-100 text-gray-800">{log.time}</td>
-                  <td className="py-2 px-4 border-b border-gray-100 text-gray-800">{log.details}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* Tiles/Card Layout */}
+      <div className="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 mt-8" style={{ position: 'relative', zIndex: 2 }}>
+        {logs.map(log => (
+          <div
+            key={log.id}
+            className="bg-white rounded-2xl shadow-xl p-6 flex flex-col gap-2 border-2 border-[#651321] hover:scale-105 transition-transform duration-200 cursor-pointer"
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <span className="font-bold text-[#651321] text-lg">{log.user}</span>
+              <span className="ml-auto text-xs text-gray-500">{log.time}</span>
+            </div>
+            <div className="font-semibold text-orange-700 mb-1">{log.event}</div>
+            <div className="text-gray-700 text-sm">{log.details}</div>
+          </div>
+        ))}
       </div>
     </div>
   );
