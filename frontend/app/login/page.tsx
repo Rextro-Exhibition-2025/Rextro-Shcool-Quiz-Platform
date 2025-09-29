@@ -17,6 +17,7 @@ interface LoginFormResponse {
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
+    studentId: '',
     memberName: '',
     password: '',
     schoolName: ''

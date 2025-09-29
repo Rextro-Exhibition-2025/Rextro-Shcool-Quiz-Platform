@@ -87,25 +87,30 @@ export default function ManageQuestions() {
                 <tr>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Question</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Quiz Set</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Correct Answer</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {questions.map((q) => (
-                  <tr key={q.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-gray-800 max-w-xs truncate">{q.question}</td>
-                    <td className="px-4 py-2 text-gray-600">{q.quizSet}</td>
-                    <td className="px-4 py-2">
-                      <button
-                        onClick={() => handleEdit(q.id)}
-                        className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
-                        title="Edit"
-                      >
-                        <Edit size={16} /> Edit
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {questions.map((q) => {
+                  const correct = q.answers.find(a => a.id === q.correctAnswer);
+                  return (
+                    <tr key={q.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 text-gray-800 max-w-xs truncate">{q.question}</td>
+                      <td className="px-4 py-2 text-gray-800">{q.quizSet}</td>
+                      <td className="px-4 py-2 text-gray-800 ">{correct ? correct.text : '-'}</td>
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={() => handleEdit(q.id)}
+                          className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+                          title="Edit"
+                        >
+                          <Edit size={16} /> Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

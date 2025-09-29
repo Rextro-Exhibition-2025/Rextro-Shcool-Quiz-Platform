@@ -1,12 +1,34 @@
-import React from "react";
+import React, { useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { LogOut, Shield } from "lucide-react";
 import { useSession, signOut } from "next-auth/react";
 
-const AdminMenu: React.FC = () => {
+const AdminMenu: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const { data: session } = useSession();
+  const router = useRouter();
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose && onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [onClose]);
+
+  // Helper to close dropdown on menu item click
+  const handleMenuClick = () => {
+    onClose && onClose();
+  };
+
   return (
-    <div className="relative">
+    <div className="relative" ref={menuRef}>
       {/* Shield icon header */}
       <div className="flex items-center justify-center py-3 border-b border-gray-100">
         <div className="w-10 h-10 bg-gradient-to-r from-[#df7500] to-[#651321] rounded-full flex items-center justify-center">
@@ -21,25 +43,32 @@ const AdminMenu: React.FC = () => {
         </div>
       )}
       <Link
-        href="/add-question"
+        href="/manage-questions"
         className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+        onClick={handleMenuClick}
       >
-        Add Question
+        Manage Questions
       </Link>
       <Link
         href="/session-selection"
         className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+        onClick={handleMenuClick}
       >
         Session
       </Link>
       <Link
         href="/admin/logs"
         className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
+        onClick={handleMenuClick}
       >
         Suspicious Activity Log
       </Link>
       <button
-        onClick={() => signOut()}
+        onClick={async () => {
+          handleMenuClick();
+          await signOut({ callbackUrl: 'http://localhost:3000/' });
+          router.push('http://localhost:3000/');
+        }}
         className="flex items-center gap-2 w-full px-4 py-2 text-[#651321] hover:bg-gray-100 border-t border-gray-100 text-left text-sm font-semibold"
       >
         <LogOut className="w-4 h-4" /> Logout
