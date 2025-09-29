@@ -426,11 +426,12 @@ export default function Quiz(): React.JSX.Element | null {
             </h2>
 
             {currentQuestionData.image && (
-              <div className="mb-6">
+              <div className="mb-6 flex justify-center">
                 <img
                   src={currentQuestionData.image}
                   alt="Question illustration"
-                  className="w-full max-w-md mx-auto rounded-xl shadow-md"
+                  className="w-full max-w-[480px] h-64 object-contain rounded-xl shadow-md bg-white"
+                  style={{ aspectRatio: '3/2' }}
                 />
               </div>
             )}
@@ -472,7 +473,8 @@ export default function Quiz(): React.JSX.Element | null {
                       <img
                         src={answer.image}
                         alt={`Option ${answer.id}`}
-                        className="w-32 h-20 object-cover rounded-lg"
+                        className="w-40 h-28 object-contain rounded-lg bg-white"
+                        style={{ aspectRatio: '10/7' }}
                       />
                     )}
 
@@ -487,7 +489,8 @@ export default function Quiz(): React.JSX.Element | null {
                         <img
                           src={answer.image}
                           alt={`Option ${answer.id}`}
-                          className="w-16 h-12 object-cover rounded-lg"
+                          className="w-24 h-16 object-contain rounded-lg bg-white"
+                          style={{ aspectRatio: '3/2' }}
                         />
                         <span className="text-gray-800 font-medium">
                           {answer.text}
