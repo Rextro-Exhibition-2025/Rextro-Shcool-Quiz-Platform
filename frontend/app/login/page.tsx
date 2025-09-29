@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { User, Lock, LogIn, Eye, EyeOff, Shield } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
-
+import axios from 'axios';
+import { SchoolsApiResponse, SchoolTeam } from '@/types/schools';
 interface LoginFormResponse {
   success: boolean;
   data: {
@@ -26,6 +27,7 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
   const { user, setUser } = useUser();
+  const [schools, setSchools] = useState<string[]>([]);
 
   // Add this useEffect to your login page to debug
   useEffect(() => {
@@ -57,7 +59,10 @@ export default function LoginPage() {
     try {
       // You can add your authentication logic here
       // For now, we'll simulate a successful login after 1 second
-      const url = "http://localhost:3000/api/auth/login";
+      const url = "http://localhost:3001/api/auth/login";
+      console.log(formData);
+
+      
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -102,19 +107,42 @@ export default function LoginPage() {
     }
   };
 
-  // Sample school names for the dropdown
-  const schools = [
-    'Select your school',
-    'Sunrise High School',
-    'Greenwood High School',
-    'Riverside Academy',
-    'Maple Valley School',
-    'Oakwood Preparatory School',
-    'Sunrise Elementary School',
-    'Mountain View School',
-    'Cedar Creek Institution',
-    'Pinewood Secondary School'
-  ];
+
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+
+      const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
+
+      console.log('Fetched schools:', response.data);
+
+      setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
+
+
+      } catch (error) {
+
+        console.error('Error fetching schools:', error);
+
+      }
+    }
+
+    fetchSchools();
+  }, []);
+
+
+  // // Sample school names for the dropdown
+  // const schools = [
+  //   'Select your school',
+  //   'Sunrise High School',
+  //   'Greenwood High School',
+  //   'Riverside Academy',
+  //   'Maple Valley School',
+  //   'Oakwood Preparatory School',
+  //   'Sunrise Elementary School',
+  //   'Mountain View School',
+  //   'Cedar Creek Institution',
+  //   'Pinewood Secondary School'
+  // ];
 
   return (
     <div

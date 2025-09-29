@@ -1,8 +1,12 @@
 "use client";
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { ChevronLeft, ChevronRight, Check } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
+import { createStudentApi } from '@/interceptors/student';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
+import { transformQuizApiResponse } from './questionTransformer';
+import { QuizApiResponse } from '@/types/quiz';
+import { useQuiz } from '@/contexts/QuizContext';
 
 interface Answer {
   id: string;
@@ -10,7 +14,7 @@ interface Answer {
   image: string | null;
 }
 
-interface QuizQuestion {
+export interface QuizQuestion {
   id: number;
   question: string;
   image: string | null;
@@ -36,66 +40,9 @@ interface CompletionData {
   answeredQuestions: number;
 }
 
-// Sample quiz data with different question and answer types
-const quizData: QuizQuestion[] = [
-  {
-    id: 1,
-    question: "What is the capital of France?",
-    image: null,
-    answers: [
-      { id: 'a', text: 'London', image: null },
-      { id: 'b', text: 'Berlin', image: null },
-      { id: 'c', text: 'Paris', image: null },
-      { id: 'd', text: 'Madrid', image: null }
-    ]
-  },
-  {
-    id: 2,
-    question: "Which of these is a programming language?",
-    image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=200&fit=crop",
-    answers: [
-      { id: 'a', text: 'JavaScript', image: null },
-      { id: 'b', text: 'HTML', image: null },
-      { id: 'c', text: 'CSS', image: null },
-      { id: 'd', text: 'All of the above', image: null }
-    ]
-  },
-  {
-    id: 3,
-    question: "Select the correct React logo:",
-    image: null,
-    answers: [
-      { id: 'a', text: null, image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=150&h=100&fit=crop' },
-      { id: 'b', text: null, image: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=150&h=100&fit=crop' },
-      { id: 'c', text: null, image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=150&h=100&fit=crop' },
-      { id: 'd', text: null, image: 'https://images.unsplash.com/photo-1618477388954-7852f32655ec?w=150&h=100&fit=crop' }
-    ]
-  },
-  {
-    id: 4,
-    question: "What does this code snippet do?",
-    image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=200&fit=crop",
-    answers: [
-      { id: 'a', text: 'Creates a function', image: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=100&h=60&fit=crop' },
-      { id: 'b', text: 'Declares a variable', image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=100&h=60&fit=crop' },
-      { id: 'c', text: 'Loops through data', image: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=100&h=60&fit=crop' },
-      { id: 'd', text: 'Handles events', image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=100&h=60&fit=crop' }
-    ]
-  },
-  ...Array.from({ length: 11 }, (_, i): QuizQuestion => ({
-    id: i + 5,
-    question: `This is a sample question with different formats.`,
-    image: i % 3 === 0 ? "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=200&fit=crop" : null,
-    answers: [
-      { id: 'a', text: `Option A for question ${i + 5}`, image: null },
-      { id: 'b', text: `Option B for question ${i + 5}`, image: null },
-      { id: 'c', text: `Option C for question ${i + 5}`, image: null },
-      { id: 'd', text: `Option D for question ${i + 5}`, image: null }
-    ]
-  }))
-];
-
 export default function Quiz(): React.JSX.Element | null {
+
+  const {setQuizId , updateSelectedAnswers , submitQuiz , score} = useQuiz();
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>({});
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState<boolean>(false);
@@ -106,6 +53,29 @@ export default function Quiz(): React.JSX.Element | null {
   const [completionData, setCompletionData] = useState<CompletionData | null>(null);
   const router = useRouter();
   const user = useUser();
+  const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
+ 
+useEffect(() => {
+  
+
+  const fetchQuiz = async (id: number) => {
+    try {
+
+      const api = await createStudentApi({ token: user.user?.authToken || '' });
+      const response : any = await api.get(`/quizzes/${id}`);
+      
+      setQuizData(transformQuizApiResponse(response.data.quiz));
+      
+      // You can set the fetched quiz data to state here if needed
+
+    } catch (error) {
+      console.error('Fetch quiz error:', error);
+    }
+  };
+  setQuizId(1);
+  fetchQuiz(1);
+  
+}, []);
 
   useEffect(() => {
     console.log('User context data:', user);
@@ -191,13 +161,13 @@ export default function Quiz(): React.JSX.Element | null {
 
     // 7. Full-Screen Mode Detection
     const handleFullScreenChange = (): void => {
-      console.log('Fullscreen change detected:', {
-        isFullscreen: !!document.fullscreenElement,
-        currentQuestion: currentQuestion,
-        totalQuestions: quizData.length - 1,
-        isSubmitting: isSubmitting,
-        shouldShowPrompt: !document.fullscreenElement && !isSubmitting
-      });
+      // console.log('Fullscreen change detected:', {
+      //   isFullscreen: !!document.fullscreenElement,
+      //   currentQuestion: currentQuestion,
+      //   totalQuestions: quizData.length - 1,
+      //   isSubmitting: isSubmitting,
+      //   shouldShowPrompt: !document.fullscreenElement && !isSubmitting
+      // });
 
       // Show fullscreen prompt on ALL questions (including the last one)
       // BUT NOT during quiz submission
@@ -249,7 +219,7 @@ export default function Quiz(): React.JSX.Element | null {
 
   // Handle quiz submission
   const handleSubmitQuiz = async (): Promise<void> => {
-    try {
+     try {
       // Set submitting flag to prevent fullscreen prompt during submission
       setIsSubmitting(true);
 
@@ -292,6 +262,14 @@ export default function Quiz(): React.JSX.Element | null {
       // Clear authentication after successful submission
       localStorage.removeItem('studentData');
 
+  
+      
+
+  
+
+      await submitQuiz();
+      
+
     } catch (error) {
       alert('Error submitting quiz. Please try again.');
       console.error('Submit quiz error:', error);
@@ -311,18 +289,19 @@ export default function Quiz(): React.JSX.Element | null {
       ...prev,
       [currentQuestion]: answerId
     }));
+    updateSelectedAnswers(currentQuestion, answerId);
   };
 
   const handleNext = (): void => {
-    if (currentQuestion < totalQuestions - 1) {
-      setCurrentQuestion(prev => prev + 1);
-    }
+   
+    setCurrentQuestion((prev) => Math.min(prev + 1, totalQuestions - 1));
+    // updateSelectedAnswers(currentQuestion, selectedAnswers[currentQuestion]);
   };
 
   const handlePrevious = (): void => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(prev => prev - 1);
-    }
+  
+    setCurrentQuestion((prev) => Math.max(prev - 1, 0));
+    // updateSelectedAnswers(currentQuestion, selectedAnswers[currentQuestion]);
   };
 
   const handleQuestionNavigation = (questionIndex: number): void => {
@@ -422,7 +401,7 @@ export default function Quiz(): React.JSX.Element | null {
           <div className="my-8">
 
             <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6">
-              {currentQuestion + 1}. {currentQuestionData.question}
+              {currentQuestion + 1}. {currentQuestionData?.question ?? 'No question available'}
             </h2>
 
             {currentQuestionData.image && (
@@ -439,7 +418,7 @@ export default function Quiz(): React.JSX.Element | null {
 
           {/* Answers */}
           <div className="grid gap-4">
-            {currentQuestionData.answers.map((answer) => (
+            {Array.isArray(currentQuestionData?.answers) && currentQuestionData.answers.map((answer) => (
               <button
                 key={answer.id}
                 onClick={() => handleAnswerSelect(answer.id)}
@@ -622,7 +601,7 @@ export default function Quiz(): React.JSX.Element | null {
                   </div>
                   <div className="bg-white/50 rounded-lg p-4">
                     <div className="text-sm text-gray-600">Score</div>
-                    <div className="font-bold text-2xl text-[#df7500]">{completionData.score}%</div>
+                    <div className="font-bold text-2xl text-[#df7500]">{score}%</div>
                   </div>
                 </div>
                 <div className="mt-4 text-sm text-gray-600">
