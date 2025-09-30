@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import { transformQuizApiResponse } from './questionTransformer';
 import { QuizApiResponse } from '@/types/quiz';
 import { useQuiz } from '@/contexts/QuizContext';
+import { reportViolation } from '@/lib/violationService';
 
 interface Answer {
   id: string;
@@ -42,7 +43,7 @@ interface CompletionData {
 
 export default function Quiz(): React.JSX.Element | null {
 
-  const {setQuizId , updateSelectedAnswers , submitQuiz , score} = useQuiz();
+  const { setQuizId, updateSelectedAnswers, submitQuiz, score } = useQuiz();
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>({});
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState<boolean>(false);
@@ -54,28 +55,28 @@ export default function Quiz(): React.JSX.Element | null {
   const router = useRouter();
   const user = useUser();
   const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
- 
-useEffect(() => {
-  
 
-  const fetchQuiz = async (id: number) => {
-    try {
+  useEffect(() => {
 
-      const api = await createStudentApi({ token: user.user?.authToken || '' });
-      const response : any = await api.get(`/quizzes/${id}`);
-      
-      setQuizData(transformQuizApiResponse(response.data.quiz));
-      
-      // You can set the fetched quiz data to state here if needed
 
-    } catch (error) {
-      console.error('Fetch quiz error:', error);
-    }
-  };
-  setQuizId(1);
-  fetchQuiz(1);
-  
-}, []);
+    const fetchQuiz = async (id: number) => {
+      try {
+
+        const api = await createStudentApi({ token: user.user?.authToken || '' });
+        const response: any = await api.get(`/quizzes/${id}`);
+
+        setQuizData(transformQuizApiResponse(response.data.quiz));
+
+        // You can set the fetched quiz data to state here if needed
+
+      } catch (error) {
+        console.error('Fetch quiz error:', error);
+      }
+    };
+    setQuizId(1);
+    fetchQuiz(1);
+
+  }, []);
 
   useEffect(() => {
     console.log('User context data:', user);
@@ -131,20 +132,40 @@ useEffect(() => {
 
     requestFullscreen();
 
-    // 3. Disable Copy/Paste
-    const handleCopyPaste = (e: Event): void => {
+    // 3. Disable Copy/Paste with violation reporting
+    const handleCopyPaste = async (e: Event): Promise<void> => {
       e.preventDefault();
+
+      // Report copy/paste violation
+      if (user.user?.teamId && user.user?.memberName) {
+        await reportViolation({
+          teamId: user.user.teamId,
+          memberName: user.user.memberName,
+          violationType: 'copy & paste'
+        });
+      }
+
       alert("Copy/Paste is disabled during the quiz.");
     };
+
     document.addEventListener("copy", handleCopyPaste);
     document.addEventListener("paste", handleCopyPaste);
 
-    // 4. Monitor Tab Switching
-    const handleVisibilityChange = (): void => {
+    // 4. Monitor Tab Switching (you can also report this as a violation)
+    const handleVisibilityChange = async (): Promise<void> => {
       if (document.visibilityState === "hidden") {
+        // Optionally report tab switching as a violation
+        if (user.user?.teamId && user.user?.memberName) {
+          await reportViolation({
+            teamId: user.user.teamId,
+            memberName: user.user.memberName,
+            violationType: 'escaping full screen' // or create a new violation type
+          });
+        }
         alert("Tab switching detected! Please stay on the quiz page.");
       }
     };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     // Cleanup
@@ -153,35 +174,36 @@ useEffect(() => {
       document.removeEventListener("copy", handleCopyPaste);
       document.removeEventListener("paste", handleCopyPaste);
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
-  // Separate useEffect for fullscreen detection that depends on currentQuestion
+  // Separate useEffect for fullscreen detection with violation reporting
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
-    // 7. Full-Screen Mode Detection
-    const handleFullScreenChange = (): void => {
-      // console.log('Fullscreen change detected:', {
-      //   isFullscreen: !!document.fullscreenElement,
-      //   currentQuestion: currentQuestion,
-      //   totalQuestions: quizData.length - 1,
-      //   isSubmitting: isSubmitting,
-      //   shouldShowPrompt: !document.fullscreenElement && !isSubmitting
-      // });
-
-      // Show fullscreen prompt on ALL questions (including the last one)
-      // BUT NOT during quiz submission
+    // 7. Full-Screen Mode Detection with violation reporting
+    const handleFullScreenChange = async (): Promise<void> => {
+      // Report fullscreen exit as violation (but not during quiz submission)
       if (!document.fullscreenElement && !isSubmitting) {
+        // Report violation to backend
+        if (user.user?.teamId && user.user?.memberName) {
+          await reportViolation({
+            teamId: user.user.teamId,
+            memberName: user.user.memberName,
+            violationType: 'escaping full screen'
+          });
+        }
+
         setShowFullscreenPrompt(true);
       }
     };
+
     document.addEventListener("fullscreenchange", handleFullScreenChange);
 
     // Cleanup
     return () => {
       document.removeEventListener("fullscreenchange", handleFullScreenChange);
     };
-  }, [isAuthenticated, currentQuestion, isSubmitting]);
+  }, [isAuthenticated, currentQuestion, isSubmitting, user]);
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -219,7 +241,7 @@ useEffect(() => {
 
   // Handle quiz submission
   const handleSubmitQuiz = async (): Promise<void> => {
-     try {
+    try {
       // Set submitting flag to prevent fullscreen prompt during submission
       setIsSubmitting(true);
 
@@ -262,13 +284,13 @@ useEffect(() => {
       // Clear authentication after successful submission
       localStorage.removeItem('studentData');
 
-  
-      
 
-  
+
+
+
 
       await submitQuiz();
-      
+
 
     } catch (error) {
       alert('Error submitting quiz. Please try again.');
@@ -293,13 +315,13 @@ useEffect(() => {
   };
 
   const handleNext = (): void => {
-   
+
     setCurrentQuestion((prev) => Math.min(prev + 1, totalQuestions - 1));
     // updateSelectedAnswers(currentQuestion, selectedAnswers[currentQuestion]);
   };
 
   const handlePrevious = (): void => {
-  
+
     setCurrentQuestion((prev) => Math.max(prev - 1, 0));
     // updateSelectedAnswers(currentQuestion, selectedAnswers[currentQuestion]);
   };
@@ -505,7 +527,7 @@ useEffect(() => {
               </button>
             )}
           </div>
-  </div>
+        </div>
         {/* Question Navigation */}
         <div className="bg-white rounded-2xl shadow-lg p-6 my-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Navigation</h3>
