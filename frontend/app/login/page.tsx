@@ -8,6 +8,7 @@ import { SchoolsApiResponse, SchoolTeam } from '@/types/schools';
 interface LoginFormResponse {
   success: boolean;
   data: {
+    teamId: string;
     memberName: string;
     schoolName: string;
     teamName: string;
@@ -62,7 +63,7 @@ export default function LoginPage() {
       const url = "http://localhost:3001/api/auth/login";
       console.log(formData);
 
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -92,6 +93,7 @@ export default function LoginPage() {
         console.log(responseData);
         localStorage.setItem('authToken', responseData.data.authToken);
         setUser({
+          teamId: responseData.data.teamId,
           memberName: responseData.data.memberName,
           schoolName: responseData.data.schoolName,
           teamName: responseData.data.teamName,
@@ -112,11 +114,11 @@ export default function LoginPage() {
     const fetchSchools = async () => {
       try {
 
-      const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
+        const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
 
-      console.log('Fetched schools:', response.data);
+        console.log('Fetched schools:', response.data);
 
-      setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
+        setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
 
 
       } catch (error) {
@@ -128,6 +130,8 @@ export default function LoginPage() {
 
     fetchSchools();
   }, []);
+
+
 
 
   // // Sample school names for the dropdown
