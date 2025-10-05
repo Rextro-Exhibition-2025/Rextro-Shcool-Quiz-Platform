@@ -22,7 +22,7 @@ export const createViolation = async (req: Request, res: Response) => {
 
 export const getViolationsForTeam = async (req: Request, res: Response) => {
     try {
-        const { teamId } = req.params;
+        const { teamId } = req.body;
         if (!teamId || !mongoose.Types.ObjectId.isValid(teamId)) {
             res.status(400).json({
                 success: false,
@@ -53,3 +53,29 @@ export const getViolationsForTeam = async (req: Request, res: Response) => {
         });
     }
 }
+
+export const countViolationsForTeamMember = async (req: Request, res: Response) => {
+    try {
+        const { teamId, memberName } = req.body;
+        if (!teamId || !mongoose.Types.ObjectId.isValid(teamId) || !memberName) {
+            res.status(400).json({
+                success: false,
+                message: "Invalid team ID format or member name",
+            });
+            return;
+        }
+
+        const violationCount = await Violation.countDocuments({ teamId: teamId, memberName: memberName });
+
+        res.status(200).json({
+            success: true,
+            data: { count: violationCount },
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Failed to count violations",
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+};
