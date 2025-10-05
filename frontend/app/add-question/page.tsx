@@ -1,10 +1,14 @@
 "use client";
+
 import React, { useState, useEffect } from 'react';
+import { createAdminApi } from '@/interceptors/admins';
+import { Plus, Trash2, Save, ArrowLeft, LogOut, Shield, RotateCcw } from 'lucide-react';
+import { signOut, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { transformQuestion } from './questionTransformer';
+
 // Error modal state for alerts
 type ErrorModalState = { open: boolean; message: string };
-import { Plus, Trash2, Save, ArrowLeft, LogOut, Shield, RotateCcw } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
 
 interface Answer {
   id: string;
@@ -12,17 +16,18 @@ interface Answer {
   image: string;
 }
 
-interface Question {
+export interface Question {
   question: string;
   image: string;
   answers: Answer[];
   correctAnswer: string;
-  quizSet: string;
+  quizSet: number | null;
 }
 
 export default function AddQuestion(): React.ReactElement | null {
   const [errorModal, setErrorModal] = useState<ErrorModalState>({ open: false, message: '' });
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
   
@@ -42,23 +47,21 @@ export default function AddQuestion(): React.ReactElement | null {
       { id: 'c', text: '', image: '' },
       { id: 'd', text: '', image: '' }
     ],
-
     correctAnswer: '',
-    quizSet: '',
+    quizSet: null,
   });
-  const handleQuizSetChange = (value: string): void => {
-    setQuestion(prev => ({ ...prev, quizSet: value }));
-  };
 
+  const handleQuizSetChange = (value: string): void => {
+    setQuestion(prev => ({ ...prev, quizSet: parseInt(value) }));
+  };
 
   const handleQuestionChange = (value: string): void => {
     setQuestion(prev => ({ ...prev, question: value }));
   };
 
   const handleQuestionImageChange = (value: string): void => {
-      setQuestion(prev => ({ ...prev, image: value }));
+    setQuestion(prev => ({ ...prev, image: value }));
   };
-  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
   const handleAnswerChange = (answerId: string, field: keyof Omit<Answer, 'id'>, value: string): void => {
     setQuestion(prev => ({
@@ -73,8 +76,7 @@ export default function AddQuestion(): React.ReactElement | null {
     setQuestion(prev => ({ ...prev, correctAnswer: answerId }));
   };
 
-  const handleSave = (): void => {
-    // Validate that question and at least one answer are filled
+  const handleSave = async (): Promise<void> => {
     if (!question.question.trim()) {
       setErrorModal({ open: true, message: 'Please enter a question.' });
       return;
@@ -93,13 +95,13 @@ export default function AddQuestion(): React.ReactElement | null {
       setErrorModal({ open: true, message: 'Please select the correct answer.' });
       return;
     }
+
     // Validate that the selected correct answer is not empty
     const correct = question.answers.find(a => a.id === question.correctAnswer);
     if (!correct || (!correct.text.trim() && !correct.image.trim())) {
       setErrorModal({ open: true, message: 'The selected correct answer must have text or image.' });
       return;
     }
-
 
     if (!question.quizSet) {
       setErrorModal({ open: true, message: 'Please select a quiz set.' });
@@ -108,20 +110,30 @@ export default function AddQuestion(): React.ReactElement | null {
 
     // Here you would typically send the data to your backend
     console.log('Saving question:', question);
-    // Reset form
-    setQuestion({
-      question: '',
-      image: '',
-      answers: [
-        { id: 'a', text: '', image: '' },
-        { id: 'b', text: '', image: '' },
-        { id: 'c', text: '', image: '' },
-        { id: 'd', text: '', image: '' }
-      ],
-      correctAnswer: '',
-      quizSet: '',
-    });
-    setShowSaveConfirm(true);
+
+    try {
+      const api = await createAdminApi();
+      const response = await api.post('/questions', transformQuestion(question));
+      console.log('Response:', response);
+      
+      // Reset form
+      setQuestion({
+        question: '',
+        image: '',
+        answers: [
+          { id: 'a', text: '', image: '' },
+          { id: 'b', text: '', image: '' },
+          { id: 'c', text: '', image: '' },
+          { id: 'd', text: '', image: '' }
+        ],
+        correctAnswer: '',
+        quizSet: null,
+      });
+      
+      setShowSaveConfirm(true);
+    } catch (error) {
+      setErrorModal({ open: true, message: 'Failed to save question. Please try again.' });
+    }
   };
 
 
@@ -136,7 +148,7 @@ export default function AddQuestion(): React.ReactElement | null {
         { id: 'd', text: '', image: '' }
       ],
       correctAnswer: '',
-      quizSet: '',
+      quizSet: null,
     });
     setShowClearConfirm(false);
   };
@@ -291,15 +303,15 @@ export default function AddQuestion(): React.ReactElement | null {
               Quiz Set *
             </label>
             <select
-              value={question.quizSet}
+              value={question.quizSet ?? ""}
               onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleQuizSetChange(e.target.value)}
               className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
             >
               <option value="">Select a quiz set</option>
-              <option value="set1">Set 1</option>
-              <option value="set2">Set 2</option>
-              <option value="set3">Set 3</option>
-              <option value="set4">Set 4</option>
+              <option value="1">Set 1</option>
+              <option value="2">Set 2</option>
+              <option value="3">Set 3</option>
+              <option value="4">Set 4</option>
             </select>
           </div>
           {/* Question Text */}
@@ -330,11 +342,12 @@ export default function AddQuestion(): React.ReactElement | null {
             />
             {question.image && (
               <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                <p className="text-sm text-gray-600 mb-2">Preview (Recommended: 800×600px, &lt;200KB):</p>
                 <img
                   src={question.image}
                   alt="Question preview"
-                  className="max-w-md w-full h-auto rounded-lg shadow-md border border-gray-200"
+                  className="w-[400px] h-[300px] object-contain rounded-lg shadow-md border border-gray-200"
+                  style={{ maxWidth: '100%', maxHeight: '400px' }}
                   onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                     const target = e.target as HTMLImageElement;
                     const nextSibling = target.nextSibling as HTMLElement;
@@ -400,7 +413,8 @@ export default function AddQuestion(): React.ReactElement | null {
                       <img
                         src={answer.image}
                         alt={`Option ${answer.id} preview`}
-                        className="w-24 h-20 object-cover rounded-lg shadow-sm border border-gray-200"
+                        className="w-[100px] h-[100px] object-contain rounded-lg shadow-sm border border-gray-200"
+                        style={{ maxWidth: '100%', maxHeight: '120px' }}
                         onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                           const target = e.target as HTMLImageElement;
                           const nextSibling = target.nextSibling as HTMLElement;
@@ -426,6 +440,9 @@ export default function AddQuestion(): React.ReactElement | null {
               <li>• Add answer options - you can use text, images, or both</li>
               <li>• Select which option is the correct answer</li>
               <li>• Question and answer images should be valid URLs</li>
+              <li>• <b>Recommended image sizes:</b></li>
+              <li className="ml-4">- <b>Question image:</b> 800×600 pixels (max 200KB, JPG/PNG)</li>
+              <li className="ml-4">- <b>Option image:</b> 200×200 pixels (max 100KB, JPG/PNG)</li>
               <li>• At least one answer option must be provided</li>
             </ul>
           </div>

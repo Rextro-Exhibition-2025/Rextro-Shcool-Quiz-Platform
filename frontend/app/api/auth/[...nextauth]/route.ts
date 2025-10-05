@@ -1,3 +1,4 @@
+
 import NextAuth, { AuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 
@@ -10,13 +11,9 @@ const authOptions: AuthOptions = {
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
-      // Get allowed admin emails from environment variables
-      const adminEmailsEnv = process.env.ADMIN_EMAILS || 'admin@school.edu,teacher@school.edu';
-      const adminEmails = adminEmailsEnv.split(',').map(email => email.trim());
-      
-      // Check if user email is in admin list
+      // Allow any Google-authenticated user (including test users) to sign in
       if (account?.provider === 'google' && user.email) {
-        return adminEmails.includes(user.email);
+        return true;
       }
       return false;
     },
@@ -35,6 +32,7 @@ const authOptions: AuthOptions = {
     strategy: 'jwt',
   },
 }
+
 
 const handler = NextAuth(authOptions)
 

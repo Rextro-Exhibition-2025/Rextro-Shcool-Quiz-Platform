@@ -7,6 +7,7 @@ import Footer from "@/components/Footer/Footer";
 import Providers from "@/components/Providers";
 import { usePathname } from "next/navigation";
 import { UserProvider } from '@/contexts/UserContext';
+import { QuizProvider } from "@/contexts/QuizContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,9 +28,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
           <UserProvider>
-            {!hideNavAndFooter && <NavBar />}
-            {children}
-            {!hideNavAndFooter && <Footer />}
+            <QuizProvider>
+              {!hideNavAndFooter && <NavBar />}
+              {children}
+              {!hideNavAndFooter && <Footer />}
+            </QuizProvider>
           </UserProvider>
         </Providers>
       </body>

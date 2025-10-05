@@ -1,5 +1,13 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
+import { useUser } from '@/contexts/UserContext';
+import { createStudentApi } from '@/interceptors/student';
+import { Check, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { transformQuizApiResponse } from './questionTransformer';
+import { QuizApiResponse } from '@/types/quiz';
+import { useQuiz } from '@/contexts/QuizContext';
+
 // Simple device fingerprint (for demo; use a library for production)
 function getDeviceFingerprint() {
   const nav = window.navigator;
@@ -8,7 +16,6 @@ function getDeviceFingerprint() {
     nav.language,
     nav.platform,
     nav.hardwareConcurrency,
-    // nav.deviceMemory, // Removed for compatibility
     window.screen.width,
     window.screen.height,
     window.screen.colorDepth
@@ -21,16 +28,13 @@ function getDeviceFingerprint() {
   }
   return 'fp_' + Math.abs(hash);
 }
+
 // Helper to format time as mm:ss
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0');
   const s = (seconds % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
 }
-import { useRouter } from 'next/navigation';
-
-import { useUser } from '@/contexts/UserContext';
-import { ChevronLeft, ChevronRight, Check, Clock } from 'lucide-react';
 
 interface Answer {
   id: string;
@@ -38,7 +42,7 @@ interface Answer {
   image: string | null;
 }
 
-interface QuizQuestion {
+export interface QuizQuestion {
   id: number;
   question: string;
   image: string | null;
@@ -66,70 +70,13 @@ interface CompletionData {
   answeredQuestions: number;
 }
 
-// Sample quiz data with different question and answer types
-const quizData: QuizQuestion[] = [
-  {
-    id: 1,
-    question: "What is the capital of France?",
-    image: null,
-    answers: [
-      { id: 'a', text: 'London', image: null },
-      { id: 'b', text: 'Berlin', image: null },
-      { id: 'c', text: 'Paris', image: null },
-      { id: 'd', text: 'Madrid', image: null }
-    ]
-  },
-  {
-    id: 2,
-    question: "Which of these is a programming language?",
-    image: "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=400&h=200&fit=crop",
-    answers: [
-      { id: 'a', text: 'JavaScript', image: null },
-      { id: 'b', text: 'HTML', image: null },
-      { id: 'c', text: 'CSS', image: null },
-      { id: 'd', text: 'All of the above', image: null }
-    ]
-  },
-  {
-    id: 3,
-    question: "Select the correct React logo:",
-    image: null,
-    answers: [
-      { id: 'a', text: null, image: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=150&h=100&fit=crop' },
-      { id: 'b', text: null, image: 'https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=150&h=100&fit=crop' },
-      { id: 'c', text: null, image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=150&h=100&fit=crop' },
-      { id: 'd', text: null, image: 'https://images.unsplash.com/photo-1618477388954-7852f32655ec?w=150&h=100&fit=crop' }
-    ]
-  },
-  {
-    id: 4,
-    question: "What does this code snippet do?",
-    image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400&h=200&fit=crop",
-    answers: [
-      { id: 'a', text: 'Creates a function', image: 'https://images.unsplash.com/photo-1516116216624-53e697fedbea?w=100&h=60&fit=crop' },
-      { id: 'b', text: 'Declares a variable', image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=100&h=60&fit=crop' },
-      { id: 'c', text: 'Loops through data', image: 'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?w=100&h=60&fit=crop' },
-      { id: 'd', text: 'Handles events', image: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=100&h=60&fit=crop' }
-    ]
-  },
-  ...Array.from({ length: 11 }, (_, i): QuizQuestion => ({
-    id: i + 5,
-    question: `This is a sample question with different formats.`,
-    image: i % 3 === 0 ? "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&h=200&fit=crop" : null,
-    answers: [
-      { id: 'a', text: `Option A for question ${i + 5}`, image: null },
-      { id: 'b', text: `Option B for question ${i + 5}`, image: null },
-      { id: 'c', text: `Option C for question ${i + 5}`, image: null },
-      { id: 'd', text: `Option D for question ${i + 5}`, image: null }
-    ]
-  }))
-];
-
 export default function Quiz(): React.JSX.Element | null {
   // 45 minutes in seconds
   const QUIZ_DURATION = 45 * 60;
   const [timeLeft, setTimeLeft] = useState<number>(QUIZ_DURATION);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const { setQuizId, updateSelectedAnswers, submitQuiz, score } = useQuiz();
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>(() => {
     if (typeof window !== 'undefined') {
@@ -153,6 +100,39 @@ export default function Quiz(): React.JSX.Element | null {
   const [sessionInfo, setSessionInfo] = useState<{ sessionId: string; sessionTime: string } | null>(null);
   const router = useRouter();
   const user = useUser();
+  const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
+
+  // Helper to log suspicious activity
+  function logSuspicious(event: string, details: string) {
+    const logData = {
+      user: (typeof window !== 'undefined' && localStorage.getItem('studentId')) || 'unknown',
+      event,
+      time: new Date().toISOString(),
+      details,
+      fingerprint: typeof window !== 'undefined' ? getDeviceFingerprint() : 'unknown',
+    };
+    fetch('/api/logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(logData)
+    });
+  }
+
+  useEffect(() => {
+    const fetchQuiz = async (id: number) => {
+      try {
+        const api = await createStudentApi({ token: user.user?.authToken || '' });
+        const response: any = await api.get(`/quizzes/${id}`);
+        
+        setQuizData(transformQuizApiResponse(response.data.quiz));
+        
+      } catch (error) {
+        console.error('Fetch quiz error:', error);
+      }
+    };
+    setQuizId(1);
+    fetchQuiz(1);
+  }, []);
 
   useEffect(() => {
     console.log('User context data:', user);
@@ -187,7 +167,6 @@ export default function Quiz(): React.JSX.Element | null {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, showCompletionCard]);
 
   // Check authentication status
@@ -202,7 +181,6 @@ export default function Quiz(): React.JSX.Element | null {
       if (parsedData.memberName && parsedData.schoolName) {
         setIsAuthenticated(true);
         // Determine session info based on login time or backend assignment
-        // Match login page session logic
         const now = new Date();
         const hour = now.getHours();
         const minute = now.getMinutes();
@@ -255,6 +233,11 @@ export default function Quiz(): React.JSX.Element | null {
     const handleCopyPaste = (e: Event): void => {
       e.preventDefault();
       alert("Copy/Paste is disabled during the quiz.");
+      if (e.type === 'copy') {
+        logSuspicious('Copy attempt', `User tried to copy content on question ${currentQuestion + 1}`);
+      } else if (e.type === 'paste') {
+        logSuspicious('Paste attempt', `User tried to paste content on question ${currentQuestion + 1}`);
+      }
     };
     document.addEventListener("copy", handleCopyPaste);
     document.addEventListener("paste", handleCopyPaste);
@@ -270,42 +253,14 @@ export default function Quiz(): React.JSX.Element | null {
     // Cleanup
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      // No handleCopyPaste cleanup here
+      document.removeEventListener("copy", handleCopyPaste);
+      document.removeEventListener("paste", handleCopyPaste);
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, currentQuestion]);
 
   // Separate useEffect for fullscreen detection that depends on currentQuestion
   useEffect(() => {
     if (!isAuthenticated) return;
-    
-    // Helper to log suspicious activity
-    function logSuspicious(event: string, details: string) {
-      const logData = {
-        user: (typeof window !== 'undefined' && localStorage.getItem('studentId')) || 'unknown',
-        event,
-        time: new Date().toISOString(),
-        details,
-        fingerprint: typeof window !== 'undefined' ? getDeviceFingerprint() : 'unknown',
-      };
-      fetch('/api/logs', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(logData)
-      });
-    }
-
-    // 3. Disable Copy/Paste (handler now has access to logSuspicious)
-    function handleCopyPaste(e: Event): void {
-      e.preventDefault();
-      alert("Copy/Paste is disabled during the quiz.");
-      if (e.type === 'copy') {
-        logSuspicious('Copy attempt', `User tried to copy content on question ${currentQuestion + 1}`);
-      } else if (e.type === 'paste') {
-        logSuspicious('Paste attempt', `User tried to paste content on question ${currentQuestion + 1}`);
-      }
-    }
-    document.addEventListener("copy", handleCopyPaste);
-    document.addEventListener("paste", handleCopyPaste);
 
     // Full-Screen Mode Detection
     const handleFullScreenChange = (): void => {
@@ -436,6 +391,8 @@ export default function Quiz(): React.JSX.Element | null {
       // Clear authentication after successful submission
       localStorage.removeItem('studentData');
 
+      await submitQuiz();
+
     } catch (error) {
       alert('Error submitting quiz. Please try again.');
       console.error('Submit quiz error:', error);
@@ -455,18 +412,15 @@ export default function Quiz(): React.JSX.Element | null {
       ...prev,
       [currentQuestion]: answerId
     }));
+    updateSelectedAnswers(currentQuestion, answerId);
   };
 
   const handleNext = (): void => {
-    if (currentQuestion < totalQuestions - 1) {
-      setCurrentQuestion(prev => prev + 1);
-    }
+    setCurrentQuestion((prev) => Math.min(prev + 1, totalQuestions - 1));
   };
 
   const handlePrevious = (): void => {
-    if (currentQuestion > 0) {
-      setCurrentQuestion(prev => prev - 1);
-    }
+    setCurrentQuestion((prev) => Math.max(prev - 1, 0));
   };
 
   const handleQuestionNavigation = (questionIndex: number): void => {
@@ -539,14 +493,22 @@ export default function Quiz(): React.JSX.Element | null {
         background: 'rgba(255,255,255,0.6)',
         zIndex: 1
       }} />
+      
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
-
         {/* Header with Progress */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-800">Quiz Challenge</h1>
-            <div className="text-sm font-medium text-gray-600">
-              Question {currentQuestion + 1} of {totalQuestions}
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <Clock size={20} style={{ color: timerColor }} />
+                <span className="text-lg font-bold" style={{ color: timerColor }}>
+                  {formatTime(timeLeft)}
+                </span>
+              </div>
+              <div className="text-sm font-medium text-gray-600">
+                Question {currentQuestion + 1} of {totalQuestions}
+              </div>
             </div>
           </div>
 
@@ -571,17 +533,17 @@ export default function Quiz(): React.JSX.Element | null {
 
           {/* Question Card */}
           <div className="my-8">
-
             <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6">
-              {currentQuestion + 1}. {currentQuestionData.question}
+              {currentQuestion + 1}. {currentQuestionData?.question ?? 'No question available'}
             </h2>
 
-            {currentQuestionData.image && (
-              <div className="mb-6">
+            {currentQuestionData?.image && (
+              <div className="mb-6 flex justify-center">
                 <img
                   src={currentQuestionData.image}
                   alt="Question illustration"
-                  className="w-full max-w-md mx-auto rounded-xl shadow-md"
+                  className="w-full max-w-[480px] h-64 object-contain rounded-xl shadow-md bg-white"
+                  style={{ aspectRatio: '3/2' }}
                 />
               </div>
             )}
@@ -589,7 +551,7 @@ export default function Quiz(): React.JSX.Element | null {
 
           {/* Answers */}
           <div className="grid gap-4">
-            {currentQuestionData.answers.map((answer) => (
+            {Array.isArray(currentQuestionData?.answers) && currentQuestionData.answers.map((answer) => (
               <button
                 key={answer.id}
                 onClick={() => handleAnswerSelect(answer.id)}
@@ -623,7 +585,8 @@ export default function Quiz(): React.JSX.Element | null {
                       <img
                         src={answer.image}
                         alt={`Option ${answer.id}`}
-                        className="w-32 h-20 object-cover rounded-lg"
+                        className="w-40 h-28 object-contain rounded-lg bg-white"
+                        style={{ aspectRatio: '10/7' }}
                       />
                     )}
 
@@ -638,7 +601,8 @@ export default function Quiz(): React.JSX.Element | null {
                         <img
                           src={answer.image}
                           alt={`Option ${answer.id}`}
-                          className="w-16 h-12 object-cover rounded-lg"
+                          className="w-24 h-16 object-contain rounded-lg bg-white"
+                          style={{ aspectRatio: '3/2' }}
                         />
                         <span className="text-gray-800 font-medium">
                           {answer.text}
@@ -677,7 +641,8 @@ export default function Quiz(): React.JSX.Element | null {
               </button>
             )}
           </div>
-  </div>
+        </div>
+
         {/* Question Navigation */}
         <div className="bg-white rounded-2xl shadow-lg p-6 my-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Navigation</h3>
@@ -770,7 +735,7 @@ export default function Quiz(): React.JSX.Element | null {
                   </div>
                   <div className="bg-white/50 rounded-lg p-4">
                     <div className="text-sm text-gray-600">Score</div>
-                    <div className="font-bold text-2xl text-[#df7500]">{completionData.score}%</div>
+                    <div className="font-bold text-2xl text-[#df7500]">{score}%</div>
                   </div>
                 </div>
                 <div className="mt-4 text-sm text-gray-600">
@@ -793,4 +758,4 @@ export default function Quiz(): React.JSX.Element | null {
       )}
     </div>
   );
-};
+}
