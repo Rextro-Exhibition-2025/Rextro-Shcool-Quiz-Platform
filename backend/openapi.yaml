@@ -545,6 +545,53 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /violations/count:
+    get:
+      tags:
+        - Violations
+      summary: Count violations for a team member
+      description: Get the count of violations for a specific team member
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: teamId
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Team ID
+        - name: memberName
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Member name
+      responses:
+        '200':
+          description: Successfully retrieved violation count
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  count:
+                    type: integer
+                    example: 5
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /users:
     get:
