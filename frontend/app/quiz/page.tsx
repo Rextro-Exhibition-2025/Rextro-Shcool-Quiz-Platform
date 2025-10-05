@@ -270,7 +270,7 @@ export default function Quiz(): React.JSX.Element | null {
       };
 
       //uodate user state
-      const url = "http://localhost:3000/api/auth/update-state";
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/update-state`;
       const response = await fetch(url, {
         method: 'PUT',
         headers: {
