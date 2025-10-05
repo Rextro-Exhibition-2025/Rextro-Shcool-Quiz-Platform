@@ -276,11 +276,12 @@ console.log('Response:', response);
             />
             {question.image && (
               <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                <p className="text-sm text-gray-600 mb-2">Preview (Recommended: 800×600px, &lt;200KB):</p>
                 <img
                   src={question.image}
                   alt="Question preview"
-                  className="max-w-md w-full h-auto rounded-lg shadow-md border border-gray-200"
+                  className="w-[400px] h-[300px] object-contain rounded-lg shadow-md border border-gray-200"
+                  style={{ maxWidth: '100%', maxHeight: '400px' }}
                   onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                     const target = e.target as HTMLImageElement;
                     const nextSibling = target.nextSibling as HTMLElement;
@@ -346,7 +347,8 @@ console.log('Response:', response);
                       <img
                         src={answer.image}
                         alt={`Option ${answer.id} preview`}
-                        className="w-24 h-20 object-cover rounded-lg shadow-sm border border-gray-200"
+                        className="w-[100px] h-[100px] object-contain rounded-lg shadow-sm border border-gray-200"
+                        style={{ maxWidth: '100%', maxHeight: '120px' }}
                         onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                           const target = e.target as HTMLImageElement;
                           const nextSibling = target.nextSibling as HTMLElement;
@@ -372,6 +374,9 @@ console.log('Response:', response);
               <li>• Add answer options - you can use text, images, or both</li>
               <li>• Select which option is the correct answer</li>
               <li>• Question and answer images should be valid URLs</li>
+              <li>• <b>Recommended image sizes:</b></li>
+              <li className="ml-4">- <b>Question image:</b> 800×600 pixels (max 200KB, JPG/PNG)</li>
+              <li className="ml-4">- <b>Option image:</b> 200×200 pixels (max 100KB, JPG/PNG)</li>
               <li>• At least one answer option must be provided</li>
             </ul>
           </div>
