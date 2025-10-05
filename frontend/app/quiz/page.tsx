@@ -269,6 +269,45 @@ export default function Quiz(): React.JSX.Element | null {
         answeredQuestions: answeredCount
       };
 
+      //uodate user state
+      const url = "http://localhost:3000/api/auth/update-state";
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || user.user?.authToken || ''}`
+        },
+        body: JSON.stringify({
+          schoolName: parsedStudentData.schoolName,
+          memberName: parsedStudentData.memberName,
+          hasEndedQuiz: true
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update quiz state');
+      }
+
+      const responseData = await response.json();
+      if (!responseData.success) {
+        throw new Error(responseData.message || 'Failed to update quiz state');
+      }
+
+      console.log('Quiz state updated:', responseData.data);
+
+      // Optionally, you can update user context or localStorage here if needed
+      if (user.user) {
+        user.setUser({
+          ...user.user,
+          hasEndedQuiz: true
+        });
+      }
+      const updatedStudentData = {
+        ...parsedStudentData,
+        hasEndedQuiz: true
+      };
+      localStorage.setItem('studentData', JSON.stringify(updatedStudentData));
+
       // Store results (you can also send to backend here)
       localStorage.setItem('quizResult', JSON.stringify(submissionData));
 

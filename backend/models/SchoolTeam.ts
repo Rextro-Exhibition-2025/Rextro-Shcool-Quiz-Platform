@@ -7,6 +7,7 @@ export interface IStudent extends Document {
     marks: number;
     isLoggedIn?: boolean;
     authToken?: string;
+    hasEndedQuiz?: boolean;
 }
 
 export interface ISchoolTeam extends Document {
@@ -30,6 +31,7 @@ const schoolTeamSchema: Schema = new Schema({
             marks: { type: Number, default: 0 },
             isLoggedIn: { type: Boolean, default: false },
             authToken: { type: String },
+            hasEndedQuiz: { type: Boolean, default: false },
         },
     ],
 }, { timestamps: true });

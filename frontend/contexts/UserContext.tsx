@@ -10,6 +10,7 @@ interface User {
     teamName: string;
     authToken: string;  // Add this field
     marks?: number;     // Make this optional since it's not in login response
+    hasEndedQuiz?: boolean;
 }
 
 interface UserContextType {
