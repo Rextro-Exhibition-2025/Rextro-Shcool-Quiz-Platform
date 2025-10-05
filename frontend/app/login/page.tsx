@@ -35,6 +35,27 @@ export default function LoginPage() {
     console.log('User from context changed:', user);
   }, [user]);
 
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+
+        const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
+
+        console.log('Fetched schools:', response.data);
+
+        setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
+
+
+      } catch (error) {
+
+        console.error('Error fetching schools:', error);
+
+      }
+    }
+
+    fetchSchools();
+  }, []);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -60,7 +81,7 @@ export default function LoginPage() {
     try {
       // You can add your authentication logic here
       // For now, we'll simulate a successful login after 1 second
-      const url = "http://localhost:3001/api/auth/login";
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
       console.log(formData);
 
 
@@ -108,29 +129,6 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
-
-  useEffect(() => {
-    const fetchSchools = async () => {
-      try {
-
-        const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
-
-        console.log('Fetched schools:', response.data);
-
-        setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
-
-
-      } catch (error) {
-
-        console.error('Error fetching schools:', error);
-
-      }
-    }
-
-    fetchSchools();
-  }, []);
-
 
 
 
