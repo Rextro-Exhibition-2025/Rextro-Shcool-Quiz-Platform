@@ -77,7 +77,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                     return;
                 }
 
-                const response = await axios.get<ApiResponse>('http://localhost:3000/api/auth/me', {
+                const response = await axios.get<ApiResponse>(`${process.env.NEXT_PUBLIC_SERVER_API_URL}/auth/me`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }

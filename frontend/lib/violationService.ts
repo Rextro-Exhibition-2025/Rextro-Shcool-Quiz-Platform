@@ -9,7 +9,7 @@ export const reportViolation = async (violationData: ViolationData): Promise<voi
     try {
         const authToken = localStorage.getItem('authToken');
 
-        const response = await fetch('http://localhost:3000/api/violations', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_API_URL}/violations`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
