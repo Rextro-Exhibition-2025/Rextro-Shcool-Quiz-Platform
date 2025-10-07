@@ -2,14 +2,14 @@
 import { useUser } from '@/contexts/UserContext';
 import axios from 'axios';
 
-export const createStudentApi = async ({token}:{token:string}) => {
+export const createStudentApi = async ({ token }: { token: string }) => {
     // Use client-side getSession instead of getServerSession
 
-  
- 
+
+
 
     const serverApi = axios.create({
-        baseURL: process.env.NEXT_PUBLIC_SERVER_API_URL || 'http://localhost:3001/api',
+        baseURL: process.env.NEXT_PUBLIC_SERVER_API_URL || 'http://localhost:5000/api',
         headers: {
             'Content-Type': 'application/json',
         },
