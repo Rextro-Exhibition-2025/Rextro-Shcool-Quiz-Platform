@@ -1,0 +1,21 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    - duration: 2
+      arrivalRate: 150  # Burst 300 users in 2 seconds
+  http:
+    timeout: 60  # Longer timeout for stress test
+
+scenarios:
+  - name: "Stress Test"
+    weight: 100
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Sunrise High School"
+            memberName: "Alice"
+            password: "loadtest123"
+      - think: 30  # Keep connections active for 30 seconds
+      - get:
+          url: "/api/school-teams"

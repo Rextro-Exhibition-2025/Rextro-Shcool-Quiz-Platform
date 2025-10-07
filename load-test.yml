@@ -1,0 +1,89 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    - duration: 60
+      arrivalRate: 3  # Start with 3 users per second = 180 users
+    - duration: 120
+      arrivalRate: 0  # Hold for 2 minutes to test sustained load
+  http:
+    timeout: 30
+
+scenarios:
+  - name: "Sunrise High School Students"
+    weight: 25
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Sunrise High School"
+            memberName: "{{ $pick(['Alice', 'Bob', 'Charlie', 'Diana']) }}"
+            password: "loadtest123"
+          capture:
+            - json: "$.data.authToken"
+              as: "authToken"
+            - json: "$.data.teamId"
+              as: "teamId"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/school-teams"
+      - think: "{{ $randomInt(1, 3) }}"
+      - get:
+          url: "/api/quizzes/1"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      - post:
+          url: "/api/violations"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            teamId: "{{ teamId }}"
+            memberName: "{{ $pick(['Alice', 'Bob', 'Charlie', 'Diana']) }}"
+            violationType: "{{ $pick(['tab switching', 'copy & paste', 'escaping full screen']) }}"
+
+  - name: "Horizon Secondary School Students"
+    weight: 25
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Horizon Secondary School"
+            memberName: "{{ $pick(['Ethan', 'Fiona', 'George', 'Hannah']) }}"
+            password: "loadtest123"
+          capture:
+            - json: "$.data.authToken"
+              as: "authToken"
+            - json: "$.data.teamId"
+              as: "teamId"
+      - get:
+          url: "/api/school-teams"
+      - get:
+          url: "/api/quizzes/1"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+  - name: "Other Schools Mixed"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "{{ $pick(['Valleyview High', 'Lakeside Academy', 'Ridgewood School']) }}"
+            memberName: "{{ $pick(['Ian', 'Julia', 'Kevin', 'Laura', 'Michael', 'Nina', 'Oscar', 'Paula', 'Quentin', 'Rachel', 'Samuel', 'Tina']) }}"
+            password: "loadtest123"
+          capture:
+            - json: "$.data.authToken"
+              as: "authToken"
+      - get:
+          url: "/api/school-teams"
+      - think: "{{ $randomInt(1, 2) }}"
+
+  - name: "Public Browsing (No Auth)"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/school-teams"
+      - think: "{{ $randomInt(1, 2) }}"
+      - get:
+          url: "/"
+      - think: "{{ $randomInt(1, 3) }}"

@@ -36,6 +36,12 @@ app.use(cors({
 // Middleware
 app.use(express.json());
 
+// Log requests
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - Body:`, req.body);
+  next();
+});
+
 // Connect to MongoDB
 connectDB();
 
@@ -78,6 +84,12 @@ app.use("/api/quizzes", QuizRouter);
 app.use("/api/auth", AuthRouter);
 app.use("/api/school-teams", SchoolTeamRouter);
 app.use("/api/violations", ViolationRouter);
+
+// 404 handler
+app.use((req, res) => {
+  console.log(`❌ 404 - Route not found: ${req.method} ${req.originalUrl}`);
+  res.status(404).json({ error: 'Route not found', path: req.originalUrl });
+});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

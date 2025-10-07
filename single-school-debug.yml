@@ -1,0 +1,76 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    - duration: 30
+      arrivalRate: 2
+  http:
+    timeout: 30
+
+scenarios:
+  - name: "Alice Login"
+    weight: 25
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Sunrise High School"
+            memberName: "Alice"
+            password: "loadtest123"
+          capture:
+            - json: "$.data.authToken"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Bob Login"
+    weight: 25
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Sunrise High School"
+            memberName: "Bob"
+            password: "loadtest123"
+          capture:
+            - json: "$.data.authToken"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Charlie Login"
+    weight: 25
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Sunrise High School"
+            memberName: "Charlie"
+            password: "loadtest123"
+          capture:
+            - json: "$.data.authToken"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Diana Login"
+    weight: 25
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Sunrise High School"
+            memberName: "Diana"
+            password: "loadtest123"
+          capture:
+            - json: "$.data.authToken"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/school-teams"

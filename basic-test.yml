@@ -1,0 +1,16 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    - duration: 10
+      arrivalRate: 1
+  http:
+    timeout: 30
+
+scenarios:
+  - name: "Basic Server Test"
+    weight: 100
+    flow:
+      - get:
+          url: "/"
+      - get:
+          url: "/api/school-teams"

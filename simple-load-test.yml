@@ -1,0 +1,97 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    - duration: 60
+      arrivalRate: 5  # 5 users per second = 300 users total
+  http:
+    timeout: 30
+
+scenarios:
+  # Sunrise High School (20% of traffic)
+  - name: "Sunrise Alice"
+    weight: 5
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Sunrise High School"
+            memberName: "Alice"
+            password: "loadtest123"
+          capture:
+            - json: "$.data.authToken"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Sunrise Bob"
+    weight: 5
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Sunrise High School"
+            memberName: "Bob"
+            password: "loadtest123"
+          capture:
+            - json: "$.data.authToken"
+              as: "authToken"
+      - get:
+          url: "/api/school-teams"
+
+  # Horizon Secondary School (20% of traffic)
+  - name: "Horizon Ethan"
+    weight: 5
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Horizon Secondary School"
+            memberName: "Ethan"
+            password: "loadtest123"
+          capture:
+            - json: "$.data.authToken"
+              as: "authToken"
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Horizon Fiona"
+    weight: 5
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Horizon Secondary School"
+            memberName: "Fiona"
+            password: "loadtest123"
+          capture:
+            - json: "$.data.authToken"
+              as: "authToken"
+      - get:
+          url: "/api/school-teams"
+
+  # Additional schools...
+  - name: "Valleyview Ian"
+    weight: 5
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Valleyview High"
+            memberName: "Ian"
+            password: "loadtest123"
+          capture:
+            - json: "$.data.authToken"
+              as: "authToken"
+      - get:
+          url: "/api/school-teams"
+
+  # Public browsing
+  - name: "Public Browsing"
+    weight: 15
+    flow:
+      - get:
+          url: "/api/school-teams"
+      - get:
+          url: "/"

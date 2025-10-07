@@ -1,0 +1,220 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    - duration: 2
+      arrivalRate: 150  # Burst 300 users in 2 seconds
+  http:
+    timeout: 60  # Longer timeout for stress test
+
+scenarios:
+  # Sunrise High School - 4 students (25% of traffic = 75 users)
+  - name: "Sunrise Alice"
+    weight: 6
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Sunrise High School"
+            memberName: "Alice"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Sunrise Bob"
+    weight: 6
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Sunrise High School"
+            memberName: "Bob"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Sunrise Charlie"
+    weight: 6
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Sunrise High School"
+            memberName: "Charlie"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Sunrise Diana"
+    weight: 7
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Sunrise High School"
+            memberName: "Diana"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  # Horizon Secondary School - 4 students (25% of traffic = 75 users)
+  - name: "Horizon Ethan"
+    weight: 6
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Horizon Secondary School"
+            memberName: "Ethan"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Horizon Fiona"
+    weight: 6
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Horizon Secondary School"
+            memberName: "Fiona"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Horizon George"
+    weight: 6
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Horizon Secondary School"
+            memberName: "George"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Horizon Hannah"
+    weight: 7
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Horizon Secondary School"
+            memberName: "Hannah"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  # Valleyview High - 4 students (25% of traffic = 75 users)
+  - name: "Valleyview Ian"
+    weight: 6
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Valleyview High"
+            memberName: "Ian"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Valleyview Julia"
+    weight: 6
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Valleyview High"
+            memberName: "Julia"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Valleyview Kevin"
+    weight: 6
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Valleyview High"
+            memberName: "Kevin"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Valleyview Laura"
+    weight: 7
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Valleyview High"
+            memberName: "Laura"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  # Lakeside Academy - 4 students (25% of traffic = 75 users)
+  - name: "Lakeside Michael"
+    weight: 6
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Lakeside Academy"
+            memberName: "Michael"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Lakeside Nina"
+    weight: 6
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Lakeside Academy"
+            memberName: "Nina"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Lakeside Oscar"
+    weight: 6
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Lakeside Academy"
+            memberName: "Oscar"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
+
+  - name: "Lakeside Paula"
+    weight: 7
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            schoolName: "Lakeside Academy"
+            memberName: "Paula"
+            password: "loadtest123"
+      - think: 30
+      - get:
+          url: "/api/school-teams"
