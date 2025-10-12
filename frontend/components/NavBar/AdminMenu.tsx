@@ -50,13 +50,6 @@ const AdminMenu: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
         Manage Questions
       </Link>
       <Link
-        href="/session-selection"
-        className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
-        onClick={handleMenuClick}
-      >
-        Session
-      </Link>
-      <Link
         href="/admin/logs"
         className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
         onClick={handleMenuClick}
