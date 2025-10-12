@@ -103,18 +103,6 @@ export default function Quiz(): React.JSX.Element | null {
   const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
 
 
-  useEffect(() => {
-
-
-    const fetchQuiz = async (id: number) => {
-      try {
-
-        const api = await createStudentApi({ token: user.user?.authToken || '' });
-        const response: any = await api.get(`/quizzes/${id}`);
-
-        setQuizData(transformQuizApiResponse(response.data.quiz));
-
-
   // Helper to log suspicious activity
   function logSuspicious(event: string, details: string) {
     const logData = {
@@ -136,7 +124,6 @@ export default function Quiz(): React.JSX.Element | null {
       try {
         const api = await createStudentApi({ token: user.user?.authToken || '' });
         const response: any = await api.get(`/quizzes/${id}`);
-        
         setQuizData(transformQuizApiResponse(response.data.quiz));
       } catch (error) {
         console.error('Fetch quiz error:', error);
@@ -153,6 +140,7 @@ export default function Quiz(): React.JSX.Element | null {
   // 1. Authentication Check
   useEffect(() => {
     const authToken = localStorage.getItem('authToken');
+    console.log(`auth token: ${authToken}`);
     if (!authToken) {
       router.push('/login');
       return;
@@ -342,7 +330,7 @@ export default function Quiz(): React.JSX.Element | null {
       window.removeEventListener('paste', handlePaste);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [isAuthenticated, currentQuestion, isSubmitting, user]);
+  }, [isAuthenticated, currentQuestion, isSubmitting]);
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -565,7 +553,7 @@ export default function Quiz(): React.JSX.Element | null {
         background: 'rgba(255,255,255,0.6)',
         zIndex: 1
       }} />
-      
+
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
         {/* Header with Progress */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
