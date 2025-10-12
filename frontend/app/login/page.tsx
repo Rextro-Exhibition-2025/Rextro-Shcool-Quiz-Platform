@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Lock, LogIn, Eye, EyeOff, Shield } from 'lucide-react';
+import { User, Lock, LogIn, Eye, EyeOff, Shield, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import axios from 'axios';
 import { SchoolsApiResponse, SchoolTeam } from '@/types/schools';
+
 interface LoginFormResponse {
   success: boolean;
   data: {
@@ -19,6 +20,7 @@ interface LoginFormResponse {
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
+    studentId: '',
     memberName: '',
     password: '',
     schoolName: ''
@@ -26,14 +28,13 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Removed session state
   const router = useRouter();
   const { user, setUser } = useUser();
   const [schools, setSchools] = useState<string[]>([]);
 
   // Add this useEffect to your login page to debug
-  useEffect(() => {
-    console.log('User from context changed:', user);
-  }, [user]);
+
 
   useEffect(() => {
     const fetchSchools = async () => {
@@ -77,6 +78,7 @@ export default function LoginPage() {
       return;
     }
 
+
     // Simulate authentication (replace with actual authentication logic)
     try {
       // You can add your authentication logic here
@@ -98,10 +100,10 @@ export default function LoginPage() {
       });
 
       const responseData: LoginFormResponse = await response.json();
-
+https://github.com/Rextro-Exhibition-2025/Rextro-Shcool-Quiz-Platform/pull/13/conflict?name=frontend%252Fapp%252Flogin%252Fpage.tsx&ancestor_oid=28db767e50be41f97c433541239a831aeb31eb73&base_oid=6476e8dfc0da3adf05b21c03c2c9a535d1c721d8&head_oid=3010eb9cd3251817809adbee06ab0c64e0dd7d3c
       // Store user data in localStorage (or use proper state management)
       localStorage.setItem('studentData', JSON.stringify({
-        memberName: formData.memberName,
+        studentId: formData.studentId,
         schoolName: formData.schoolName,
         loginTime: new Date().toISOString()
       }));
@@ -111,8 +113,8 @@ export default function LoginPage() {
       //   await document.documentElement.requestFullscreen();
       // }
       if (response.ok && responseData.success) {
-        console.log(responseData);
         localStorage.setItem('authToken', responseData.data.authToken);
+
         setUser({
           teamId: responseData.data.teamId,
           memberName: responseData.data.memberName,
@@ -121,6 +123,7 @@ export default function LoginPage() {
           authToken: responseData.data.authToken,
         });
         console.log(user);
+
         router.push('/quiz');
       }
     } catch (error) {
@@ -174,16 +177,15 @@ export default function LoginPage() {
           style={{ animationDuration: '4s' }} />
       </div>
 
-      {/* Login Form */}
       <div className="relative z-10 w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl p-8 backdrop-blur-sm">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-[#df7500] to-[#651321] rounded-full mb-4">
-              <LogIn className="w-8 h-8 text-white" />
+          {/* Login Icon and Heading */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-14 h-14 rounded-full bg-gradient-to-r from-[#df7500] to-[#651321] flex items-center justify-center mb-3 shadow-lg">
+              <LogIn className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-[#651321] mb-2">Student Login</h1>
-            <p className="text-gray-600">Enter your credentials to start the quiz</p>
+            <h2 className="text-2xl font-bold text-[#651321] mb-1">Student Login</h2>
+            <p className="text-sm text-[#651321] opacity-80">Enter your credentials to start the quiz</p>
           </div>
 
           {/* Error Message */}
@@ -305,14 +307,14 @@ export default function LoginPage() {
             >
               Back to Home
             </button>
-            <div className="text-gray-400">•</div>
+            {/* <div className="text-gray-400">•</div>
             <button
               onClick={() => router.push('/admin/login')}
               className="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors flex items-center justify-center space-x-1"
             >
               <Shield className="w-4 h-4" />
               <span>Admin Login</span>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
