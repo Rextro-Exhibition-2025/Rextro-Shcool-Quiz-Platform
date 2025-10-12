@@ -1,42 +1,19 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
-import { useUser } from '@/contexts/UserContext';
-import { createStudentApi } from '@/interceptors/student';
-import { Check, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { transformQuizApiResponse } from './questionTransformer';
-import { QuizApiResponse } from '@/types/quiz';
+import { Check, ChevronRight, Clock } from 'lucide-react';
+
+// Contexts and services
+import { useUser } from '@/contexts/UserContext';
 import { useQuiz } from '@/contexts/QuizContext';
+import { createStudentApi } from '@/interceptors/student';
 import { reportViolation } from '@/lib/violationService';
 
-// Simple device fingerprint (for demo; use a library for production)
-function getDeviceFingerprint() {
-  const nav = window.navigator;
-  const fp = [
-    nav.userAgent,
-    nav.language,
-    nav.platform,
-    nav.hardwareConcurrency,
-    window.screen.width,
-    window.screen.height,
-    window.screen.colorDepth
-  ].join('::');
-  // Simple hash
-  let hash = 0;
-  for (let i = 0; i < fp.length; i++) {
-    hash = ((hash << 5) - hash) + fp.charCodeAt(i);
-    hash |= 0;
-  }
-  return 'fp_' + Math.abs(hash);
-}
+// Utils and types
+import { transformQuizApiResponse } from './questionTransformer';
+import { QuizApiResponse } from '@/types/quiz';
 
-// Helper to format time as mm:ss
-function formatTime(seconds: number): string {
-  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-  const s = (seconds % 60).toString().padStart(2, '0');
-  return `${m}:${s}`;
-}
-
+// Type definitions
 interface Answer {
   id: string;
   text: string | null;
@@ -71,26 +48,69 @@ interface CompletionData {
   answeredQuestions: number;
 }
 
+// Constants
+const QUIZ_DURATION = 45 * 60; // 45 minutes in seconds
+
+// Simple device fingerprint generation
+const getDeviceFingerprint = (): string => {
+  if (typeof window === 'undefined') return 'unknown';
+  
+  const { navigator, screen } = window;
+  const fingerprint = [
+    navigator.userAgent,
+    navigator.language,
+    navigator.platform,
+    navigator.hardwareConcurrency,
+    screen.width,
+    screen.height,
+    screen.colorDepth
+  ].join('::');
+  
+  // Simple hash generation
+  let hash = 0;
+  for (let i = 0; i < fingerprint.length; i++) {
+    hash = ((hash << 5) - hash) + fingerprint.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  
+  return 'fp_' + Math.abs(hash);
+};
+
+// Helper to format time as mm:ss
+const formatTime = (seconds: number): string => {
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+};
+
 export default function Quiz(): React.JSX.Element | null {
-  // 45 minutes in seconds
-  const QUIZ_DURATION = 45 * 60;
-  const [timeLeft, setTimeLeft] = useState<number>(QUIZ_DURATION);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  // Constants
+  const router = useRouter();
+  const user = useUser();
   const { setQuizId, updateSelectedAnswers, submitQuiz, score } = useQuiz();
+  
+  // Timer management
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(QUIZ_DURATION);
+  
+  // Quiz state
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
+  const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
+  
+  // State initialization with localStorage
   const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('quizSelectedAnswers');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch {
-          return {};
-        }
+      try {
+        const saved = localStorage.getItem('quizSelectedAnswers');
+        return saved ? JSON.parse(saved) : {};
+      } catch {
+        return {};
       }
     }
     return {};
   });
+  
+  // UI state
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
@@ -98,25 +118,11 @@ export default function Quiz(): React.JSX.Element | null {
   const [showCompletionCard, setShowCompletionCard] = useState<boolean>(false);
   const [completionData, setCompletionData] = useState<CompletionData | null>(null);
   const [sessionInfo, setSessionInfo] = useState<{ sessionId: string; sessionTime: string } | null>(null);
-  const router = useRouter();
-  const user = useUser();
-  const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
 
 
-  useEffect(() => {
 
-
-    const fetchQuiz = async (id: number) => {
-      try {
-
-        const api = await createStudentApi({ token: user.user?.authToken || '' });
-        const response: any = await api.get(`/quizzes/${id}`);
-
-        setQuizData(transformQuizApiResponse(response.data.quiz));
-
-
-  // Helper to log suspicious activity
-  function logSuspicious(event: string, details: string) {
+  // Helper functions
+  const logSuspicious = (event: string, details: string) => {
     const logData = {
       user: (typeof window !== 'undefined' && localStorage.getItem('studentId')) || 'unknown',
       event,
@@ -124,236 +130,19 @@ export default function Quiz(): React.JSX.Element | null {
       details,
       fingerprint: typeof window !== 'undefined' ? getDeviceFingerprint() : 'unknown',
     };
+    
     fetch('/api/logs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(logData)
+    }).catch(error => {
+      console.error('Failed to log suspicious activity:', error);
     });
-  }
-
-  useEffect(() => {
-    const fetchQuiz = async (id: number) => {
-      try {
-        const api = await createStudentApi({ token: user.user?.authToken || '' });
-        const response: any = await api.get(`/quizzes/${id}`);
-        
-        setQuizData(transformQuizApiResponse(response.data.quiz));
-      } catch (error) {
-        console.error('Fetch quiz error:', error);
-      }
-    };
-    setQuizId(1);
-    fetchQuiz(1);
-  }, []);
-
-  useEffect(() => {
-    console.log('User context data:', user);
-  }, [user]);
-
-  // 1. Authentication Check
-  useEffect(() => {
-    const authToken = localStorage.getItem('authToken');
-    if (!authToken) {
-      router.push('/login');
-      return;
-    }
-    setIsAuthenticated(true);
-    setLoading(false);
-  }, [router]);
-
-  // Timer countdown effect
-  useEffect(() => {
-    if (!isAuthenticated || showCompletionCard) return;
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerRef.current!);
-          // Auto-submit when timer hits zero
-          handleSubmitQuiz();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [isAuthenticated, showCompletionCard]);
-
-  // Check authentication status
-  useEffect(() => {
-    const studentData = localStorage.getItem('studentData');
-    if (!studentData) {
-      router.push('/login');
-      return;
-    }
-    try {
-      const parsedData: StudentData = JSON.parse(studentData);
-      if (parsedData.memberName && parsedData.schoolName) {
-        setIsAuthenticated(true);
-        // Determine session info based on login time or backend assignment
-        const now = new Date();
-        const hour = now.getHours();
-        const minute = now.getMinutes();
-        let sessionId = "";
-        let sessionTime = "";
-        if ((hour === 8 && minute >= 30) || (hour === 9 && minute < 15)) {
-          sessionId = "1";
-          sessionTime = "8:30 AM - 9:15 AM";
-        } else if ((hour === 9 && minute >= 30) || (hour === 10 && minute < 15)) {
-          sessionId = "2";
-          sessionTime = "9:30 AM - 10:15 AM";
-        } else if ((hour === 11 && minute >= 30) || (hour === 12 && minute < 15)) {
-          sessionId = "3";
-          sessionTime = "11:30 AM - 12:15 PM";
-        } else if ((hour === 16 && minute >= 30) || (hour > 16 && hour < 23) || (hour === 23 && minute <= 15)) {
-          sessionId = "4";
-          sessionTime = "4:30 PM - 11:15 PM";
-        } else {
-          sessionId = "-";
-          sessionTime = "Not in a valid session window";
-        }
-        setSessionInfo({ sessionId, sessionTime });
-      } else {
-        router.push('/login');
-        return;
-      }
-    } catch (error) {
-      router.push('/login');
-      return;
-    }
-    setLoading(false);
-  }, [router]);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    // Request fullscreen - handle async operation inside useEffect
-    const requestFullscreen = async () => {
-      try {
-        if (document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen();
-        }
-      } catch (error) {
-        console.error('Error entering fullscreen:', error);
-      }
-    };
-
-    requestFullscreen();
-
-    // 3. Disable Copy/Paste with violation reporting
-    const handleCopyPaste = async (e: Event): Promise<void> => {
-      e.preventDefault();
-
-      // Report copy/paste violation
-      if (user.user?.teamId && user.user?.memberName) {
-        await reportViolation({
-          teamId: user.user.teamId,
-          memberName: user.user.memberName,
-          violationType: 'copy & paste'
-        });
-      }
-
-      alert("Copy/Paste is disabled during the quiz.");
-      if (e.type === 'copy') {
-        logSuspicious('Copy attempt', `User tried to copy content on question ${currentQuestion + 1}`);
-      } else if (e.type === 'paste') {
-        logSuspicious('Paste attempt', `User tried to paste content on question ${currentQuestion + 1}`);
-      }
-    };
-
-    document.addEventListener("copy", handleCopyPaste);
-    document.addEventListener("paste", handleCopyPaste);
-
-    // 4. Monitor Tab Switching (you can also report this as a violation)
-    const handleVisibilityChange = async (): Promise<void> => {
-      if (document.visibilityState === "hidden") {
-        // Optionally report tab switching as a violation
-        if (user.user?.teamId && user.user?.memberName) {
-          await reportViolation({
-            teamId: user.user.teamId,
-            memberName: user.user.memberName,
-            violationType: 'escaping full screen' // or create a new violation type
-          });
-        }
-        alert("Tab switching detected! Please stay on the quiz page.");
-      }
-    };
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    // Cleanup
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      document.removeEventListener("copy", handleCopyPaste);
-      document.removeEventListener("paste", handleCopyPaste);
-    };
-  }, [isAuthenticated, currentQuestion, user]);
-
-  // Separate useEffect for fullscreen detection with violation reporting
-  useEffect(() => {
-    if (!isAuthenticated || !user) return;
-
-    // Full-Screen Mode Detection
-    const handleFullScreenChange = (): void => {
-      const isFullscreen = !!document.fullscreenElement;
-      if (!isFullscreen && !isSubmitting) {
-        setShowFullscreenPrompt(true);
-        logSuspicious('Fullscreen exit', `User exited fullscreen on question ${currentQuestion + 1}`);
-      }
-    };
-
-    document.addEventListener("fullscreenchange", handleFullScreenChange);
-
-    // Tab switch / window blur
-    const handleBlur = (): void => {
-      if (!isSubmitting) {
-        logSuspicious('Tab switch or window blur', `User left quiz tab on question ${currentQuestion + 1}`);
-      }
-    };
-    window.addEventListener('blur', handleBlur);
-
-    // Copy/Cut/Paste attempts
-    const handleCopy = (e: ClipboardEvent) => {
-      logSuspicious('Copy attempt', `User tried to copy content on question ${currentQuestion + 1}`);
-    };
-    const handleCut = (e: ClipboardEvent) => {
-      logSuspicious('Cut attempt', `User tried to cut content on question ${currentQuestion + 1}`);
-    };
-    const handlePaste = (e: ClipboardEvent) => {
-      logSuspicious('Paste attempt', `User tried to paste content on question ${currentQuestion + 1}`);
-    };
-    window.addEventListener('copy', handleCopy);
-    window.addEventListener('cut', handleCut);
-    window.addEventListener('paste', handlePaste);
-
-    // Page reload/back navigation
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      logSuspicious('Page reload or navigation', `User tried to reload or leave the quiz page on question ${currentQuestion + 1}`);
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    // Cleanup
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullScreenChange);
-      window.removeEventListener('blur', handleBlur);
-      window.removeEventListener('copy', handleCopy);
-      window.removeEventListener('cut', handleCut);
-      window.removeEventListener('paste', handlePaste);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [isAuthenticated, currentQuestion, isSubmitting, user]);
-
-  React.useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
-
-  const totalQuestions = quizData.length;
-  const answeredCount = Object.keys(selectedAnswers).length;
-  const progress = (answeredCount / totalQuestions) * 100;
+  };
 
   // Calculate quiz score
   const calculateScore = (): number => {
+    const totalQuestions = quizData.length;
     let correctAnswers = 0;
     const correctAnswerKey: { [key: number]: string } = {
       0: 'c', // Paris
@@ -378,14 +167,53 @@ export default function Quiz(): React.JSX.Element | null {
     return Math.round((correctAnswers / totalQuestions) * 100);
   };
 
-  // Handle quiz submission
-  const handleSubmitQuiz = async (): Promise<void> => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    try {
-      // Set submitting flag to prevent fullscreen prompt during submission
-      setIsSubmitting(true);
+  // Update user quiz state in backend
+  const updateQuizState = async (studentData: StudentData): Promise<void> => {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/update-state`;
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('authToken') || user.user?.authToken || ''}`
+      },
+      body: JSON.stringify({
+        schoolName: studentData.schoolName,
+        memberName: studentData.memberName,
+        hasEndedQuiz: true
+      })
+    });
 
-      // Check if user is still authenticated
+    if (!response.ok) {
+      throw new Error('Failed to update quiz state');
+    }
+
+    const responseData = await response.json();
+    if (!responseData.success) {
+      throw new Error(responseData.message || 'Failed to update quiz state');
+    }
+
+    // Update user context and localStorage
+    if (user.user) {
+      user.setUser({
+        ...user.user,
+        hasEndedQuiz: true
+      });
+    }
+
+    const updatedStudentData = {
+      ...studentData,
+      hasEndedQuiz: true
+    };
+    localStorage.setItem('studentData', JSON.stringify(updatedStudentData));
+  };
+
+  // Handle quiz submission
+  const handleSubmitQuiz = useCallback(async (): Promise<void> => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setIsSubmitting(true);
+
+    try {
+      // Check authentication
       const studentData = localStorage.getItem('studentData');
       if (!studentData) {
         alert('Session expired. Please login again.');
@@ -394,9 +222,8 @@ export default function Quiz(): React.JSX.Element | null {
       }
 
       const parsedStudentData: StudentData = JSON.parse(studentData);
-
-      // Calculate score
       const score = calculateScore();
+      const answeredCount = Object.keys(selectedAnswers).length;
 
       // Prepare submission data
       const submissionData: CompletionData = {
@@ -409,71 +236,217 @@ export default function Quiz(): React.JSX.Element | null {
         answeredQuestions: answeredCount
       };
 
-      //uodate user state
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/update-state`;
-      const response = await fetch(url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('authToken') || user.user?.authToken || ''}`
-        },
-        body: JSON.stringify({
-          schoolName: parsedStudentData.schoolName,
-          memberName: parsedStudentData.memberName,
-          hasEndedQuiz: true
-        })
-      });
+      // Update user state in backend
+      await updateQuizState(parsedStudentData);
 
-      if (!response.ok) {
-        throw new Error('Failed to update quiz state');
-      }
-
-      const responseData = await response.json();
-      if (!responseData.success) {
-        throw new Error(responseData.message || 'Failed to update quiz state');
-      }
-
-      console.log('Quiz state updated:', responseData.data);
-
-      // Optionally, you can update user context or localStorage here if needed
-      if (user.user) {
-        user.setUser({
-          ...user.user,
-          hasEndedQuiz: true
-        });
-      }
-      const updatedStudentData = {
-        ...parsedStudentData,
-        hasEndedQuiz: true
-      };
-      localStorage.setItem('studentData', JSON.stringify(updatedStudentData));
-
-      // Store results (you can also send to backend here)
+      // Store results locally
       localStorage.setItem('quizResult', JSON.stringify(submissionData));
 
-      // Exit fullscreen first
+      // Exit fullscreen
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       }
 
-      // Set completion data and show completion card
+      // Show completion
       setCompletionData(submissionData);
       setShowCompletionCard(true);
 
-      // Clear authentication after successful submission
+      // Clear authentication
       localStorage.removeItem('studentData');
 
+      // Submit to quiz context
       await submitQuiz();
 
     } catch (error) {
       alert('Error submitting quiz. Please try again.');
       console.error('Submit quiz error:', error);
-      // Reset submitting flag on error
       setIsSubmitting(false);
     }
-  };
+  }, [selectedAnswers, quizData.length, router, user, submitQuiz]);
 
-  // Handle navigation to leaderboard from completion card
+  // Fetch quiz data
+  useEffect(() => {
+    const fetchQuiz = async (id: number) => {
+      try {
+        const api = await createStudentApi({ token: user.user?.authToken || '' });
+        const response: any = await api.get(`/quizzes/${id}`);
+        setQuizData(transformQuizApiResponse(response.data.quiz));
+      } catch (error) {
+        console.error('Fetch quiz error:', error);
+      }
+    };
+
+    setQuizId(1);
+    fetchQuiz(1);
+  }, [setQuizId, user.user?.authToken]);
+
+  // Debug user context
+  useEffect(() => {
+    console.log('User context data:', user);
+  }, [user]);
+
+  // Authentication check
+  useEffect(() => {
+    const checkAuthentication = () => {
+      const authToken = localStorage.getItem('authToken');
+      const studentData = localStorage.getItem('studentData');
+      
+      if (!authToken || !studentData) {
+        router.push('/login');
+        return;
+      }
+
+      try {
+        const parsedData: StudentData = JSON.parse(studentData);
+        if (parsedData.memberName && parsedData.schoolName) {
+          setIsAuthenticated(true);
+        } else {
+          router.push('/login');
+          return;
+        }
+      } catch (error) {
+        router.push('/login');
+        return;
+      }
+      
+      setLoading(false);
+    };
+
+    checkAuthentication();
+  }, [router]);
+
+  // Timer countdown effect
+  useEffect(() => {
+    if (!isAuthenticated || showCompletionCard) return;
+    
+    if (timerRef.current) clearInterval(timerRef.current);
+    
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          handleSubmitQuiz();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isAuthenticated, showCompletionCard, handleSubmitQuiz]);
+
+  // Security measures and fullscreen management
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    // Request fullscreen - handle async operation inside useEffect
+    const requestFullscreen = async () => {
+      try {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (error) {
+        console.error('Error entering fullscreen:', error);
+      }
+    };
+
+    requestFullscreen();
+
+    // Copy/Paste detection and violation reporting
+    const handleCopyPaste = async (e: Event): Promise<void> => {
+      e.preventDefault();
+
+      // Report copy/paste violation
+      if (user.user?.teamId && user.user?.memberName) {
+        await reportViolation({
+          teamId: user.user.teamId,
+          memberName: user.user.memberName,
+          violationType: 'copy & paste'
+        });
+      }
+
+      alert("Copy/Paste is disabled during the quiz.");
+      logSuspicious(e.type === 'copy' ? 'Copy attempt' : 'Paste attempt', 
+        `User tried to ${e.type} content on question ${currentQuestion + 1}`);
+    };
+
+    // Tab switching detection
+    const handleVisibilityChange = async (): Promise<void> => {
+      if (document.visibilityState === "hidden") {
+        if (user.user?.teamId && user.user?.memberName) {
+          await reportViolation({
+            teamId: user.user.teamId,
+            memberName: user.user.memberName,
+            violationType: 'escaping full screen'
+          });
+        }
+        alert("Tab switching detected! Please stay on the quiz page.");
+      }
+    };
+
+    // Fullscreen detection
+    const handleFullScreenChange = (): void => {
+      const isFullscreen = !!document.fullscreenElement;
+      if (!isFullscreen && !isSubmitting) {
+        setShowFullscreenPrompt(true);
+        logSuspicious('Fullscreen exit', `User exited fullscreen on question ${currentQuestion + 1}`);
+      }
+    };
+
+    // Window blur detection
+    const handleBlur = (): void => {
+      if (!isSubmitting) {
+        logSuspicious('Tab switch or window blur', `User left quiz tab on question ${currentQuestion + 1}`);
+      }
+    };
+
+    // Clipboard operations detection
+    const handleClipboardOp = (e: ClipboardEvent) => {
+      logSuspicious(`${e.type} attempt`, `User tried to ${e.type} content on question ${currentQuestion + 1}`);
+    };
+
+    // Page reload/navigation detection
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      logSuspicious('Page reload or navigation', `User tried to reload or leave the quiz page on question ${currentQuestion + 1}`);
+    };
+
+    // Add event listeners
+    document.addEventListener("copy", handleCopyPaste);
+    document.addEventListener("paste", handleCopyPaste);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("fullscreenchange", handleFullScreenChange);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('copy', handleClipboardOp);
+    window.addEventListener('cut', handleClipboardOp);
+    window.addEventListener('paste', handleClipboardOp);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener("copy", handleCopyPaste);
+      document.removeEventListener("paste", handleCopyPaste);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("fullscreenchange", handleFullScreenChange);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('copy', handleClipboardOp);
+      window.removeEventListener('cut', handleClipboardOp);
+      window.removeEventListener('paste', handleClipboardOp);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isAuthenticated, currentQuestion, isSubmitting, user]);
+
+  // Scroll to top on component mount
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  // Computed values
+  const totalQuestions = quizData.length;
+  const answeredCount = Object.keys(selectedAnswers).length;
+  const progress = (answeredCount / totalQuestions) * 100;
+
+  // Event handlers
   const handleGoToLeaderboard = (): void => {
     setShowCompletionCard(false);
     router.push('/leaderboard');
@@ -491,39 +464,30 @@ export default function Quiz(): React.JSX.Element | null {
     setCurrentQuestion((prev) => Math.min(prev + 1, totalQuestions - 1));
   };
 
-  const handlePrevious = (): void => {
-    setCurrentQuestion((prev) => Math.max(prev - 1, 0));
-  };
-
-  const handleQuestionNavigation = (questionIndex: number): void => {
-    setCurrentQuestion(questionIndex);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleReEnterFullscreen = (): void => {
+  const handleReEnterFullscreen = async (): Promise<void> => {
     setShowFullscreenPrompt(false);
-    const elem = document.documentElement;
-
-    const requestFullscreen = (): Promise<void> => {
+    
+    try {
+      const elem = document.documentElement;
+      
       if (elem.requestFullscreen) {
-        return elem.requestFullscreen();
-      } else if ((elem as any).mozRequestFullScreen) { /* Firefox */
-        return (elem as any).mozRequestFullScreen();
-      } else if ((elem as any).webkitRequestFullscreen) { /* Chrome, Safari & Opera */
-        return (elem as any).webkitRequestFullscreen();
-      } else if ((elem as any).msRequestFullscreen) { /* IE/Edge */
-        return (elem as any).msRequestFullscreen();
+        await elem.requestFullscreen();
+      } else if ((elem as any).mozRequestFullScreen) {
+        await (elem as any).mozRequestFullScreen();
+      } else if ((elem as any).webkitRequestFullscreen) {
+        await (elem as any).webkitRequestFullscreen();
+      } else if ((elem as any).msRequestFullscreen) {
+        await (elem as any).msRequestFullscreen();
+      } else {
+        throw new Error('Fullscreen not supported');
       }
-      return Promise.reject(new Error('Fullscreen not supported'));
-    };
-
-    requestFullscreen().catch((error: Error) => {
+    } catch (error) {
       console.error('Error entering fullscreen:', error);
       // Show the prompt again if fullscreen fails
       setTimeout(() => {
         setShowFullscreenPrompt(true);
       }, 1000);
-    });
+    }
   };
 
   const currentQuestionData = quizData[currentQuestion];
@@ -572,35 +536,34 @@ export default function Quiz(): React.JSX.Element | null {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-800">Quiz Challenge</h1>
             <div className="flex items-center space-x-4">
+              <div className="text-m font-medium text-gray-800">
+                Question {currentQuestion + 1} of {totalQuestions}    
+              </div>
               <div className="flex items-center space-x-2">
                 <Clock size={20} style={{ color: timerColor }} />
                 <span className="text-lg font-bold" style={{ color: timerColor }}>
                   {formatTime(timeLeft)}
                 </span>
-              </div>
-              <div className="text-sm font-medium text-gray-600">
-                Question {currentQuestion + 1} of {totalQuestions}
-              </div>
+              </div>              
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full rounded-full h-3 mb-4" style={{ background: 'rgba(223,117,0,0.1)' }}>
+          <div className="w-full rounded-full h-3 mb-4 relative" style={{ background: 'rgba(223,117,0,0.1)' }}>
             <div
-              className="h-3 rounded-full transition-all duration-500 ease-out"
+              className="h-3 rounded-full transition-all duration-500 ease-out relative"
               style={{
                 width: `${progress}%`,
-                backgroundColor: '#651321',
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                height: '100%'
+                backgroundColor: '#651321'
               }}
-            ></div>
-          </div>
-
-          <div className="text-center text-sm font-semibold text-gray-700">
-            {answeredCount} of {totalQuestions} answered ({Math.round(progress)}%)
+            >
+              <span
+                className="absolute right-5 top-1/2 transform -translate-y-1/2 text-xs text-white"
+                style={{ transform: 'translateX(50%)' }}
+              >
+                {Math.round(progress)}%
+              </span>
+            </div>
           </div>
 
           {/* Question Card */}
@@ -633,7 +596,7 @@ export default function Quiz(): React.JSX.Element | null {
                   }`}
                 style={selectedAnswer === answer.id ? {
                   borderColor: '#DF7500',
-                  backgroundColor: '#DF750008'
+                  backgroundColor: '#DF7500008'
                 } : {}}
               >
                 <div className="flex items-center space-x-4">
@@ -690,23 +653,13 @@ export default function Quiz(): React.JSX.Element | null {
 
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center gap-5">
-          <div>
-            {currentQuestion !== 0 && (
-              <button
-                onClick={handlePrevious}
-                className="flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 bg-white text-gray-700 hover:bg-gray-50 shadow-lg hover:shadow-xl"
-              >
-                <ChevronLeft size={20} />
-                <span>Previous</span>
-              </button>
-            )}
-          </div>
           <div className="ml-auto">
             {currentQuestion !== totalQuestions - 1 && (
               <button
                 onClick={handleNext}
-                className="flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 text-white hover:opacity-90 shadow-lg hover:shadow-xl"
-                style={{ backgroundColor: '#651321' }}
+                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 text-white hover:opacity-90 shadow-lg hover:shadow-xl ${selectedAnswers[currentQuestion] ? '' : 'bg-gray-400 cursor-not-allowed'}`}
+                style={{ backgroundColor: selectedAnswers[currentQuestion] ? '#651321' : '#785158' }}
+                disabled={!selectedAnswers[currentQuestion]}
               >
                 <span>Next</span>
                 <ChevronRight size={20} />
@@ -715,52 +668,14 @@ export default function Quiz(): React.JSX.Element | null {
           </div>
         </div>
 
-        {/* Question Navigation */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 my-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Navigation</h3>
-          <div className="grid grid-cols-5 sm:grid-cols-10 md:grid-cols-15 gap-2">
-            {Array.from({ length: totalQuestions }, (_, index) => (
-              <button
-                key={index}
-                onClick={() => handleQuestionNavigation(index)}
-                className={`w-10 h-10 rounded-lg font-medium text-sm transition-all duration-200 ${index === currentQuestion
-                  ? 'text-white shadow-lg scale-105'
-                  : selectedAnswers[index]
-                    ? 'text-white shadow-lg scale-105'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                style={
-                  index === currentQuestion
-                    ? { backgroundColor: '#DF7500' }
-                    : selectedAnswers[index]
-                      ? { backgroundColor: '#651321' }
-                      : {}
-                }
-              >
-                {selectedAnswers[index] ? (
-                  <span style={{ position: 'relative', display: 'block', width: '100%', height: '100%' }}>
-                    <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-                      {index + 1}
-                    </span>
-                    <span style={{ position: 'absolute', right: 2, bottom: 2 }}>
-                      <Check size={14} />
-                    </span>
-                  </span>
-                ) : (
-                  index + 1
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Submit Button (appears on last question) */}
         {currentQuestion === totalQuestions - 1 && (
           <div className="mt-6 text-center">
             <button
               className="text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-200"
-              style={{ backgroundColor: '#651321' }}
+              style={{ backgroundColor: selectedAnswers[currentQuestion] ? '#651321' : '#785158', cursor: selectedAnswers[currentQuestion] ? 'pointer' : 'not-allowed' }}
               onClick={handleSubmitQuiz}
+              disabled={!selectedAnswers[currentQuestion]}
             >
               Submit Quiz
             </button>
@@ -807,7 +722,7 @@ export default function Quiz(): React.JSX.Element | null {
                   </div>
                   <div className="bg-white/50 rounded-lg p-4">
                     <div className="text-sm text-gray-600">Score</div>
-                    <div className="font-bold text-2xl text-[#df7500]">{score}%</div>
+                    <div className="font-bold text-2xl text-[#df7500]">{score ? score.toFixed(2) : 'N/A'}%</div>
                   </div>
                 </div>
                 <div className="mt-4 text-sm text-gray-600">

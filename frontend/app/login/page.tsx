@@ -125,6 +125,8 @@ https://github.com/Rextro-Exhibition-2025/Rextro-Shcool-Quiz-Platform/pull/13/co
         console.log(user);
 
         router.push('/quiz');
+      } else {
+        setError('Login failed. Please check your credentials.');
       }
     } catch (error) {
       setError('Login failed. Please check your credentials.');
@@ -134,20 +136,6 @@ https://github.com/Rextro-Exhibition-2025/Rextro-Shcool-Quiz-Platform/pull/13/co
   };
 
 
-
-  // // Sample school names for the dropdown
-  // const schools = [
-  //   'Select your school',
-  //   'Sunrise High School',
-  //   'Greenwood High School',
-  //   'Riverside Academy',
-  //   'Maple Valley School',
-  //   'Oakwood Preparatory School',
-  //   'Sunrise Elementary School',
-  //   'Mountain View School',
-  //   'Cedar Creek Institution',
-  //   'Pinewood Secondary School'
-  // ];
 
   return (
     <div
