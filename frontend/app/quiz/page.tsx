@@ -117,7 +117,6 @@ export default function Quiz(): React.JSX.Element | null {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showCompletionCard, setShowCompletionCard] = useState<boolean>(false);
   const [completionData, setCompletionData] = useState<CompletionData | null>(null);
-  const [sessionInfo, setSessionInfo] = useState<{ sessionId: string; sessionTime: string } | null>(null);
 
 
 
@@ -435,6 +434,20 @@ export default function Quiz(): React.JSX.Element | null {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [isAuthenticated, currentQuestion, isSubmitting, user]);
+
+  // Disable right-click and text selection
+  useEffect(() => {
+    const disableContextMenu = (e: MouseEvent) => e.preventDefault();
+    const disableTextSelection = (e: Event) => e.preventDefault();
+
+    document.addEventListener('contextmenu', disableContextMenu);
+    document.addEventListener('selectstart', disableTextSelection);
+
+    return () => {
+      document.removeEventListener('contextmenu', disableContextMenu);
+      document.removeEventListener('selectstart', disableTextSelection);
+    };
+  }, []);
 
   // Scroll to top on component mount
   useEffect(() => {
