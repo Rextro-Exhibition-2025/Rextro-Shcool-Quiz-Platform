@@ -118,7 +118,10 @@ export default function Quiz(): React.JSX.Element | null {
   const [showCompletionCard, setShowCompletionCard] = useState<boolean>(false);
   const [completionData, setCompletionData] = useState<CompletionData | null>(null);
 
-
+  // Inactivity tracking
+  const [lastActivityTime, setLastActivityTime] = useState<number>(Date.now());
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number>(Date.now());
 
   // Helper functions
   const logSuspicious = (event: string, details: string) => {
@@ -137,6 +140,22 @@ export default function Quiz(): React.JSX.Element | null {
     }).catch(error => {
       console.error('Failed to log suspicious activity:', error);
     });
+  };
+
+  // Update last activity time
+  const updateActivity = () => {
+    setLastActivityTime(Date.now());
+  };
+
+  // Check for inactivity and log if detected
+  const checkInactivity = () => {
+    const now = Date.now();
+    const inactiveTime = Math.floor((now - lastActivityTime) / 1000); // Convert to seconds
+    
+    // Log if user has been inactive for more than 30 seconds
+    if (inactiveTime >= 30) {
+      logSuspicious('Extended inactivity', `User inactive for ${inactiveTime}s on question ${currentQuestion + 1}`);
+    }
   };
 
   // Calculate quiz score
@@ -283,6 +302,35 @@ export default function Quiz(): React.JSX.Element | null {
   useEffect(() => {
     console.log('User context data:', user);
   }, [user]);
+
+  // Inactivity tracking setup
+  useEffect(() => {
+    if (!isAuthenticated || showCompletionCard) return;
+
+    // Start inactivity monitoring
+    if (inactivityTimerRef.current) clearInterval(inactivityTimerRef.current);
+    
+    inactivityTimerRef.current = setInterval(() => {
+      checkInactivity();
+    }, 3000); // Check every 3 seconds
+
+    // Activity tracking event listeners
+    const handleActivity = () => {
+      updateActivity();
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+      document.addEventListener(event, handleActivity, true);
+    });
+
+    return () => {
+      if (inactivityTimerRef.current) clearInterval(inactivityTimerRef.current);
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity, true);
+      });
+    };
+  }, [isAuthenticated, showCompletionCard, currentQuestion, lastActivityTime]);
 
   // Authentication check
   useEffect(() => {
