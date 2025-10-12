@@ -4,11 +4,13 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import axios from 'axios';
 
 interface User {
+    teamId: string;
     memberName: string;
     schoolName: string;
     teamName: string;
     authToken: string;  // Add this field
     marks?: number;     // Make this optional since it's not in login response
+    hasEndedQuiz?: boolean;
 }
 
 interface UserContextType {
@@ -75,7 +77,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                     return;
                 }
 
-                const response = await axios.get<ApiResponse>('http://localhost:3000/api/auth/me', {
+                const response = await axios.get<ApiResponse>(`${process.env.NEXT_PUBLIC_SERVER_API_URL}/auth/me`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }

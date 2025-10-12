@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { transformQuizApiResponse } from './questionTransformer';
 import { QuizApiResponse } from '@/types/quiz';
 import { useQuiz } from '@/contexts/QuizContext';
+import { reportViolation } from '@/lib/violationService';
 
 // Simple device fingerprint (for demo; use a library for production)
 function getDeviceFingerprint() {
@@ -75,7 +76,6 @@ export default function Quiz(): React.JSX.Element | null {
   const QUIZ_DURATION = 45 * 60;
   const [timeLeft, setTimeLeft] = useState<number>(QUIZ_DURATION);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  
   const { setQuizId, updateSelectedAnswers, submitQuiz, score } = useQuiz();
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>(() => {
@@ -102,6 +102,19 @@ export default function Quiz(): React.JSX.Element | null {
   const user = useUser();
   const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
 
+
+  useEffect(() => {
+
+
+    const fetchQuiz = async (id: number) => {
+      try {
+
+        const api = await createStudentApi({ token: user.user?.authToken || '' });
+        const response: any = await api.get(`/quizzes/${id}`);
+
+        setQuizData(transformQuizApiResponse(response.data.quiz));
+
+
   // Helper to log suspicious activity
   function logSuspicious(event: string, details: string) {
     const logData = {
@@ -125,7 +138,6 @@ export default function Quiz(): React.JSX.Element | null {
         const response: any = await api.get(`/quizzes/${id}`);
         
         setQuizData(transformQuizApiResponse(response.data.quiz));
-        
       } catch (error) {
         console.error('Fetch quiz error:', error);
       }
@@ -229,9 +241,19 @@ export default function Quiz(): React.JSX.Element | null {
 
     requestFullscreen();
 
-    // 3. Disable Copy/Paste
-    const handleCopyPaste = (e: Event): void => {
+    // 3. Disable Copy/Paste with violation reporting
+    const handleCopyPaste = async (e: Event): Promise<void> => {
       e.preventDefault();
+
+      // Report copy/paste violation
+      if (user.user?.teamId && user.user?.memberName) {
+        await reportViolation({
+          teamId: user.user.teamId,
+          memberName: user.user.memberName,
+          violationType: 'copy & paste'
+        });
+      }
+
       alert("Copy/Paste is disabled during the quiz.");
       if (e.type === 'copy') {
         logSuspicious('Copy attempt', `User tried to copy content on question ${currentQuestion + 1}`);
@@ -239,15 +261,25 @@ export default function Quiz(): React.JSX.Element | null {
         logSuspicious('Paste attempt', `User tried to paste content on question ${currentQuestion + 1}`);
       }
     };
+
     document.addEventListener("copy", handleCopyPaste);
     document.addEventListener("paste", handleCopyPaste);
 
-    // 4. Monitor Tab Switching
-    const handleVisibilityChange = (): void => {
+    // 4. Monitor Tab Switching (you can also report this as a violation)
+    const handleVisibilityChange = async (): Promise<void> => {
       if (document.visibilityState === "hidden") {
+        // Optionally report tab switching as a violation
+        if (user.user?.teamId && user.user?.memberName) {
+          await reportViolation({
+            teamId: user.user.teamId,
+            memberName: user.user.memberName,
+            violationType: 'escaping full screen' // or create a new violation type
+          });
+        }
         alert("Tab switching detected! Please stay on the quiz page.");
       }
     };
+
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
     // Cleanup
@@ -256,11 +288,11 @@ export default function Quiz(): React.JSX.Element | null {
       document.removeEventListener("copy", handleCopyPaste);
       document.removeEventListener("paste", handleCopyPaste);
     };
-  }, [isAuthenticated, currentQuestion]);
+  }, [isAuthenticated, currentQuestion, user]);
 
-  // Separate useEffect for fullscreen detection that depends on currentQuestion
+  // Separate useEffect for fullscreen detection with violation reporting
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
     // Full-Screen Mode Detection
     const handleFullScreenChange = (): void => {
@@ -270,6 +302,7 @@ export default function Quiz(): React.JSX.Element | null {
         logSuspicious('Fullscreen exit', `User exited fullscreen on question ${currentQuestion + 1}`);
       }
     };
+
     document.addEventListener("fullscreenchange", handleFullScreenChange);
 
     // Tab switch / window blur
@@ -309,7 +342,7 @@ export default function Quiz(): React.JSX.Element | null {
       window.removeEventListener('paste', handlePaste);
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [isAuthenticated, currentQuestion, isSubmitting]);
+  }, [isAuthenticated, currentQuestion, isSubmitting, user]);
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -375,6 +408,45 @@ export default function Quiz(): React.JSX.Element | null {
         totalQuestions: quizData.length,
         answeredQuestions: answeredCount
       };
+
+      //uodate user state
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/update-state`;
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('authToken') || user.user?.authToken || ''}`
+        },
+        body: JSON.stringify({
+          schoolName: parsedStudentData.schoolName,
+          memberName: parsedStudentData.memberName,
+          hasEndedQuiz: true
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update quiz state');
+      }
+
+      const responseData = await response.json();
+      if (!responseData.success) {
+        throw new Error(responseData.message || 'Failed to update quiz state');
+      }
+
+      console.log('Quiz state updated:', responseData.data);
+
+      // Optionally, you can update user context or localStorage here if needed
+      if (user.user) {
+        user.setUser({
+          ...user.user,
+          hasEndedQuiz: true
+        });
+      }
+      const updatedStudentData = {
+        ...parsedStudentData,
+        hasEndedQuiz: true
+      };
+      localStorage.setItem('studentData', JSON.stringify(updatedStudentData));
 
       // Store results (you can also send to backend here)
       localStorage.setItem('quizResult', JSON.stringify(submissionData));

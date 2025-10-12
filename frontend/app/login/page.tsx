@@ -9,6 +9,7 @@ import { SchoolsApiResponse, SchoolTeam } from '@/types/schools';
 interface LoginFormResponse {
   success: boolean;
   data: {
+    teamId: string;
     memberName: string;
     schoolName: string;
     teamName: string;
@@ -34,6 +35,27 @@ export default function LoginPage() {
 
   // Add this useEffect to your login page to debug
 
+
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+
+        const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
+
+        console.log('Fetched schools:', response.data);
+
+        setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
+
+
+      } catch (error) {
+
+        console.error('Error fetching schools:', error);
+
+      }
+    }
+
+    fetchSchools();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -61,10 +83,10 @@ export default function LoginPage() {
     try {
       // You can add your authentication logic here
       // For now, we'll simulate a successful login after 1 second
-      const url = "http://localhost:3001/api/auth/login";
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
       console.log(formData);
 
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -78,7 +100,7 @@ export default function LoginPage() {
       });
 
       const responseData: LoginFormResponse = await response.json();
-
+https://github.com/Rextro-Exhibition-2025/Rextro-Shcool-Quiz-Platform/pull/13/conflict?name=frontend%252Fapp%252Flogin%252Fpage.tsx&ancestor_oid=28db767e50be41f97c433541239a831aeb31eb73&base_oid=6476e8dfc0da3adf05b21c03c2c9a535d1c721d8&head_oid=3010eb9cd3251817809adbee06ab0c64e0dd7d3c
       // Store user data in localStorage (or use proper state management)
       localStorage.setItem('studentData', JSON.stringify({
         studentId: formData.studentId,
@@ -92,6 +114,16 @@ export default function LoginPage() {
       // }
       if (response.ok && responseData.success) {
         localStorage.setItem('authToken', responseData.data.authToken);
+
+        setUser({
+          teamId: responseData.data.teamId,
+          memberName: responseData.data.memberName,
+          schoolName: responseData.data.schoolName,
+          teamName: responseData.data.teamName,
+          authToken: responseData.data.authToken,
+        });
+        console.log(user);
+
         router.push('/quiz');
       }
     } catch (error) {
@@ -101,27 +133,6 @@ export default function LoginPage() {
     }
   };
 
-
-  useEffect(() => {
-    const fetchSchools = async () => {
-      try {
-
-      const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
-
-      console.log('Fetched schools:', response.data);
-
-      setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
-
-
-      } catch (error) {
-
-        console.error('Error fetching schools:', error);
-
-      }
-    }
-
-    fetchSchools();
-  }, []);
 
 
   // // Sample school names for the dropdown
