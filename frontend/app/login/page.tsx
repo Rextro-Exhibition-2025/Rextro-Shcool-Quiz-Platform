@@ -103,7 +103,7 @@ export default function LoginPage() {
 https://github.com/Rextro-Exhibition-2025/Rextro-Shcool-Quiz-Platform/pull/13/conflict?name=frontend%252Fapp%252Flogin%252Fpage.tsx&ancestor_oid=28db767e50be41f97c433541239a831aeb31eb73&base_oid=6476e8dfc0da3adf05b21c03c2c9a535d1c721d8&head_oid=3010eb9cd3251817809adbee06ab0c64e0dd7d3c
       // Store user data in localStorage (or use proper state management)
       localStorage.setItem('studentData', JSON.stringify({
-        studentId: formData.studentId,
+        memberName: formData.memberName,
         schoolName: formData.schoolName,
         loginTime: new Date().toISOString()
       }));
