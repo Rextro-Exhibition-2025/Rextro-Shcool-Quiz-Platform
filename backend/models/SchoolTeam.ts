@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken"; // Fixed import: use default import
 export interface IStudent extends Document {
     name: string;
     marks: number;
+    number: number;
     isLoggedIn?: boolean;
     authToken?: string;
     hasEndedQuiz?: boolean;
@@ -16,6 +17,9 @@ export interface ISchoolTeam extends Document {
     password: string;
     totalMarks: number;
     members: IStudent[];
+    educationalZone: string;
+    teacherInCharge: string;
+    teacherContact: string;
     comparePassword(candidatePassword: string): Promise<boolean>;
     generateAuthTokenForMember(memberName: string): string;
 }
@@ -34,6 +38,9 @@ const schoolTeamSchema: Schema = new Schema({
             hasEndedQuiz: { type: Boolean, default: false },
         },
     ],
+    educationalZone: { type: String, required: [true, "Educational zone is required"] },
+    teacherInCharge: { type: String, required: [true, "Teacher in charge is required"] },
+    teacherContact: { type: String, required: [true, "Teacher contact is required"] },
 }, { timestamps: true });
 
 // hashing the password
