@@ -51,9 +51,11 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
             success: true,
             message: "Login successful",
             data: {
+                teamId: schoolTeam._id,
                 teamName: schoolTeam.teamName,
                 memberName: member.name,
                 schoolName: schoolTeam.schoolName,
+                hasEndedQuiz: member.hasEndedQuiz,
                 authToken,
             },
         });
@@ -165,3 +167,96 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
         });
     }
 };
+
+export const updateStateOfMember = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { schoolName, memberName, hasEndedQuiz } = req.body;
+
+        if (!schoolName || !memberName || typeof hasEndedQuiz !== 'boolean') {
+            res.status(400).json({
+                success: false,
+                message: "School name, member name, and hasEndedQuiz status are required",
+            });
+            return;
+        }
+
+        const schoolTeam = await SchoolTeam.findOne({ schoolName });
+        if (!schoolTeam) {
+            res.status(404).json({
+                success: false,
+                message: "School team not found",
+            });
+            return;
+        }
+
+        const member = schoolTeam.members.find((m) => m.name === memberName);
+        if (!member) {
+            res.status(404).json({
+                success: false,
+                message: "Member not found in the team",
+            });
+            return;
+        }
+
+        member.hasEndedQuiz = hasEndedQuiz;
+
+        await schoolTeam.save();
+
+        res.status(200).json({
+            success: true,
+            message: "Member state updated successfully",
+            data: { memberName: member.name, hasEndedQuiz: member.hasEndedQuiz }
+        });
+    } catch (error) {
+        console.error("Error updating member state:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error instanceof Error ? error.message : "Unknown error",
+        });
+    }
+};
+
+export const getMemberOfSchoolTeam = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { schoolName, memberName } = req.body;
+
+        if (!schoolName || !memberName) {
+            res.status(400).json({
+                success: false,
+                message: "School name and member name are required",
+            });
+            return;
+        }
+
+        const schoolTeam = await SchoolTeam.findOne({ schoolName });
+        if (!schoolTeam) {
+            res.status(404).json({
+                success: false,
+                message: "School team not found",
+            });
+            return;
+        }
+
+        const member = schoolTeam.members.find((m) => m.name === memberName);
+        if (!member) {
+            res.status(404).json({
+                success: false,
+                message: "Member not found in the team",
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: member,
+        });
+    } catch (error) {
+        console.error("Error fetching member:", error);
+        res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error instanceof Error ? error.message : "Unknown error",
+        });
+    }
+}

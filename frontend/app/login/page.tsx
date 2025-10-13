@@ -1,13 +1,15 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Lock, LogIn, Eye, EyeOff, Shield } from 'lucide-react';
+import { User, Lock, LogIn, Eye, EyeOff, Shield, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import axios from 'axios';
 import { SchoolsApiResponse, SchoolTeam } from '@/types/schools';
+
 interface LoginFormResponse {
   success: boolean;
   data: {
+    teamId: string;
     memberName: string;
     schoolName: string;
     teamName: string;
@@ -18,6 +20,7 @@ interface LoginFormResponse {
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
+    studentId: '',
     memberName: '',
     password: '',
     schoolName: ''
@@ -25,14 +28,34 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Removed session state
   const router = useRouter();
   const { user, setUser } = useUser();
   const [schools, setSchools] = useState<string[]>([]);
 
   // Add this useEffect to your login page to debug
+
+
   useEffect(() => {
-    console.log('User from context changed:', user);
-  }, [user]);
+    const fetchSchools = async () => {
+      try {
+
+        const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
+
+        console.log('Fetched schools:', response.data);
+
+        setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
+
+
+      } catch (error) {
+
+        console.error('Error fetching schools:', error);
+
+      }
+    }
+
+    fetchSchools();
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -55,14 +78,16 @@ export default function LoginPage() {
       return;
     }
 
+
     // Simulate authentication (replace with actual authentication logic)
     try {
       // You can add your authentication logic here
       // For now, we'll simulate a successful login after 1 second
-      const url = "http://localhost:3001/api/auth/login";
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
       console.log(formData);
 
       
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -77,7 +102,6 @@ export default function LoginPage() {
 
       const responseData: LoginFormResponse = await response.json();
 
-      // Store user data in localStorage (or use proper state management)
       localStorage.setItem('studentData', JSON.stringify({
         memberName: formData.memberName,
         schoolName: formData.schoolName,
@@ -89,16 +113,20 @@ export default function LoginPage() {
       //   await document.documentElement.requestFullscreen();
       // }
       if (response.ok && responseData.success) {
-        console.log(responseData);
         localStorage.setItem('authToken', responseData.data.authToken);
+
         setUser({
+          teamId: responseData.data.teamId,
           memberName: responseData.data.memberName,
           schoolName: responseData.data.schoolName,
           teamName: responseData.data.teamName,
           authToken: responseData.data.authToken,
         });
         console.log(user);
+
         router.push('/quiz');
+      } else {
+        setError('Login failed. Please check your credentials.');
       }
     } catch (error) {
       setError('Login failed. Please check your credentials.');
@@ -172,16 +200,15 @@ export default function LoginPage() {
           style={{ animationDuration: '4s' }} />
       </div>
 
-      {/* Login Form */}
       <div className="relative z-10 w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-2xl p-8 backdrop-blur-sm">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-[#df7500] to-[#651321] rounded-full mb-4">
-              <LogIn className="w-8 h-8 text-white" />
+          {/* Login Icon and Heading */}
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-14 h-14 rounded-full bg-gradient-to-r from-[#df7500] to-[#651321] flex items-center justify-center mb-3 shadow-lg">
+              <LogIn className="w-7 h-7 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-[#651321] mb-2">Student Login</h1>
-            <p className="text-gray-600">Enter your credentials to start the quiz</p>
+            <h2 className="text-2xl font-bold text-[#651321] mb-1">Student Login</h2>
+            <p className="text-sm text-[#651321] opacity-80">Enter your credentials to start the quiz</p>
           </div>
 
           {/* Error Message */}
@@ -303,14 +330,14 @@ export default function LoginPage() {
             >
               Back to Home
             </button>
-            <div className="text-gray-400">•</div>
+            {/* <div className="text-gray-400">•</div>
             <button
               onClick={() => router.push('/admin/login')}
               className="text-indigo-600 hover:text-indigo-800 text-sm font-medium transition-colors flex items-center justify-center space-x-1"
             >
               <Shield className="w-4 h-4" />
               <span>Admin Login</span>
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

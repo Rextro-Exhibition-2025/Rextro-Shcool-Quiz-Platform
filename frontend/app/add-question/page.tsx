@@ -1,10 +1,14 @@
 "use client";
+
+import React, { useState, useEffect } from 'react';
 import { createAdminApi } from '@/interceptors/admins';
-import { LogOut, Save, Shield, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, LogOut, Shield, RotateCcw } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
 import { transformQuestion } from './questionTransformer';
+
+// Error modal state for alerts
+type ErrorModalState = { open: boolean; message: string };
 
 interface Answer {
   id: string;
@@ -17,11 +21,13 @@ export interface Question {
   image: string;
   answers: Answer[];
   correctAnswer: string;
-  quizSet: number| null;
+  quizSet: number | null;
 }
 
 export default function AddQuestion(): React.ReactElement | null {
-
+  const [errorModal, setErrorModal] = useState<ErrorModalState>({ open: false, message: '' });
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
   
@@ -41,14 +47,13 @@ export default function AddQuestion(): React.ReactElement | null {
       { id: 'c', text: '', image: '' },
       { id: 'd', text: '', image: '' }
     ],
-
     correctAnswer: '',
     quizSet: null,
   });
+
   const handleQuizSetChange = (value: string): void => {
     setQuestion(prev => ({ ...prev, quizSet: parseInt(value) }));
   };
-
 
   const handleQuestionChange = (value: string): void => {
     setQuestion(prev => ({ ...prev, question: value }));
@@ -72,9 +77,8 @@ export default function AddQuestion(): React.ReactElement | null {
   };
 
   const handleSave = async (): Promise<void> => {
-  
     if (!question.question.trim()) {
-      alert('Please enter a question');
+      setErrorModal({ open: true, message: 'Please enter a question.' });
       return;
     }
 
@@ -83,48 +87,55 @@ export default function AddQuestion(): React.ReactElement | null {
     );
 
     if (!hasValidAnswers) {
-      alert('Please provide at least one answer option');
+      setErrorModal({ open: true, message: 'Please provide at least one answer option.' });
       return;
     }
 
     if (!question.correctAnswer) {
-      alert('Please select the correct answer');
+      setErrorModal({ open: true, message: 'Please select the correct answer.' });
       return;
     }
 
+    // Validate that the selected correct answer is not empty
+    const correct = question.answers.find(a => a.id === question.correctAnswer);
+    if (!correct || (!correct.text.trim() && !correct.image.trim())) {
+      setErrorModal({ open: true, message: 'The selected correct answer must have text or image.' });
+      return;
+    }
 
     if (!question.quizSet) {
-      alert('Please select a quiz set');
+      setErrorModal({ open: true, message: 'Please select a quiz set.' });
       return;
     }
 
     // Here you would typically send the data to your backend
     console.log('Saving question:', question);
 
-
-
-    const api = await createAdminApi();
-    const response = await api.post('/questions', transformQuestion(question));
-
-console.log('Response:', response);
-
-
-    alert('Question saved successfully!');
-    
-    // Reset form
-    setQuestion({
-      question: '',
-      image: '',
-      answers: [
-        { id: 'a', text: '', image: '' },
-        { id: 'b', text: '', image: '' },
-        { id: 'c', text: '', image: '' },
-        { id: 'd', text: '', image: '' }
-      ],
-      correctAnswer: '',
-      quizSet: null,
-    });
+    try {
+      const api = await createAdminApi();
+      const response = await api.post('/questions', transformQuestion(question));
+      console.log('Response:', response);
+      
+      // Reset form
+      setQuestion({
+        question: '',
+        image: '',
+        answers: [
+          { id: 'a', text: '', image: '' },
+          { id: 'b', text: '', image: '' },
+          { id: 'c', text: '', image: '' },
+          { id: 'd', text: '', image: '' }
+        ],
+        correctAnswer: '',
+        quizSet: null,
+      });
+      
+      setShowSaveConfirm(true);
+    } catch (error) {
+      setErrorModal({ open: true, message: 'Failed to save question. Please try again.' });
+    }
   };
+
 
   const clearForm = (): void => {
     setQuestion({
@@ -139,6 +150,7 @@ console.log('Response:', response);
       correctAnswer: '',
       quizSet: null,
     });
+    setShowClearConfirm(false);
   };
 
   const handleLogout = async () => {
@@ -169,6 +181,29 @@ console.log('Response:', response);
         backgroundPosition: 'center'
       }}
     >
+      {/* Error Modal for Save Button Alerts */}
+      {errorModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border-2 border-[#df7500]">
+            <div className="mb-4 text-center">
+              <div className="w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center bg-gradient-to-r from-[#df7500] to-[#651321] shadow-lg">
+                <span className="text-white text-2xl font-bold">!</span>
+              </div>
+              <h2 className="text-xl font-bold bg-gradient-to-r from-[#df7500] to-[#651321] bg-clip-text text-transparent mb-1">Alert</h2>
+              <p className="text-[#651321]">{errorModal.message}</p>
+            </div>
+            <div className="flex justify-center mt-6">
+              <button
+                onClick={() => setErrorModal({ open: false, message: '' })}
+                className="px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-200"
+                style={{ minWidth: 120 }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div style={{
         position: 'absolute',
         top: 0,
@@ -180,28 +215,6 @@ console.log('Response:', response);
       }} />
       
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
-        {/* Admin Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-[#df7500] to-[#651321] rounded-full flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Logged in as</p>
-                <p className="font-semibold text-gray-800">{session?.user?.email}</p>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <LogOut size={16} />
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
-
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -210,16 +223,15 @@ console.log('Response:', response);
             </div>
             <div className="flex space-x-3">
               <button
-                onClick={clearForm}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+                onClick={() => setShowClearConfirm(true)}
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
               >
-                <Trash2 size={16} />
+                <RotateCcw size={16} />
                 <span>Clear</span>
               </button>
               <button
                 onClick={handleSave}
-                className="flex items-center space-x-2 px-6 py-2 rounded-lg text-white transition-colors"
-                style={{ backgroundColor: '#651321' }}
+                className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
               >
                 <Save size={16} />
                 <span>Save Question</span>
@@ -227,6 +239,60 @@ console.log('Response:', response);
             </div>
           </div>
         </div>
+
+        {/* Save confirmation popup */}
+        {showSaveConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border-2 border-[#df7500]">
+              <div className="mb-4 text-center">
+                <div className="w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center bg-gradient-to-r from-[#df7500] to-[#651321] shadow-lg">
+                  <Save size={28} className="text-white" />
+                </div>
+                <h2 className="text-xl font-bold bg-gradient-to-r from-[#df7500] to-[#651321] bg-clip-text text-transparent mb-1">Question Saved!</h2>
+                <p className="text-[#651321]">Your question has been saved successfully.</p>
+              </div>
+              <div className="flex justify-center mt-6">
+                <button
+                  onClick={() => setShowSaveConfirm(false)}
+                  className="px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-200"
+                  style={{ minWidth: 120 }}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {/* Clear confirmation popup */}
+        {showClearConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full border-2 border-[#df7500]">
+              <div className="mb-4 text-center">
+                <div className="w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center bg-gradient-to-r from-[#df7500] to-[#651321] shadow-lg">
+                  <RotateCcw size={28} className="text-white" />
+                </div>
+                <h2 className="text-xl font-bold bg-gradient-to-r from-[#df7500] to-[#651321] bg-clip-text text-transparent mb-1">Clear All Fields?</h2>
+                <p className="text-[#651321]">This will remove all question and answer data. Are you sure?</p>
+              </div>
+              <div className="flex justify-center gap-4 mt-6">
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-gray-200 to-gray-400 text-[#651321] shadow hover:scale-105 hover:shadow transition-all duration-200 border border-gray-300"
+                  style={{ minWidth: 100 }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={clearForm}
+                  className="px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-200"
+                  style={{ minWidth: 100 }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Question Form */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
@@ -276,11 +342,12 @@ console.log('Response:', response);
             />
             {question.image && (
               <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-2">Preview:</p>
+                <p className="text-sm text-gray-600 mb-2">Preview (Recommended: 800×600px, &lt;200KB):</p>
                 <img
                   src={question.image}
                   alt="Question preview"
-                  className="max-w-md w-full h-auto rounded-lg shadow-md border border-gray-200"
+                  className="w-[400px] h-[300px] object-contain rounded-lg shadow-md border border-gray-200"
+                  style={{ maxWidth: '100%', maxHeight: '400px' }}
                   onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                     const target = e.target as HTMLImageElement;
                     const nextSibling = target.nextSibling as HTMLElement;
@@ -346,7 +413,8 @@ console.log('Response:', response);
                       <img
                         src={answer.image}
                         alt={`Option ${answer.id} preview`}
-                        className="w-24 h-20 object-cover rounded-lg shadow-sm border border-gray-200"
+                        className="w-[100px] h-[100px] object-contain rounded-lg shadow-sm border border-gray-200"
+                        style={{ maxWidth: '100%', maxHeight: '120px' }}
                         onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
                           const target = e.target as HTMLImageElement;
                           const nextSibling = target.nextSibling as HTMLElement;
@@ -372,6 +440,9 @@ console.log('Response:', response);
               <li>• Add answer options - you can use text, images, or both</li>
               <li>• Select which option is the correct answer</li>
               <li>• Question and answer images should be valid URLs</li>
+              <li>• <b>Recommended image sizes:</b></li>
+              <li className="ml-4">- <b>Question image:</b> 800×600 pixels (max 200KB, JPG/PNG)</li>
+              <li className="ml-4">- <b>Option image:</b> 200×200 pixels (max 100KB, JPG/PNG)</li>
               <li>• At least one answer option must be provided</li>
             </ul>
           </div>

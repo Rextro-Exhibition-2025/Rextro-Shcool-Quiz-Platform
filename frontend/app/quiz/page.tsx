@@ -2,12 +2,23 @@
 import { useUser } from '@/contexts/UserContext';
 import { createStudentApi } from '@/interceptors/student';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+
+
 import { transformQuizApiResponse } from './questionTransformer';
 import { QuizApiResponse } from '@/types/quiz';
 import { useQuiz } from '@/contexts/QuizContext';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import {  Clock } from 'lucide-react';
 
+
+
+import { reportViolation } from '@/lib/violationService';
+
+// Utils and types
+
+
+// Type definitions
 interface Answer {
   id: string;
   text: string | null;
@@ -24,6 +35,8 @@ export interface QuizQuestion {
 interface StudentData {
   memberName: string;
   schoolName: string;
+  sessionId?: string;
+  sessionTime?: string;
 }
 
 interface SelectedAnswers {
@@ -40,159 +53,119 @@ interface CompletionData {
   answeredQuestions: number;
 }
 
-export default function Quiz(): React.JSX.Element | null {
+// Constants
+const QUIZ_DURATION = 45 * 60; // 45 minutes in seconds
 
-  const {setQuizId , updateSelectedAnswers , submitQuiz , score} = useQuiz();
+// Simple device fingerprint generation
+const getDeviceFingerprint = (): string => {
+  if (typeof window === 'undefined') return 'unknown';
+  
+  const { navigator, screen } = window;
+  const fingerprint = [
+    navigator.userAgent,
+    navigator.language,
+    navigator.platform,
+    navigator.hardwareConcurrency,
+    screen.width,
+    screen.height,
+    screen.colorDepth
+  ].join('::');
+  
+  // Simple hash generation
+  let hash = 0;
+  for (let i = 0; i < fingerprint.length; i++) {
+    hash = ((hash << 5) - hash) + fingerprint.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+  
+  return 'fp_' + Math.abs(hash);
+};
+
+// Helper to format time as mm:ss
+const formatTime = (seconds: number): string => {
+  const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+  const s = (seconds % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
+};
+
+export default function Quiz(): React.JSX.Element | null {
+  // Constants
+  const router = useRouter();
+  const user = useUser();
+  const { setQuizId, updateSelectedAnswers, submitQuiz, score } = useQuiz();
+  
+  // Timer management
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(QUIZ_DURATION);
+  
+  // Quiz state
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
-  const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>({});
+  const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
+  
+  // State initialization with localStorage
+  const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('quizSelectedAnswers');
+        return saved ? JSON.parse(saved) : {};
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  });
+  
+  // UI state
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [showCompletionCard, setShowCompletionCard] = useState<boolean>(false);
   const [completionData, setCompletionData] = useState<CompletionData | null>(null);
-  const router = useRouter();
-  const user = useUser();
-  const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
- 
-useEffect(() => {
-  
 
-  const fetchQuiz = async (id: number) => {
-    try {
+  // Inactivity tracking
+  const [lastActivityTime, setLastActivityTime] = useState<number>(Date.now());
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number>(Date.now());
 
-      const api = await createStudentApi({ token: user.user?.authToken || '' });
-      const response : any = await api.get(`/quizzes/${id}`);
-      
-      setQuizData(transformQuizApiResponse(response.data.quiz));
-      
-      // You can set the fetched quiz data to state here if needed
+  // Helper functions
+  const logSuspicious = (event: string, details: string) => {
+    const logData = {
+      user: (typeof window !== 'undefined' && localStorage.getItem('studentId')) || 'unknown',
+      event,
+      time: new Date().toISOString(),
+      details,
+      fingerprint: typeof window !== 'undefined' ? getDeviceFingerprint() : 'unknown',
+    };
+    
+    fetch('/api/logs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(logData)
+    }).catch(error => {
+      console.error('Failed to log suspicious activity:', error);
+    });
+  };
 
-    } catch (error) {
-      console.error('Fetch quiz error:', error);
+  // Update last activity time
+  const updateActivity = () => {
+    setLastActivityTime(Date.now());
+  };
+
+  // Check for inactivity and log if detected
+  const checkInactivity = () => {
+    const now = Date.now();
+    const inactiveTime = Math.floor((now - lastActivityTime) / 1000); // Convert to seconds
+    
+    // Log if user has been inactive for more than 30 seconds
+    if (inactiveTime >= 30) {
+      logSuspicious('Extended inactivity', `User inactive for ${inactiveTime}s on question ${currentQuestion + 1}`);
     }
   };
-  setQuizId(1);
-  fetchQuiz(1);
-  
-}, []);
-
-  useEffect(() => {
-    console.log('User context data:', user);
-  }, [user]);
-
-  // 1. Authentication Check
-  useEffect(() => {
-    const authToken = localStorage.getItem('authToken');
-    if (!authToken) {
-      router.push('/login');
-      return;
-    }
-    setIsAuthenticated(true);
-    setLoading(false);
-  }, [router]);
-
-  // Check authentication status
-  useEffect(() => {
-    const studentData = localStorage.getItem('studentData');
-    if (!studentData) {
-      router.push('/login');
-      return;
-    }
-
-    try {
-      const parsedData: StudentData = JSON.parse(studentData);
-      if (parsedData.memberName && parsedData.schoolName) {
-        setIsAuthenticated(true);
-      } else {
-        router.push('/login');
-        return;
-      }
-    } catch (error) {
-      router.push('/login');
-      return;
-    }
-
-    setLoading(false);
-  }, [router]);
-
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    // Request fullscreen - handle async operation inside useEffect
-    const requestFullscreen = async () => {
-      try {
-        if (document.documentElement.requestFullscreen) {
-          await document.documentElement.requestFullscreen();
-        }
-      } catch (error) {
-        console.error('Error entering fullscreen:', error);
-      }
-    };
-
-    requestFullscreen();
-
-    // 3. Disable Copy/Paste
-    const handleCopyPaste = (e: Event): void => {
-      e.preventDefault();
-      alert("Copy/Paste is disabled during the quiz.");
-    };
-    document.addEventListener("copy", handleCopyPaste);
-    document.addEventListener("paste", handleCopyPaste);
-
-    // 4. Monitor Tab Switching
-    const handleVisibilityChange = (): void => {
-      if (document.visibilityState === "hidden") {
-        alert("Tab switching detected! Please stay on the quiz page.");
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    // Cleanup
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      document.removeEventListener("copy", handleCopyPaste);
-      document.removeEventListener("paste", handleCopyPaste);
-    };
-  }, [isAuthenticated]);
-
-  // Separate useEffect for fullscreen detection that depends on currentQuestion
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    // 7. Full-Screen Mode Detection
-    const handleFullScreenChange = (): void => {
-      // console.log('Fullscreen change detected:', {
-      //   isFullscreen: !!document.fullscreenElement,
-      //   currentQuestion: currentQuestion,
-      //   totalQuestions: quizData.length - 1,
-      //   isSubmitting: isSubmitting,
-      //   shouldShowPrompt: !document.fullscreenElement && !isSubmitting
-      // });
-
-      // Show fullscreen prompt on ALL questions (including the last one)
-      // BUT NOT during quiz submission
-      if (!document.fullscreenElement && !isSubmitting) {
-        setShowFullscreenPrompt(true);
-      }
-    };
-    document.addEventListener("fullscreenchange", handleFullScreenChange);
-
-    // Cleanup
-    return () => {
-      document.removeEventListener("fullscreenchange", handleFullScreenChange);
-    };
-  }, [isAuthenticated, currentQuestion, isSubmitting]);
-
-  React.useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
-
-  const totalQuestions = quizData.length;
-  const answeredCount = Object.keys(selectedAnswers).length;
-  const progress = (answeredCount / totalQuestions) * 100;
 
   // Calculate quiz score
   const calculateScore = (): number => {
+    const totalQuestions = quizData.length;
     let correctAnswers = 0;
     const correctAnswerKey: { [key: number]: string } = {
       0: 'c', // Paris
@@ -217,13 +190,53 @@ useEffect(() => {
     return Math.round((correctAnswers / totalQuestions) * 100);
   };
 
-  // Handle quiz submission
-  const handleSubmitQuiz = async (): Promise<void> => {
-     try {
-      // Set submitting flag to prevent fullscreen prompt during submission
-      setIsSubmitting(true);
+  // Update user quiz state in backend
+  const updateQuizState = async (studentData: StudentData): Promise<void> => {
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/update-state`;
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('authToken') || user.user?.authToken || ''}`
+      },
+      body: JSON.stringify({
+        schoolName: studentData.schoolName,
+        memberName: studentData.memberName,
+        hasEndedQuiz: true
+      })
+    });
 
-      // Check if user is still authenticated
+    if (!response.ok) {
+      throw new Error('Failed to update quiz state');
+    }
+
+    const responseData = await response.json();
+    if (!responseData.success) {
+      throw new Error(responseData.message || 'Failed to update quiz state');
+    }
+
+    // Update user context and localStorage
+    if (user.user) {
+      user.setUser({
+        ...user.user,
+        hasEndedQuiz: true
+      });
+    }
+
+    const updatedStudentData = {
+      ...studentData,
+      hasEndedQuiz: true
+    };
+    localStorage.setItem('studentData', JSON.stringify(updatedStudentData));
+  };
+
+  // Handle quiz submission
+  const handleSubmitQuiz = useCallback(async (): Promise<void> => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setIsSubmitting(true);
+
+    try {
+      // Check authentication
       const studentData = localStorage.getItem('studentData');
       if (!studentData) {
         alert('Session expired. Please login again.');
@@ -232,9 +245,8 @@ useEffect(() => {
       }
 
       const parsedStudentData: StudentData = JSON.parse(studentData);
-
-      // Calculate score
       const score = calculateScore();
+      const answeredCount = Object.keys(selectedAnswers).length;
 
       // Prepare submission data
       const submissionData: CompletionData = {
@@ -247,38 +259,260 @@ useEffect(() => {
         answeredQuestions: answeredCount
       };
 
-      // Store results (you can also send to backend here)
+      // Update user state in backend
+      await updateQuizState(parsedStudentData);
+
+      // Store results locally
       localStorage.setItem('quizResult', JSON.stringify(submissionData));
 
-      // Exit fullscreen first
+      // Exit fullscreen
       if (document.fullscreenElement) {
         await document.exitFullscreen();
       }
 
-      // Set completion data and show completion card
+      // Show completion
       setCompletionData(submissionData);
       setShowCompletionCard(true);
 
-      // Clear authentication after successful submission
+      // Clear authentication
       localStorage.removeItem('studentData');
 
-  
-      
-
-  
-
+      // Submit to quiz context
       await submitQuiz();
-      
 
     } catch (error) {
       alert('Error submitting quiz. Please try again.');
       console.error('Submit quiz error:', error);
-      // Reset submitting flag on error
       setIsSubmitting(false);
     }
-  };
+  }, [selectedAnswers, quizData.length, router, user, submitQuiz]);
 
-  // Handle navigation to leaderboard from completion card
+  // Fetch quiz data
+  useEffect(() => {
+    const fetchQuiz = async (id: number) => {
+      try {
+        const api = await createStudentApi({ token: user.user?.authToken || '' });
+        const response: any = await api.get(`/quizzes/${id}`);
+        setQuizData(transformQuizApiResponse(response.data.quiz));
+      } catch (error) {
+        console.error('Fetch quiz error:', error);
+      }
+    };
+
+    setQuizId(1);
+    fetchQuiz(1);
+  }, [setQuizId, user.user?.authToken]);
+
+  // Debug user context
+  useEffect(() => {
+    console.log('User context data:', user);
+  }, [user]);
+
+  // Inactivity tracking setup
+  useEffect(() => {
+    if (!isAuthenticated || showCompletionCard) return;
+
+    // Start inactivity monitoring
+    if (inactivityTimerRef.current) clearInterval(inactivityTimerRef.current);
+    
+    inactivityTimerRef.current = setInterval(() => {
+      checkInactivity();
+    }, 3000); // Check every 3 seconds
+
+    // Activity tracking event listeners
+    const handleActivity = () => {
+      updateActivity();
+    };
+
+    const events = ['mousedown', 'mousemove', 'keypress', 'keydown', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => {
+      document.addEventListener(event, handleActivity, true);
+    });
+
+    return () => {
+      if (inactivityTimerRef.current) clearInterval(inactivityTimerRef.current);
+      events.forEach(event => {
+        document.removeEventListener(event, handleActivity, true);
+      });
+    };
+  }, [isAuthenticated, showCompletionCard, currentQuestion, lastActivityTime]);
+
+  // Authentication check
+  useEffect(() => {
+    const checkAuthentication = () => {
+      const authToken = localStorage.getItem('authToken');
+      const studentData = localStorage.getItem('studentData');
+      
+      if (!authToken || !studentData) {
+        router.push('/login');
+        return;
+      }
+
+      try {
+        const parsedData: StudentData = JSON.parse(studentData);
+        if (parsedData.memberName && parsedData.schoolName) {
+          setIsAuthenticated(true);
+        } else {
+          router.push('/login');
+          return;
+        }
+      } catch (error) {
+        router.push('/login');
+        return;
+      }
+      
+      setLoading(false);
+    };
+
+    checkAuthentication();
+  }, [router]);
+
+  // Timer countdown effect
+  useEffect(() => {
+    if (!isAuthenticated || showCompletionCard) return;
+    
+    if (timerRef.current) clearInterval(timerRef.current);
+    
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          handleSubmitQuiz();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isAuthenticated, showCompletionCard, handleSubmitQuiz]);
+
+  // Security measures and fullscreen management
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    // Request fullscreen - handle async operation inside useEffect
+    const requestFullscreen = async () => {
+      try {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (error) {
+        console.error('Error entering fullscreen:', error);
+      }
+    };
+
+    requestFullscreen();
+
+    // Copy/Paste detection and violation reporting
+    const handleCopyPaste = async (e: Event): Promise<void> => {
+      e.preventDefault();
+
+      // Report copy/paste violation
+      if (user.user?.teamId && user.user?.memberName) {
+        await reportViolation({
+          teamId: user.user.teamId,
+          memberName: user.user.memberName,
+          violationType: 'copy & paste'
+        });
+      }
+
+      alert("Copy/Paste is disabled during the quiz.");
+      logSuspicious(e.type === 'copy' ? 'Copy attempt' : 'Paste attempt', 
+        `User tried to ${e.type} content on question ${currentQuestion + 1}`);
+    };
+
+    // Tab switching detection
+    const handleVisibilityChange = async (): Promise<void> => {
+      if (document.visibilityState === "hidden") {
+        if (user.user?.teamId && user.user?.memberName) {
+          await reportViolation({
+            teamId: user.user.teamId,
+            memberName: user.user.memberName,
+            violationType: 'escaping full screen'
+          });
+        }
+        alert("Tab switching detected! Please stay on the quiz page.");
+      }
+    };
+
+    // Fullscreen detection
+    const handleFullScreenChange = (): void => {
+      const isFullscreen = !!document.fullscreenElement;
+      if (!isFullscreen && !isSubmitting) {
+        setShowFullscreenPrompt(true);
+        logSuspicious('Fullscreen exit', `User exited fullscreen on question ${currentQuestion + 1}`);
+      }
+    };
+
+    // Window blur detection
+    const handleBlur = (): void => {
+      if (!isSubmitting) {
+        logSuspicious('Tab switch or window blur', `User left quiz tab on question ${currentQuestion + 1}`);
+      }
+    };
+
+    // Clipboard operations detection
+    const handleClipboardOp = (e: ClipboardEvent) => {
+      logSuspicious(`${e.type} attempt`, `User tried to ${e.type} content on question ${currentQuestion + 1}`);
+    };
+
+    // Page reload/navigation detection
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      logSuspicious('Page reload or navigation', `User tried to reload or leave the quiz page on question ${currentQuestion + 1}`);
+    };
+
+    // Add event listeners
+    document.addEventListener("copy", handleCopyPaste);
+    document.addEventListener("paste", handleCopyPaste);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener("fullscreenchange", handleFullScreenChange);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('copy', handleClipboardOp);
+    window.addEventListener('cut', handleClipboardOp);
+    window.addEventListener('paste', handleClipboardOp);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    // Cleanup
+    return () => {
+      document.removeEventListener("copy", handleCopyPaste);
+      document.removeEventListener("paste", handleCopyPaste);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener("fullscreenchange", handleFullScreenChange);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('copy', handleClipboardOp);
+      window.removeEventListener('cut', handleClipboardOp);
+      window.removeEventListener('paste', handleClipboardOp);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isAuthenticated, currentQuestion, isSubmitting, user]);
+
+  // Disable right-click and text selection
+  useEffect(() => {
+    const disableContextMenu = (e: MouseEvent) => e.preventDefault();
+    const disableTextSelection = (e: Event) => e.preventDefault();
+
+    document.addEventListener('contextmenu', disableContextMenu);
+    document.addEventListener('selectstart', disableTextSelection);
+
+    return () => {
+      document.removeEventListener('contextmenu', disableContextMenu);
+      document.removeEventListener('selectstart', disableTextSelection);
+    };
+  }, []);
+
+  // Scroll to top on component mount
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+  // Computed values
+  const totalQuestions = quizData.length;
+  const answeredCount = Object.keys(selectedAnswers).length;
+  const progress = (answeredCount / totalQuestions) * 100;
+
+  // Event handlers
   const handleGoToLeaderboard = (): void => {
     setShowCompletionCard(false);
     router.push('/leaderboard');
@@ -309,30 +543,32 @@ useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleReEnterFullscreen = (): void => {
+ 
+
+  const handleReEnterFullscreen = async (): Promise<void> => {
     setShowFullscreenPrompt(false);
-    const elem = document.documentElement;
-
-    const requestFullscreen = (): Promise<void> => {
+    
+    try {
+      const elem = document.documentElement;
+      
       if (elem.requestFullscreen) {
-        return elem.requestFullscreen();
-      } else if ((elem as any).mozRequestFullScreen) { /* Firefox */
-        return (elem as any).mozRequestFullScreen();
-      } else if ((elem as any).webkitRequestFullscreen) { /* Chrome, Safari & Opera */
-        return (elem as any).webkitRequestFullscreen();
-      } else if ((elem as any).msRequestFullscreen) { /* IE/Edge */
-        return (elem as any).msRequestFullscreen();
+        await elem.requestFullscreen();
+      } else if ((elem as any).mozRequestFullScreen) {
+        await (elem as any).mozRequestFullScreen();
+      } else if ((elem as any).webkitRequestFullscreen) {
+        await (elem as any).webkitRequestFullscreen();
+      } else if ((elem as any).msRequestFullscreen) {
+        await (elem as any).msRequestFullscreen();
+      } else {
+        throw new Error('Fullscreen not supported');
       }
-      return Promise.reject(new Error('Fullscreen not supported'));
-    };
-
-    requestFullscreen().catch((error: Error) => {
+    } catch (error) {
       console.error('Error entering fullscreen:', error);
       // Show the prompt again if fullscreen fails
       setTimeout(() => {
         setShowFullscreenPrompt(true);
       }, 1000);
-    });
+    }
   };
 
   const currentQuestionData = quizData[currentQuestion];
@@ -351,6 +587,9 @@ useEffect(() => {
   if (!isAuthenticated) {
     return null;
   }
+
+  // Timer warning color
+  const timerColor = timeLeft <= 60 ? '#df7500' : '#651321';
 
   return (
     <div
@@ -371,45 +610,56 @@ useEffect(() => {
         background: 'rgba(255,255,255,0.6)',
         zIndex: 1
       }} />
+      
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
-
         {/* Header with Progress */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-2xl font-bold text-gray-800">Quiz Challenge</h1>
-            <div className="text-sm font-medium text-gray-600">
-              Question {currentQuestion + 1} of {totalQuestions}
+            <div className="flex items-center space-x-4">
+              <div className="text-m font-medium text-gray-800">
+                Question {currentQuestion + 1} of {totalQuestions}    
+              </div>
+              <div className="flex items-center space-x-2">
+                <Clock size={20} style={{ color: timerColor }} />
+                <span className="text-lg font-bold" style={{ color: timerColor }}>
+                  {formatTime(timeLeft)}
+                </span>
+              </div>              
             </div>
           </div>
 
           {/* Progress Bar */}
-          <div className="w-full rounded-full h-3 mb-4" style={{ background: 'rgba(223,117,0,0.1)' }}>
+          <div className="w-full rounded-full h-3 mb-4 relative" style={{ background: 'rgba(223,117,0,0.1)' }}>
             <div
-              className="h-3 rounded-full transition-all duration-500 ease-out"
+              className="h-3 rounded-full transition-all duration-500 ease-out relative"
               style={{
                 width: `${progress}%`,
                 backgroundColor: '#651321'
               }}
-            ></div>
-          </div>
-
-          <div className="text-center text-sm font-semibold text-gray-700">
-            {answeredCount} of {totalQuestions} answered ({Math.round(progress)}%)
+            >
+              <span
+                className="absolute right-5 top-1/2 transform -translate-y-1/2 text-xs text-white"
+                style={{ transform: 'translateX(50%)' }}
+              >
+                {Math.round(progress)}%
+              </span>
+            </div>
           </div>
 
           {/* Question Card */}
           <div className="my-8">
-
             <h2 className="text-xl md:text-2xl font-semibold text-gray-800 mb-6">
               {currentQuestion + 1}. {currentQuestionData?.question ?? 'No question available'}
             </h2>
 
             {currentQuestionData?.image && (
-              <div className="mb-6">
+              <div className="mb-6 flex justify-center">
                 <img
                   src={currentQuestionData.image}
-                  alt={currentQuestionData?.question ?? 'No question available'}
-                  className="w-full max-w-md mx-auto rounded-xl shadow-md"
+                  alt="Question illustration"
+                  className="w-full max-w-[480px] h-64 object-contain rounded-xl shadow-md bg-white"
+                  style={{ aspectRatio: '3/2' }}
                 />
               </div>
             )}
@@ -427,7 +677,7 @@ useEffect(() => {
                   }`}
                 style={selectedAnswer === answer.id ? {
                   borderColor: '#DF7500',
-                  backgroundColor: '#DF750008'
+                  backgroundColor: '#DF7500008'
                 } : {}}
               >
                 <div className="flex items-center space-x-4">
@@ -451,7 +701,8 @@ useEffect(() => {
                       <img
                         src={answer.image}
                         alt={`Option ${answer.id}`}
-                        className="w-32 h-20 object-cover rounded-lg"
+                        className="w-40 h-28 object-contain rounded-lg bg-white"
+                        style={{ aspectRatio: '10/7' }}
                       />
                     )}
 
@@ -466,7 +717,8 @@ useEffect(() => {
                         <img
                           src={answer.image}
                           alt={`Option ${answer.id}`}
-                          className="w-16 h-12 object-cover rounded-lg"
+                          className="w-24 h-16 object-contain rounded-lg bg-white"
+                          style={{ aspectRatio: '3/2' }}
                         />
                         <span className="text-gray-800 font-medium">
                           {answer.text}
@@ -482,66 +734,18 @@ useEffect(() => {
 
         {/* Navigation Buttons */}
         <div className="flex justify-between items-center gap-5">
-          <div>
-            {currentQuestion !== 0 && (
-              <button
-                onClick={handlePrevious}
-                className="flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 bg-white text-gray-700 hover:bg-gray-50 shadow-lg hover:shadow-xl"
-              >
-                <ChevronLeft size={20} />
-                <span>Previous</span>
-              </button>
-            )}
-          </div>
           <div className="ml-auto">
             {currentQuestion !== totalQuestions - 1 && (
               <button
                 onClick={handleNext}
-                className="flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 text-white hover:opacity-90 shadow-lg hover:shadow-xl"
-                style={{ backgroundColor: '#651321' }}
+                className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all duration-200 text-white hover:opacity-90 shadow-lg hover:shadow-xl ${selectedAnswers[currentQuestion] ? '' : 'bg-gray-400 cursor-not-allowed'}`}
+                style={{ backgroundColor: selectedAnswers[currentQuestion] ? '#651321' : '#785158' }}
+                disabled={!selectedAnswers[currentQuestion]}
               >
                 <span>Next</span>
                 <ChevronRight size={20} />
               </button>
             )}
-          </div>
-  </div>
-        {/* Question Navigation */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 my-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Navigation</h3>
-          <div className="grid grid-cols-5 sm:grid-cols-10 md:grid-cols-15 gap-2">
-            {Array.from({ length: totalQuestions }, (_, index) => (
-              <button
-                key={index}
-                onClick={() => handleQuestionNavigation(index)}
-                className={`w-10 h-10 rounded-lg font-medium text-sm transition-all duration-200 ${index === currentQuestion
-                  ? 'text-white shadow-lg scale-105'
-                  : selectedAnswers[index]
-                    ? 'text-white shadow-lg scale-105'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                style={
-                  index === currentQuestion
-                    ? { backgroundColor: '#DF7500' }
-                    : selectedAnswers[index]
-                      ? { backgroundColor: '#651321' }
-                      : {}
-                }
-              >
-                {selectedAnswers[index] ? (
-                  <span style={{ position: 'relative', display: 'block', width: '100%', height: '100%' }}>
-                    <span style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-                      {index + 1}
-                    </span>
-                    <span style={{ position: 'absolute', right: 2, bottom: 2 }}>
-                      <Check size={14} />
-                    </span>
-                  </span>
-                ) : (
-                  index + 1
-                )}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -550,8 +754,9 @@ useEffect(() => {
           <div className="mt-6 text-center">
             <button
               className="text-white px-8 py-4 rounded-xl font-semibold hover:opacity-90 shadow-lg hover:shadow-xl transition-all duration-200"
-              style={{ backgroundColor: '#651321' }}
+              style={{ backgroundColor: selectedAnswers[currentQuestion] ? '#651321' : '#785158', cursor: selectedAnswers[currentQuestion] ? 'pointer' : 'not-allowed' }}
               onClick={handleSubmitQuiz}
+              disabled={!selectedAnswers[currentQuestion]}
             >
               Submit Quiz
             </button>
@@ -598,7 +803,7 @@ useEffect(() => {
                   </div>
                   <div className="bg-white/50 rounded-lg p-4">
                     <div className="text-sm text-gray-600">Score</div>
-                    <div className="font-bold text-2xl text-[#df7500]">{score}%</div>
+                    <div className="font-bold text-2xl text-[#df7500]">{score ? score.toFixed(2) : 'N/A'}%</div>
                   </div>
                 </div>
                 <div className="mt-4 text-sm text-gray-600">
@@ -621,4 +826,4 @@ useEffect(() => {
       )}
     </div>
   );
-};
+}
