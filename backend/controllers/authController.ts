@@ -45,7 +45,7 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
         member.isLoggedIn = true;
         member.authToken = authToken;
 
-        await schoolTeam.save();
+        await schoolTeam.save({ validateModifiedOnly: true });
 
         res.status(200).json({
             success: true,
