@@ -433,25 +433,20 @@ export default function Quiz(): React.JSX.Element | null {
     };
 
     // Fullscreen detection
-    const handleFullScreenChange = (): void => {
+    const handleFullScreenChange = async (): Promise<void> => {
       const isFullscreen = !!document.fullscreenElement;
       if (!isFullscreen && !isSubmitting) {
         // Report fullscreen exit violation
-        if (user.user?.teamId && user.user?.memberName) {
-          await reportViolation({
-            teamId: user.user.teamId,
-            memberName: user.user.memberName,
-            violationType: 'escaping full screen'
-          });
-        }
-
-        // Report fullscreen exit violation
-        if (user.user?.teamId && user.user?.memberName) {
-          await reportViolation({
-            teamId: user.user.teamId,
-            memberName: user.user.memberName,
-            violationType: 'escaping full screen'
-          });
+        try {
+          if (user.user?.teamId && user.user?.memberName) {
+            await reportViolation({
+              teamId: user.user.teamId,
+              memberName: user.user.memberName,
+              violationType: 'escaping full screen'
+            });
+          }
+        } catch (error) {
+          console.error('Failed reporting fullscreen violation:', error);
         }
 
         setShowFullscreenPrompt(true);
