@@ -445,6 +445,15 @@ export default function Quiz(): React.JSX.Element | null {
           });
         }
 
+        // Report fullscreen exit violation
+        if (user.user?.teamId && user.user?.memberName) {
+          await reportViolation({
+            teamId: user.user.teamId,
+            memberName: user.user.memberName,
+            violationType: 'escaping full screen'
+          });
+        }
+
         setShowFullscreenPrompt(true);
         logSuspicious('Fullscreen exit', `User exited fullscreen on question ${currentQuestion + 1}`);
       }
@@ -599,6 +608,7 @@ export default function Quiz(): React.JSX.Element | null {
         background: 'rgba(255,255,255,0.6)',
         zIndex: 1
       }} />
+
 
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
         {/* Header with Progress */}
