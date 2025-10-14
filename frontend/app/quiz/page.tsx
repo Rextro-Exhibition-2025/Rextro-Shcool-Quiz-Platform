@@ -283,9 +283,18 @@ export default function Quiz(): React.JSX.Element | null {
     if (!isAuthenticated || !user) return;
 
     // Full-Screen Mode Detection
-    const handleFullScreenChange = (): void => {
+    const handleFullScreenChange = async (): Promise<void> => {
       const isFullscreen = !!document.fullscreenElement;
       if (!isFullscreen && !isSubmitting) {
+        // Report fullscreen exit violation
+        if (user.user?.teamId && user.user?.memberName) {
+          await reportViolation({
+            teamId: user.user.teamId,
+            memberName: user.user.memberName,
+            violationType: 'escaping full screen'
+          });
+        }
+
         setShowFullscreenPrompt(true);
         logSuspicious('Fullscreen exit', `User exited fullscreen on question ${currentQuestion + 1}`);
       }
