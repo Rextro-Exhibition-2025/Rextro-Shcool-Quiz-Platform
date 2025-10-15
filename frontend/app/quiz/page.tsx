@@ -54,7 +54,7 @@ const QUIZ_DURATION = 45 * 60; // 45 minutes in seconds
 // Simple device fingerprint generation
 const getDeviceFingerprint = (): string => {
   if (typeof window === 'undefined') return 'unknown';
-  
+
   const { navigator, screen } = window;
   const fingerprint = [
     navigator.userAgent,
@@ -65,14 +65,14 @@ const getDeviceFingerprint = (): string => {
     screen.height,
     screen.colorDepth
   ].join('::');
-  
+
   // Simple hash generation
   let hash = 0;
   for (let i = 0; i < fingerprint.length; i++) {
     hash = ((hash << 5) - hash) + fingerprint.charCodeAt(i);
     hash |= 0; // Convert to 32bit integer
   }
-  
+
   return 'fp_' + Math.abs(hash);
 };
 
@@ -88,15 +88,15 @@ export default function Quiz(): React.JSX.Element | null {
   const router = useRouter();
   const user = useUser();
   const { setQuizId, updateSelectedAnswers, submitQuiz, score } = useQuiz();
-  
+
   // Timer management
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(QUIZ_DURATION);
-  
+
   // Quiz state
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
-  
+
   // State initialization with localStorage
   const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>(() => {
     if (typeof window !== 'undefined') {
@@ -109,7 +109,7 @@ export default function Quiz(): React.JSX.Element | null {
     }
     return {};
   });
-  
+
   // UI state
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -132,7 +132,7 @@ export default function Quiz(): React.JSX.Element | null {
       details,
       fingerprint: typeof window !== 'undefined' ? getDeviceFingerprint() : 'unknown',
     };
-    
+
     fetch('/api/logs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -151,7 +151,7 @@ export default function Quiz(): React.JSX.Element | null {
   const checkInactivity = () => {
     const now = Date.now();
     const inactiveTime = Math.floor((now - lastActivityTime) / 1000); // Convert to seconds
-    
+
     // Log if user has been inactive for more than 30 seconds
     if (inactiveTime >= 30) {
       logSuspicious('Extended inactivity', `User inactive for ${inactiveTime}s on question ${currentQuestion + 1}`);
@@ -309,7 +309,7 @@ export default function Quiz(): React.JSX.Element | null {
 
     // Start inactivity monitoring
     if (inactivityTimerRef.current) clearInterval(inactivityTimerRef.current);
-    
+
     inactivityTimerRef.current = setInterval(() => {
       checkInactivity();
     }, 3000); // Check every 3 seconds
@@ -337,7 +337,7 @@ export default function Quiz(): React.JSX.Element | null {
     const checkAuthentication = () => {
       const authToken = localStorage.getItem('authToken');
       const studentData = localStorage.getItem('studentData');
-      
+
       if (!authToken || !studentData) {
         router.push('/login');
         return;
@@ -355,7 +355,7 @@ export default function Quiz(): React.JSX.Element | null {
         router.push('/login');
         return;
       }
-      
+
       setLoading(false);
     };
 
@@ -365,9 +365,9 @@ export default function Quiz(): React.JSX.Element | null {
   // Timer countdown effect
   useEffect(() => {
     if (!isAuthenticated || showCompletionCard) return;
-    
+
     if (timerRef.current) clearInterval(timerRef.current);
-    
+
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -414,7 +414,7 @@ export default function Quiz(): React.JSX.Element | null {
       }
 
       alert("Copy/Paste is disabled during the quiz.");
-      logSuspicious(e.type === 'copy' ? 'Copy attempt' : 'Paste attempt', 
+      logSuspicious(e.type === 'copy' ? 'Copy attempt' : 'Paste attempt',
         `User tried to ${e.type} content on question ${currentQuestion + 1}`);
     };
 
@@ -433,9 +433,18 @@ export default function Quiz(): React.JSX.Element | null {
     };
 
     // Fullscreen detection
-    const handleFullScreenChange = (): void => {
+    const handleFullScreenChange = async (): Promise<void> => {
       const isFullscreen = !!document.fullscreenElement;
       if (!isFullscreen && !isSubmitting) {
+        // Report fullscreen exit violation
+        if (user.user?.teamId && user.user?.memberName) {
+          await reportViolation({
+            teamId: user.user.teamId,
+            memberName: user.user.memberName,
+            violationType: 'escaping full screen'
+          });
+        }
+
         setShowFullscreenPrompt(true);
         logSuspicious('Fullscreen exit', `User exited fullscreen on question ${currentQuestion + 1}`);
       }
@@ -527,10 +536,10 @@ export default function Quiz(): React.JSX.Element | null {
 
   const handleReEnterFullscreen = async (): Promise<void> => {
     setShowFullscreenPrompt(false);
-    
+
     try {
       const elem = document.documentElement;
-      
+
       if (elem.requestFullscreen) {
         await elem.requestFullscreen();
       } else if ((elem as any).mozRequestFullScreen) {
@@ -590,7 +599,7 @@ export default function Quiz(): React.JSX.Element | null {
         background: 'rgba(255,255,255,0.6)',
         zIndex: 1
       }} />
-      
+
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
         {/* Header with Progress */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
@@ -598,14 +607,14 @@ export default function Quiz(): React.JSX.Element | null {
             <h1 className="text-2xl font-bold text-gray-800">Quiz Challenge</h1>
             <div className="flex items-center space-x-4">
               <div className="text-m font-medium text-gray-800">
-                Question {currentQuestion + 1} of {totalQuestions}    
+                Question {currentQuestion + 1} of {totalQuestions}
               </div>
               <div className="flex items-center space-x-2">
                 <Clock size={20} style={{ color: timerColor }} />
                 <span className="text-lg font-bold" style={{ color: timerColor }}>
                   {formatTime(timeLeft)}
                 </span>
-              </div>              
+              </div>
             </div>
           </div>
 
