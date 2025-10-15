@@ -6,6 +6,7 @@ import { Plus, Trash2, Save, ArrowLeft, LogOut, Shield, RotateCcw } from 'lucide
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { transformQuestion } from './questionTransformer';
+import ImageUpload from '@/components/ImageUpload/ImageUpload';
 
 // Error modal state for alerts
 type ErrorModalState = { open: boolean; message: string };
@@ -52,7 +53,8 @@ export default function AddQuestion(): React.ReactElement | null {
   });
 
   const handleQuizSetChange = (value: string): void => {
-    setQuestion(prev => ({ ...prev, quizSet: parseInt(value) }));
+    const parsed = value ? parseInt(value) : null;
+    setQuestion(prev => ({ ...prev, quizSet: parsed }));
   };
 
   const handleQuestionChange = (value: string): void => {
@@ -329,38 +331,14 @@ export default function AddQuestion(): React.ReactElement | null {
           </div>
 
           {/* Question Image */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Question Image URL (Optional)
-            </label>
-            <input
-              type="url"
-              value={question.image}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleQuestionImageChange(e.target.value)}
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
-              placeholder="https://example.com/image.jpg"
-            />
-            {question.image && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-2">Preview (Recommended: 800×600px, &lt;200KB):</p>
-                <img
-                  src={question.image}
-                  alt="Question preview"
-                  className="w-[400px] h-[300px] object-contain rounded-lg shadow-md border border-gray-200"
-                  style={{ maxWidth: '100%', maxHeight: '400px' }}
-                  onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                    const target = e.target as HTMLImageElement;
-                    const nextSibling = target.nextSibling as HTMLElement;
-                    target.style.display = 'none';
-                    if (nextSibling) {
-                      nextSibling.style.display = 'block';
-                    }
-                  }}
-                />
-                <p className="text-sm text-red-500 mt-2 hidden">Failed to load image. Please check the URL.</p>
-              </div>
-            )}
-          </div>
+          <ImageUpload
+            label="Question Image (Optional)"
+            currentImage={question.image}
+            onImageChange={handleQuestionImageChange}
+            folder="quiz-questions"
+            maxSizeMB={2}
+            recommendedSize="800×600px"
+          />
         </div>
 
         {/* Answers Form */}
@@ -398,36 +376,15 @@ export default function AddQuestion(): React.ReactElement | null {
                   />
                 </div>
 
-                {/* Answer Image */}
-                <div>
-                  <input
-                    type="url"
-                    value={answer.image}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleAnswerChange(answer.id, 'image', e.target.value)}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
-                    placeholder={`Image URL for option ${answer.id.toUpperCase()} (optional)`}
-                  />
-                  {answer.image && (
-                    <div className="mt-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-xs text-gray-600 mb-1">Preview:</p>
-                      <img
-                        src={answer.image}
-                        alt={`Option ${answer.id} preview`}
-                        className="w-[100px] h-[100px] object-contain rounded-lg shadow-sm border border-gray-200"
-                        style={{ maxWidth: '100%', maxHeight: '120px' }}
-                        onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                          const target = e.target as HTMLImageElement;
-                          const nextSibling = target.nextSibling as HTMLElement;
-                          target.style.display = 'none';
-                          if (nextSibling) {
-                            nextSibling.style.display = 'block';
-                          }
-                        }}
-                      />
-                      <p className="text-xs text-red-500 mt-1 hidden">Failed to load image</p>
-                    </div>
-                  )}
-                </div>
+                {/* Answer Image Upload */}
+                <ImageUpload
+                  label={`Image for Option ${answer.id.toUpperCase()} (Optional)`}
+                  currentImage={answer.image}
+                  onImageChange={(url) => handleAnswerChange(answer.id, 'image', url)}
+                  folder="quiz-answers"
+                  maxSizeMB={1}
+                  recommendedSize="200×200px"
+                />
               </div>
             ))}
           </div>
@@ -439,10 +396,10 @@ export default function AddQuestion(): React.ReactElement | null {
               <li>• Fill in the question text (required)</li>
               <li>• Add answer options - you can use text, images, or both</li>
               <li>• Select which option is the correct answer</li>
-              <li>• Question and answer images should be valid URLs</li>
+              <li>• Upload images directly - they will be stored securely in Cloudinary</li>
               <li>• <b>Recommended image sizes:</b></li>
-              <li className="ml-4">- <b>Question image:</b> 800×600 pixels (max 200KB, JPG/PNG)</li>
-              <li className="ml-4">- <b>Option image:</b> 200×200 pixels (max 100KB, JPG/PNG)</li>
+              <li className="ml-4">- <b>Question image:</b> 800×600 pixels (max 2MB, JPG/PNG/GIF)</li>
+              <li className="ml-4">- <b>Option image:</b> 200×200 pixels (max 1MB, JPG/PNG/GIF)</li>
               <li>• At least one answer option must be provided</li>
             </ul>
           </div>
