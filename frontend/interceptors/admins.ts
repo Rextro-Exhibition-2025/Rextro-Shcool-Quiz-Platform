@@ -9,7 +9,7 @@ export const createAdminApi = async () => {
   
 
     const serverApi = axios.create({
-        baseURL: process.env.NEXT_PUBLIC_SERVER_API_URL || 'http://localhost:3001/api',
+        baseURL: process.env.NEXT_PUBLIC_SERVER_API_URL || 'http://localhost:5000/api',
         headers: {
             'Content-Type': 'application/json',
         },

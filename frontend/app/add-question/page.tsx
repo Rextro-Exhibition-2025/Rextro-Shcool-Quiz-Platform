@@ -6,6 +6,7 @@ import { Plus, Trash2, Save, ArrowLeft, LogOut, Shield, RotateCcw } from 'lucide
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { transformQuestion } from './questionTransformer';
+import ImageUpload from '@/components/ImageUpload/ImageUpload';
 
 // Error modal state for alerts
 type ErrorModalState = { open: boolean; message: string };
@@ -52,7 +53,8 @@ export default function AddQuestion(): React.ReactElement | null {
   });
 
   const handleQuizSetChange = (value: string): void => {
-    setQuestion(prev => ({ ...prev, quizSet: parseInt(value) }));
+    const parsed = value ? parseInt(value) : null;
+    setQuestion(prev => ({ ...prev, quizSet: parsed }));
   };
 
   const handleQuestionChange = (value: string): void => {
@@ -240,6 +242,108 @@ export default function AddQuestion(): React.ReactElement | null {
           </div>
         </div>
 
+        {/* Instructions Card - Separate from form */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 border-2 border-orange-100">
+          <div className="flex items-start space-x-3 mb-4">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-[#df7500] to-[#651321] flex items-center justify-center">
+              <span className="text-white text-xl">📝</span>
+            </div>
+            <div className="flex-1">
+              <h2 className="text-lg font-bold text-gray-800">Instructions & Image Guidelines</h2>
+              <p className="text-sm text-gray-600 mt-1">Please read these guidelines before adding questions</p>
+            </div>
+          </div>
+
+          <div className="bg-gradient-to-r from-orange-50 to-red-50 rounded-lg p-5 border border-orange-200">
+            <ul className="text-sm text-gray-700 space-y-2.5">
+              <li className="flex items-start">
+                <span className="mr-2 font-bold text-orange-600 text-base">•</span>
+                <span>Fill in the question text (required)</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 font-bold text-orange-600 text-base">•</span>
+                <span>Add answer options - you can use text, images, or both</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 font-bold text-orange-600 text-base">•</span>
+                <span>Select which option is the correct answer</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 font-bold text-orange-600 text-base">•</span>
+                <span>Upload images directly - they will be stored securely in Cloudinary</span>
+              </li>
+              <li className="flex items-start">
+                <span className="mr-2 font-bold text-orange-600 text-base">•</span>
+                <span>At least one answer option must be provided</span>
+              </li>
+            </ul>
+            
+            <div className="mt-5 pt-5 border-t border-orange-300">
+              <div className="flex items-center space-x-2 mb-3">
+                <span className="text-xl">🖼️</span>
+                <h3 className="text-sm font-bold text-gray-800">Recommended Image Sizes (displayed large in quiz):</h3>
+              </div>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-white p-4 rounded-lg border-2 border-orange-200 shadow-sm">
+                  <p className="font-bold text-orange-700 mb-2 flex items-center">
+                    <span className="mr-2">🖼️</span> Question Image:
+                  </p>
+                  <ul className="text-xs text-gray-700 space-y-1.5 ml-1">
+                    <li className="flex items-start">
+                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span><b>Size:</b> 1024×768 pixels or larger for best quality</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span><b>Format:</b> JPG, PNG, or GIF</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span><b>Max file size:</b> 2MB</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span><b>Display:</b> Up to 768px wide in quiz (full width on mobile)</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="bg-white p-4 rounded-lg border-2 border-orange-200 shadow-sm">
+                  <p className="font-bold text-orange-700 mb-2 flex items-center">
+                    <span className="mr-2">📸</span> Answer Option Images:
+                  </p>
+                  <ul className="text-xs text-gray-700 space-y-1.5 ml-1">
+                    <li className="flex items-start">
+                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span><b>Size:</b> 600×600 pixels or larger recommended</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span><b>Format:</b> JPG, PNG, or GIF</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span><b>Max file size:</b> 1MB</span>
+                    </li>
+                    <li className="flex items-start">
+                      <span className="mr-1.5 text-orange-500">▸</span>
+                      <span><b>Display:</b> Up to 384px wide in quiz (larger on desktop)</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
+                <p className="text-xs text-gray-700 flex items-start">
+                  <span className="mr-2 text-lg">💡</span>
+                  <span><b>Tip:</b> Use high-quality images for better readability. Images are displayed large to help students see details clearly.</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Save confirmation popup */}
         {showSaveConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -329,38 +433,14 @@ export default function AddQuestion(): React.ReactElement | null {
           </div>
 
           {/* Question Image */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Question Image URL (Optional)
-            </label>
-            <input
-              type="url"
-              value={question.image}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleQuestionImageChange(e.target.value)}
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
-              placeholder="https://example.com/image.jpg"
-            />
-            {question.image && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-2">Preview (Recommended: 800×600px, &lt;200KB):</p>
-                <img
-                  src={question.image}
-                  alt="Question preview"
-                  className="w-[400px] h-[300px] object-contain rounded-lg shadow-md border border-gray-200"
-                  style={{ maxWidth: '100%', maxHeight: '400px' }}
-                  onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                    const target = e.target as HTMLImageElement;
-                    const nextSibling = target.nextSibling as HTMLElement;
-                    target.style.display = 'none';
-                    if (nextSibling) {
-                      nextSibling.style.display = 'block';
-                    }
-                  }}
-                />
-                <p className="text-sm text-red-500 mt-2 hidden">Failed to load image. Please check the URL.</p>
-              </div>
-            )}
-          </div>
+          <ImageUpload
+            label="Question Image (Optional)"
+            currentImage={question.image}
+            onImageChange={handleQuestionImageChange}
+            folder="quiz-questions"
+            maxSizeMB={2}
+            recommendedSize="1024×768px (displays up to 768px wide in quiz)"
+          />
         </div>
 
         {/* Answers Form */}
@@ -398,53 +478,17 @@ export default function AddQuestion(): React.ReactElement | null {
                   />
                 </div>
 
-                {/* Answer Image */}
-                <div>
-                  <input
-                    type="url"
-                    value={answer.image}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleAnswerChange(answer.id, 'image', e.target.value)}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
-                    placeholder={`Image URL for option ${answer.id.toUpperCase()} (optional)`}
-                  />
-                  {answer.image && (
-                    <div className="mt-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-xs text-gray-600 mb-1">Preview:</p>
-                      <img
-                        src={answer.image}
-                        alt={`Option ${answer.id} preview`}
-                        className="w-[100px] h-[100px] object-contain rounded-lg shadow-sm border border-gray-200"
-                        style={{ maxWidth: '100%', maxHeight: '120px' }}
-                        onError={(e: React.SyntheticEvent<HTMLImageElement, Event>) => {
-                          const target = e.target as HTMLImageElement;
-                          const nextSibling = target.nextSibling as HTMLElement;
-                          target.style.display = 'none';
-                          if (nextSibling) {
-                            nextSibling.style.display = 'block';
-                          }
-                        }}
-                      />
-                      <p className="text-xs text-red-500 mt-1 hidden">Failed to load image</p>
-                    </div>
-                  )}
-                </div>
+                {/* Answer Image Upload */}
+                <ImageUpload
+                  label={`Image for Option ${answer.id.toUpperCase()} (Optional)`}
+                  currentImage={answer.image}
+                  onImageChange={(url) => handleAnswerChange(answer.id, 'image', url)}
+                  folder="quiz-answers"
+                  maxSizeMB={1}
+                  recommendedSize="600×600px (displays up to 384px wide)"
+                />
               </div>
             ))}
-          </div>
-
-          {/* Help Text */}
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">Instructions:</h3>
-            <ul className="text-sm text-gray-600 space-y-1">
-              <li>• Fill in the question text (required)</li>
-              <li>• Add answer options - you can use text, images, or both</li>
-              <li>• Select which option is the correct answer</li>
-              <li>• Question and answer images should be valid URLs</li>
-              <li>• <b>Recommended image sizes:</b></li>
-              <li className="ml-4">- <b>Question image:</b> 800×600 pixels (max 200KB, JPG/PNG)</li>
-              <li className="ml-4">- <b>Option image:</b> 200×200 pixels (max 100KB, JPG/PNG)</li>
-              <li>• At least one answer option must be provided</li>
-            </ul>
           </div>
         </div>
       </div>
