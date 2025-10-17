@@ -13,12 +13,14 @@ export type OutputOption = {
 	option: string;
 	optionText: string;
 	optionImage?: string;
+	optionImagePublicId?: string;
 };
 
 export type OutputQuestion = {
 	quizId: number;
 	question: string;
 	questionImage?: string;
+	questionImagePublicId?: string;
 	options: OutputOption[];
 	correctOption: string;
 };
@@ -29,7 +31,8 @@ export function transformQuestion(input: Question): OutputQuestion {
 	const options: OutputOption[] = input.answers.map((ans, idx) => ({
 		option: idToOption[idx],
 		optionText: ans.text,
-		...(ans.image ? { optionImage: ans.image } : {})
+		...(ans.image ? { optionImage: ans.image } : {}),
+		...(ans.imagePublicId ? { optionImagePublicId: ans.imagePublicId } : {})
 	}));
 
 	const correctIdx = input.answers.findIndex(ans => ans.id === input.correctAnswer);
@@ -39,6 +42,7 @@ export function transformQuestion(input: Question): OutputQuestion {
 		quizId: input.quizSet || 0,
 		question: input.question,
 		...(input.image ? { questionImage: input.image } : {}),
+		...(input.imagePublicId ? { questionImagePublicId: input.imagePublicId } : {}),
 		options,
 		correctOption
 	};

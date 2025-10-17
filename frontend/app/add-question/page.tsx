@@ -16,11 +16,13 @@ interface Answer {
   id: string;
   text: string;
   image: string;
+  imagePublicId?: string;
 }
 
 export interface Question {
   question: string;
   image: string;
+  imagePublicId?: string;
   answers: Answer[];
   correctAnswer: string;
   quizSet: number | null;
@@ -458,6 +460,7 @@ export default function AddQuestion(): React.ReactElement | null {
             onImageChange={handleQuestionImageChange}
             onPublicIdChange={(publicId) => {
               setUploadedImageIds(prev => ({ ...prev, questionImage: publicId }));
+              setQuestion(prev => ({ ...prev, imagePublicId: publicId }));
             }}
             folder="quiz-questions"
             maxSizeMB={2}
@@ -510,6 +513,13 @@ export default function AddQuestion(): React.ReactElement | null {
                     setUploadedImageIds(prev => ({
                       ...prev,
                       answers: { ...prev.answers, [answer.id]: publicId }
+                    }));
+                    // Also store publicId in the answer object
+                    setQuestion(prev => ({
+                      ...prev,
+                      answers: prev.answers.map(ans =>
+                        ans.id === answer.id ? { ...ans, imagePublicId: publicId } : ans
+                      )
                     }));
                   }}
                   folder="quiz-answers"
