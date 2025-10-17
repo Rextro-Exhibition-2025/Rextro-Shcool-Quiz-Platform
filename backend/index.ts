@@ -13,6 +13,7 @@ import QuizRouter from "./routes/quizRoute.js";
 import AuthRouter from "./routes/authRoutes.js";
 import SchoolTeamRouter from "./routes/schoolTeamRoutes.js";
 import ViolationRouter from "./routes/violationRoutes.js";
+import UploadRouter from "./routes/uploadRoutes.js";
 
 dotenv.config();
 
@@ -33,8 +34,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }))
 
-// Middleware
-app.use(express.json());
+// Middleware - Increase limit for image uploads (base64 images can be large)
+app.use(express.json({ limit: '10mb' })); // Allow up to 10MB for base64 images
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Connect to MongoDB
 connectDB();
@@ -78,6 +80,7 @@ app.use("/api/quizzes", QuizRouter);
 app.use("/api/auth", AuthRouter);
 app.use("/api/school-teams", SchoolTeamRouter);
 app.use("/api/violations", ViolationRouter);
+app.use("/api/upload", UploadRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

@@ -59,7 +59,7 @@ const QUIZ_DURATION = 45 * 60; // 45 minutes in seconds
 // Simple device fingerprint generation
 const getDeviceFingerprint = (): string => {
   if (typeof window === 'undefined') return 'unknown';
-  
+
   const { navigator, screen } = window;
   const fingerprint = [
     navigator.userAgent,
@@ -70,14 +70,14 @@ const getDeviceFingerprint = (): string => {
     screen.height,
     screen.colorDepth
   ].join('::');
-  
+
   // Simple hash generation
   let hash = 0;
   for (let i = 0; i < fingerprint.length; i++) {
     hash = ((hash << 5) - hash) + fingerprint.charCodeAt(i);
     hash |= 0; // Convert to 32bit integer
   }
-  
+
   return 'fp_' + Math.abs(hash);
 };
 
@@ -93,15 +93,15 @@ export default function Quiz(): React.JSX.Element | null {
   const router = useRouter();
   const user = useUser();
   const { setQuizId, updateSelectedAnswers, submitQuiz, score } = useQuiz();
-  
+
   // Timer management
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(QUIZ_DURATION);
-  
+
   // Quiz state
   const [currentQuestion, setCurrentQuestion] = useState<number>(0);
   const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
-  
+
   // State initialization with localStorage
   const [selectedAnswers, setSelectedAnswers] = useState<SelectedAnswers>(() => {
     if (typeof window !== 'undefined') {
@@ -114,7 +114,7 @@ export default function Quiz(): React.JSX.Element | null {
     }
     return {};
   });
-  
+
   // UI state
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState<boolean>(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -137,7 +137,7 @@ export default function Quiz(): React.JSX.Element | null {
       details,
       fingerprint: typeof window !== 'undefined' ? getDeviceFingerprint() : 'unknown',
     };
-    
+
     fetch('/api/logs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -156,7 +156,7 @@ export default function Quiz(): React.JSX.Element | null {
   const checkInactivity = () => {
     const now = Date.now();
     const inactiveTime = Math.floor((now - lastActivityTime) / 1000); // Convert to seconds
-    
+
     // Log if user has been inactive for more than 30 seconds
     if (inactiveTime >= 30) {
       logSuspicious('Extended inactivity', `User inactive for ${inactiveTime}s on question ${currentQuestion + 1}`);
@@ -314,7 +314,7 @@ export default function Quiz(): React.JSX.Element | null {
 
     // Start inactivity monitoring
     if (inactivityTimerRef.current) clearInterval(inactivityTimerRef.current);
-    
+
     inactivityTimerRef.current = setInterval(() => {
       checkInactivity();
     }, 3000); // Check every 3 seconds
@@ -342,7 +342,7 @@ export default function Quiz(): React.JSX.Element | null {
     const checkAuthentication = () => {
       const authToken = localStorage.getItem('authToken');
       const studentData = localStorage.getItem('studentData');
-      
+
       if (!authToken || !studentData) {
         router.push('/login');
         return;
@@ -360,7 +360,7 @@ export default function Quiz(): React.JSX.Element | null {
         router.push('/login');
         return;
       }
-      
+
       setLoading(false);
     };
 
@@ -370,9 +370,9 @@ export default function Quiz(): React.JSX.Element | null {
   // Timer countdown effect
   useEffect(() => {
     if (!isAuthenticated || showCompletionCard) return;
-    
+
     if (timerRef.current) clearInterval(timerRef.current);
-    
+
     timerRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
@@ -419,7 +419,7 @@ export default function Quiz(): React.JSX.Element | null {
       }
 
       alert("Copy/Paste is disabled during the quiz.");
-      logSuspicious(e.type === 'copy' ? 'Copy attempt' : 'Paste attempt', 
+      logSuspicious(e.type === 'copy' ? 'Copy attempt' : 'Paste attempt',
         `User tried to ${e.type} content on question ${currentQuestion + 1}`);
     };
 
@@ -438,9 +438,18 @@ export default function Quiz(): React.JSX.Element | null {
     };
 
     // Fullscreen detection
-    const handleFullScreenChange = (): void => {
+    const handleFullScreenChange = async (): Promise<void> => {
       const isFullscreen = !!document.fullscreenElement;
       if (!isFullscreen && !isSubmitting) {
+        // Report fullscreen exit violation
+        if (user.user?.teamId && user.user?.memberName) {
+          await reportViolation({
+            teamId: user.user.teamId,
+            memberName: user.user.memberName,
+            violationType: 'escaping full screen'
+          });
+        }
+
         setShowFullscreenPrompt(true);
         logSuspicious('Fullscreen exit', `User exited fullscreen on question ${currentQuestion + 1}`);
       }
@@ -547,10 +556,10 @@ export default function Quiz(): React.JSX.Element | null {
 
   const handleReEnterFullscreen = async (): Promise<void> => {
     setShowFullscreenPrompt(false);
-    
+
     try {
       const elem = document.documentElement;
-      
+
       if (elem.requestFullscreen) {
         await elem.requestFullscreen();
       } else if ((elem as any).mozRequestFullScreen) {
@@ -610,27 +619,26 @@ export default function Quiz(): React.JSX.Element | null {
         background: 'rgba(255,255,255,0.6)',
         zIndex: 1
       }} />
-      
+
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
-        {/* Header with Progress */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-800">Quiz Challenge</h1>
-            <div className="flex items-center space-x-4">
-              <div className="text-m font-medium text-gray-800">
-                Question {currentQuestion + 1} of {totalQuestions}    
+        {/* Sticky Header with Timer */}
+        <div className="sticky top-0 z-10 bg-white rounded-2xl shadow-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl md:text-2xl font-bold text-gray-800">Quiz Challenge</h1>
+            <div className="flex items-center space-x-3 md:space-x-4">
+              <div className="text-sm md:text-base font-medium text-gray-800">
+                Q {currentQuestion + 1}/{totalQuestions}
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 px-3 py-2 rounded-lg" style={{ backgroundColor: timeLeft <= 60 ? '#FEF3E2' : '#F5E6E8' }}>
                 <Clock size={20} style={{ color: timerColor }} />
-                <span className="text-lg font-bold" style={{ color: timerColor }}>
+                <span className="text-lg md:text-xl font-bold" style={{ color: timerColor }}>
                   {formatTime(timeLeft)}
                 </span>
-              </div>              
+              </div>
             </div>
           </div>
-
           {/* Progress Bar */}
-          <div className="w-full rounded-full h-3 mb-4 relative" style={{ background: 'rgba(223,117,0,0.1)' }}>
+          <div className="w-full rounded-full h-3 my-4 relative" style={{ background: 'rgba(223,117,0,0.1)' }}>
             <div
               className="h-3 rounded-full transition-all duration-500 ease-out relative"
               style={{
@@ -646,6 +654,12 @@ export default function Quiz(): React.JSX.Element | null {
               </span>
             </div>
           </div>
+        </div>
+        
+
+        {/* Progress and Question Card */}
+        <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          
 
           {/* Question Card */}
           <div className="my-8">
@@ -658,8 +672,8 @@ export default function Quiz(): React.JSX.Element | null {
                 <img
                   src={currentQuestionData.image}
                   alt="Question illustration"
-                  className="w-full max-w-[480px] h-64 object-contain rounded-xl shadow-md bg-white"
-                  style={{ aspectRatio: '3/2' }}
+                  className="w-full max-w-2xl h-auto object-contain rounded-xl shadow-md hover:shadow-lg transition-shadow bg-white"
+                  style={{ maxHeight: '400px' }}
                 />
               </div>
             )}
@@ -701,26 +715,26 @@ export default function Quiz(): React.JSX.Element | null {
                       <img
                         src={answer.image}
                         alt={`Option ${answer.id}`}
-                        className="w-40 h-28 object-contain rounded-lg bg-white"
-                        style={{ aspectRatio: '10/7' }}
+                        className="w-full max-w-2xl h-auto object-contain rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow cursor-pointer mx-auto"
+                        style={{ maxHeight: '400px' }}
                       />
                     )}
 
                     {answer.text && !answer.image && (
-                      <span className="text-gray-800 font-medium">
+                      <span className="text-gray-800 font-medium text-lg">
                         {answer.text}
                       </span>
                     )}
 
                     {answer.text && answer.image && (
-                      <div className="flex items-center space-x-3">
+                      <div className="flex flex-col md:flex-row items-center md:space-x-6 space-y-3 md:space-y-0">
                         <img
                           src={answer.image}
                           alt={`Option ${answer.id}`}
-                          className="w-24 h-16 object-contain rounded-lg bg-white"
-                          style={{ aspectRatio: '3/2' }}
+                          className="w-full md:w-96 h-auto object-contain rounded-lg bg-white shadow-md hover:shadow-lg transition-shadow cursor-pointer"
+                          style={{ maxHeight: '300px' }}
                         />
-                        <span className="text-gray-800 font-medium">
+                        <span className="text-gray-800 font-medium text-lg">
                           {answer.text}
                         </span>
                       </div>
