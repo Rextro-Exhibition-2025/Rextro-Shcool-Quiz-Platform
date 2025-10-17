@@ -57,3 +57,48 @@ export const createQuestion = async (req: Request, res: Response): Promise<any> 
     });
   }
 };
+
+export const editQuestion =  async (req: Request, res: Response): Promise<any> => {
+  try{
+    const questionId = req.params.questionId;
+    const updatedData = req.body;
+    const question = await Question.findByIdAndUpdate(questionId, updatedData, { new: true });
+    if(!question){
+      return res.status(404).json({ success: false, message: `Question with ID ${questionId} not found.` });
+    }
+    res.status(200).json({ success: true, data: question });
+  } catch (error) {
+    console.error('❌ Error editing question:', error);
+    res.status(400).json({
+      success: false,
+      message: "Error Editing Question",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
+
+export const deleteQuestion = async (req: Request, res: Response): Promise<any> => { 
+
+  try {
+    const questionId = req.params.questionId;
+    const question = await Question.findByIdAndDelete(questionId);
+    if (!question) {
+      return res.status(404).json({ success: false, message: `Question with ID ${questionId} not found.` });
+    }
+
+  
+    // Also remove the question from any quizzes that reference it
+    await Quiz.updateMany(
+      { questions: question._id },
+      { $pull: { questions: question._id } }
+    );
+    res.status(200).json({ success: true, message: `Question with ID ${questionId} deleted successfully.` });
+  } catch (error) {
+    console.error('❌ Error deleting question:', error);
+    res.status(400).json({
+      success: false,
+      message: "Error Deleting Question",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};

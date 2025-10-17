@@ -92,6 +92,8 @@ export default function Quiz(): React.JSX.Element | null {
   // Constants
   const router = useRouter();
   const user = useUser();
+  console.log("user is", user);
+  
   const { setQuizId, updateSelectedAnswers, submitQuiz, score } = useQuiz();
 
   // Timer management

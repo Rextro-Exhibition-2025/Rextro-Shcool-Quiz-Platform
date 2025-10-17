@@ -1,6 +1,6 @@
 "use client";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Poppins } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/NavBar/NavBar";
 import Footer from "@/components/Footer/Footer";
@@ -9,14 +9,11 @@ import { usePathname } from "next/navigation";
 import { UserProvider } from '@/contexts/UserContext';
 import { QuizProvider } from "@/contexts/QuizContext";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const poppins = Poppins({
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
+  variable: "--font-poppins",
 });
 
 
@@ -25,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const hideNavAndFooter = pathname.startsWith("/quiz");
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+  <body className={`${poppins.variable} antialiased`}>
         <Providers>
           <UserProvider>
             <QuizProvider>
