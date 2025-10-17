@@ -8,6 +8,7 @@ interface ImageUploadProps {
   label: string;
   currentImage?: string;
   onImageChange: (url: string) => void;
+  onPublicIdChange?: (publicId: string) => void; // New callback for publicId
   folder?: string;
   maxSizeMB?: number;
   recommendedSize?: string;
@@ -17,6 +18,7 @@ export default function ImageUpload({
   label,
   currentImage = '',
   onImageChange,
+  onPublicIdChange,
   folder = 'quiz-images',
   maxSizeMB = 2,
   recommendedSize = '800×600px',
@@ -55,6 +57,11 @@ export default function ImageUpload({
       setPreview(url);
       setPublicId(uploadedPublicId);
       onImageChange(url);
+      
+      // Notify parent of publicId if callback provided
+      if (onPublicIdChange) {
+        onPublicIdChange(uploadedPublicId);
+      }
     } catch (err) {
       setError('Failed to upload image. Please try again.');
       console.error('Upload error:', err);
@@ -76,6 +83,12 @@ export default function ImageUpload({
       setPreview('');
       setPublicId('');
       onImageChange('');
+      
+      // Notify parent that publicId is cleared
+      if (onPublicIdChange) {
+        onPublicIdChange('');
+      }
+      
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }

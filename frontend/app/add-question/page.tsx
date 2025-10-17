@@ -7,6 +7,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { transformQuestion } from './questionTransformer';
 import ImageUpload from '@/components/ImageUpload/ImageUpload';
+import { deleteImageFromCloudinary } from '@/lib/cloudinaryService';
 
 // Error modal state for alerts
 type ErrorModalState = { open: boolean; message: string };
@@ -51,6 +52,17 @@ export default function AddQuestion(): React.ReactElement | null {
     correctAnswer: '',
     quizSet: null,
   });
+
+  // Track Cloudinary publicIds for uploaded images
+  const [uploadedImageIds, setUploadedImageIds] = useState<{
+    questionImage?: string;
+    answers: Record<string, string>; // answerId -> publicId
+  }>({
+    answers: {}
+  });
+
+  // Key to force ImageUpload components to remount when form is cleared
+  const [formResetKey, setFormResetKey] = useState(0);
 
   const handleQuizSetChange = (value: string): void => {
     const parsed = value ? parseInt(value) : null;
@@ -139,7 +151,29 @@ export default function AddQuestion(): React.ReactElement | null {
   };
 
 
-  const clearForm = (): void => {
+  const clearForm = async (): Promise<void> => {
+    try {
+      // Delete question image from Cloudinary if exists
+      if (uploadedImageIds.questionImage) {
+        console.log('Deleting question image from Cloudinary:', uploadedImageIds.questionImage);
+        await deleteImageFromCloudinary(uploadedImageIds.questionImage);
+      }
+
+      // Delete all answer images from Cloudinary if exist
+      for (const [answerId, publicId] of Object.entries(uploadedImageIds.answers)) {
+        if (publicId) {
+          console.log(`Deleting answer ${answerId} image from Cloudinary:`, publicId);
+          await deleteImageFromCloudinary(publicId);
+        }
+      }
+
+      console.log('All images cleared from Cloudinary');
+    } catch (error) {
+      console.error('Error deleting images from Cloudinary:', error);
+      // Continue with clearing the form even if deletion fails
+    }
+
+    // Clear the form state
     setQuestion({
       question: '',
       image: '',
@@ -152,6 +186,15 @@ export default function AddQuestion(): React.ReactElement | null {
       correctAnswer: '',
       quizSet: null,
     });
+
+    // Clear uploaded image IDs
+    setUploadedImageIds({
+      answers: {}
+    });
+
+    // Force ImageUpload components to remount and reset their internal state
+    setFormResetKey(prev => prev + 1);
+
     setShowClearConfirm(false);
   };
 
@@ -434,9 +477,13 @@ export default function AddQuestion(): React.ReactElement | null {
 
           {/* Question Image */}
           <ImageUpload
+            key={`question-image-${formResetKey}`}
             label="Question Image (Optional)"
             currentImage={question.image}
             onImageChange={handleQuestionImageChange}
+            onPublicIdChange={(publicId) => {
+              setUploadedImageIds(prev => ({ ...prev, questionImage: publicId }));
+            }}
             folder="quiz-questions"
             maxSizeMB={2}
             recommendedSize="1024×768px (displays up to 768px wide in quiz)"
@@ -480,9 +527,16 @@ export default function AddQuestion(): React.ReactElement | null {
 
                 {/* Answer Image Upload */}
                 <ImageUpload
+                  key={`answer-${answer.id}-image-${formResetKey}`}
                   label={`Image for Option ${answer.id.toUpperCase()} (Optional)`}
                   currentImage={answer.image}
                   onImageChange={(url) => handleAnswerChange(answer.id, 'image', url)}
+                  onPublicIdChange={(publicId) => {
+                    setUploadedImageIds(prev => ({
+                      ...prev,
+                      answers: { ...prev.answers, [answer.id]: publicId }
+                    }));
+                  }}
                   folder="quiz-answers"
                   maxSizeMB={1}
                   recommendedSize="600×600px (displays up to 384px wide)"
