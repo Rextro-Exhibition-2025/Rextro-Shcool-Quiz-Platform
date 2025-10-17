@@ -1,66 +1,49 @@
 "use client";
-import React, { useState } from 'react';
+import { fetchAllViolations } from '@/lib/violationService';
+import React, { useEffect, useState } from 'react';
 
 interface Violation {
+  _id?: string;
   teamId: string;
   memberName: string;
   violationType: 'copy & paste' | 'escaping full screen';
-  createdAt: string;
-  updatedAt: string;
+  schoolName?: string;
+  teamName?: string;
+  educationalZone?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  __v?: number;
 }
 
 interface TeamSummary {
+  schoolName?: string;
+  teamName?: string;
   teamId: string;
   members: string[];
   violationCount: number;
 }
 
 export default function AdminLogsPage() {
-  const [violations] = useState<Violation[]>([
-    {
-      teamId: 'team1',
-      memberName: 'John Doe',
-      violationType: 'copy & paste',
-      createdAt: '2025-10-10T14:32:00Z',
-      updatedAt: '2025-10-10T14:32:00Z'
-    },
-    {
-      teamId: 'team2',
-      memberName: 'Jane Smith',
-      violationType: 'escaping full screen',
-      createdAt: '2025-10-11T10:15:00Z',
-      updatedAt: '2025-10-11T10:15:00Z'
-    },
-    {
-      teamId: 'team3',
-      memberName: 'Alice Johnson',
-      violationType: 'copy & paste',
-      createdAt: '2025-10-12T09:45:00Z',
-      updatedAt: '2025-10-12T09:45:00Z'
-    },
-    {
-      teamId: 'team2',
-      memberName: 'Alice Doe',
-      violationType: 'copy & paste',
-      createdAt: '2025-10-12T09:45:00Z',
-      updatedAt: '2025-10-12T09:45:00Z'
-    },
-    {
-      teamId: 'team2',
-      memberName: 'Alice Doe',
-      violationType: 'copy & paste',
-      createdAt: '2025-10-12T09:45:00Z',
-      updatedAt: '2025-10-12T09:45:00Z'
-    }
-  ]);
+
+  const [violations, setViolations] = useState<Violation[] | []>([]);
 
   const [selectedTeam, setSelectedTeam] = useState<Violation[] | null>(null);
+
+  useEffect(() => {
+    const loadViolations = async () => {
+      const allViolations = await fetchAllViolations();
+      setViolations(allViolations);
+    };
+    loadViolations();
+  }, []);
 
   const teamSummaries: TeamSummary[] = Object.values(
     violations.reduce((acc, violation) => {
       if (!acc[violation.teamId]) {
         acc[violation.teamId] = {
           teamId: violation.teamId,
+          schoolName: violation.schoolName,
+          teamName: violation.teamName,
           members: new Set(),
           violationCount: 0
         };
@@ -68,11 +51,13 @@ export default function AdminLogsPage() {
       acc[violation.teamId].members.add(violation.memberName);
       acc[violation.teamId].violationCount++;
       return acc;
-    }, {} as Record<string, { teamId: string; members: Set<string>; violationCount: number }>))
+    }, {} as Record<string, { teamId: string; members: Set<string>; violationCount: number; schoolName?: string; teamName?: string; }>))
     .map(({ teamId, members, violationCount }) => ({
       teamId,
       members: Array.from(members),
-      violationCount
+      violationCount,
+      schoolName: violations.find(v => v.teamId === teamId)?.schoolName,
+      teamName: violations.find(v => v.teamId === teamId)?.teamName,
     }));
 
   return (
@@ -89,7 +74,8 @@ export default function AdminLogsPage() {
             <table className="min-w-full divide-y divide-gray-200">
               <thead>
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Team ID</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Team Name</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">School Name</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Members</th>
                   <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Violation Count</th>
                 </tr>
@@ -101,7 +87,8 @@ export default function AdminLogsPage() {
                     className="hover:bg-gray-50 cursor-pointer"
                     onClick={() => setSelectedTeam(violations.filter((v) => v.teamId === team.teamId))}
                   >
-                    <td className="px-4 py-2 text-gray-800 max-w-xs truncate">{team.teamId}</td>
+                    <td className="px-4 py-2 text-gray-800 max-w-xs truncate">{team.teamName}</td>
+                    <td className="px-4 py-2 text-gray-800 max-w-xs truncate">{team.schoolName}</td>
                     <td className="px-4 py-2 text-gray-800">{team.members.join(', ')}</td>
                     <td className="px-4 py-2 text-gray-800">{team.violationCount}</td>
                   </tr>
@@ -136,7 +123,7 @@ export default function AdminLogsPage() {
                   {memberViolations.map((violation, index) => (
                     <li key={index}>
                       <strong>Violation:</strong> {violation.violationType} <br />
-                      <strong>Created At:</strong> {new Date(violation.createdAt).toLocaleString()}
+                      <strong>Created At:</strong> {violation.createdAt ? new Date(violation.createdAt).toLocaleString() : 'N/A'}
                     </li>
                   ))}
                 </ul>
