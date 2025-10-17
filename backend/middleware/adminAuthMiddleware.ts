@@ -7,7 +7,10 @@ export const adminOnly = async (
     next: NextFunction
 ): Promise<void> => {
     try {
+
+        
         let token;
+
 
         // Check for token in Authorization header
         if (
