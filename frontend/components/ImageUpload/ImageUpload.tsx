@@ -2,7 +2,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
-import { uploadImageToCloudinary } from '@/lib/cloudinaryService';
+import { uploadImageToCloudinary, deleteImageFromCloudinary } from '@/lib/cloudinaryService';
 
 interface ImageUploadProps {
   label: string;
@@ -24,6 +24,7 @@ export default function ImageUpload({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(currentImage);
+  const [publicId, setPublicId] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,10 +49,11 @@ export default function ImageUpload({
 
     try {
       // Upload to Cloudinary
-      const { url } = await uploadImageToCloudinary(file, folder);
+      const { url, publicId: uploadedPublicId } = await uploadImageToCloudinary(file, folder);
       
-      // Update preview and notify parent
+      // Update preview, publicId and notify parent
       setPreview(url);
+      setPublicId(uploadedPublicId);
       onImageChange(url);
     } catch (err) {
       setError('Failed to upload image. Please try again.');
@@ -61,11 +63,25 @@ export default function ImageUpload({
     }
   };
 
-  const handleRemoveImage = () => {
-    setPreview('');
-    onImageChange('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  const handleRemoveImage = async () => {
+    try {
+      // Delete from Cloudinary if publicId exists
+      if (publicId) {
+        console.log('Deleting image with publicId:', publicId);
+        await deleteImageFromCloudinary(publicId);
+        console.log('Image deleted from Cloudinary successfully');
+      }
+      
+      // Clear local state
+      setPreview('');
+      setPublicId('');
+      onImageChange('');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (err) {
+      console.error('Error deleting image:', err);
+      setError('Failed to delete image from Cloudinary');
     }
   };
 

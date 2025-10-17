@@ -28,19 +28,37 @@ export const uploadImageToCloudinary = async (
   folder: string = 'quiz-images'
 ): Promise<{ url: string; publicId: string }> => {
   try {
+    // Validate file size (max 5MB to avoid timeout issues)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      throw new Error(`File size exceeds 5MB. Please use a smaller image.`);
+    }
+
     // Convert file to base64
     const base64Image = await fileToBase64(file);
 
-    // Send to backend
-    const api = await createAdminApi();
-    const response = await api.post<UploadResponse>('/upload/upload', {
-      image: base64Image,
-      folder: folder,
-    });
+    console.log(`Uploading image: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
 
+    // Send to backend with extended timeout
+    const api = await createAdminApi();
+    const response = await api.post<UploadResponse>(
+      '/upload/upload',
+      {
+        image: base64Image,
+        folder: folder,
+      },
+      {
+        timeout: 120000, // 120 seconds timeout
+      }
+    );
+
+    console.log('✅ Upload successful');
     return response.data.data;
   } catch (error) {
     console.error('Error uploading image:', error);
+    if (error instanceof Error) {
+      throw new Error(`Failed to upload image: ${error.message}`);
+    }
     throw new Error('Failed to upload image');
   }
 };
