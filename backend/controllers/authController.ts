@@ -56,6 +56,7 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
                 memberName: member.name,
                 schoolName: schoolTeam.schoolName,
                 hasEndedQuiz: member.hasEndedQuiz,
+                number: member.number,
                 authToken,
             },
         });
