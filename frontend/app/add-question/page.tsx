@@ -130,7 +130,7 @@ export default function AddQuestion(): React.ReactElement | null {
       const response = await api.post('/questions', transformQuestion(question));
       console.log('Response:', response);
       
-      // Reset form
+      // Reset form - images remain in Cloudinary but are cleared from preview
       setQuestion({
         question: '',
         image: '',
@@ -143,6 +143,14 @@ export default function AddQuestion(): React.ReactElement | null {
         correctAnswer: '',
         quizSet: null,
       });
+
+      // Clear uploaded image IDs tracking (images stay in Cloudinary)
+      setUploadedImageIds({
+        answers: {}
+      });
+
+      // Force ImageUpload components to remount and reset their internal state
+      setFormResetKey(prev => prev + 1);
       
       setShowSaveConfirm(true);
     } catch (error) {
@@ -217,15 +225,7 @@ export default function AddQuestion(): React.ReactElement | null {
   }
 
   return (
-    <div
-      className="min-h-screen bg-gradient-to-br p-4 relative"
-      style={{
-        backgroundImage: 'url("/Container.png")',
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center'
-      }}
-    >
+    <div className="min-h-screen bg-gradient-to-br from-[#c16401] via-[#623400] to-[#251400] p-4">
       {/* Error Modal for Save Button Alerts */}
       {errorModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -249,38 +249,13 @@ export default function AddQuestion(): React.ReactElement | null {
           </div>
         </div>
       )}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        background: 'rgba(255,255,255,0.6)',
-        zIndex: 1
-      }} />
       
-      <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Add New Question</h1>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowClearConfirm(true)}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
-              >
-                <RotateCcw size={16} />
-                <span>Clear</span>
-              </button>
-              <button
-                onClick={handleSave}
-                className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
-              >
-                <Save size={16} />
-                <span>Save Question</span>
-              </button>
             </div>
           </div>
         </div>
@@ -543,6 +518,26 @@ export default function AddQuestion(): React.ReactElement | null {
                 />
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Action Buttons at the bottom */}
+        <div className="p-6 mt-6">
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => setShowClearConfirm(true)}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+            >
+              <RotateCcw size={16} />
+              <span>Clear</span>
+            </button>
+            <button
+              onClick={handleSave}
+              className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+            >
+              <Save size={16} />
+              <span>Save Question</span>
+            </button>
           </div>
         </div>
       </div>
