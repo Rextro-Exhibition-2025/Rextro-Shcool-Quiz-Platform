@@ -2,12 +2,13 @@
 
 import React, { useState, useRef } from 'react';
 import { Upload, X, Image as ImageIcon } from 'lucide-react';
-import { uploadImageToCloudinary } from '@/lib/cloudinaryService';
+import { uploadImageToCloudinary, deleteImageFromCloudinary } from '@/lib/cloudinaryService';
 
 interface ImageUploadProps {
   label: string;
   currentImage?: string;
   onImageChange: (url: string) => void;
+  onPublicIdChange?: (publicId: string) => void; // New callback for publicId
   folder?: string;
   maxSizeMB?: number;
   recommendedSize?: string;
@@ -17,6 +18,7 @@ export default function ImageUpload({
   label,
   currentImage = '',
   onImageChange,
+  onPublicIdChange,
   folder = 'quiz-images',
   maxSizeMB = 2,
   recommendedSize = '800×600px',
@@ -24,6 +26,7 @@ export default function ImageUpload({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(currentImage);
+  const [publicId, setPublicId] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,11 +51,17 @@ export default function ImageUpload({
 
     try {
       // Upload to Cloudinary
-      const { url } = await uploadImageToCloudinary(file, folder);
+      const { url, publicId: uploadedPublicId } = await uploadImageToCloudinary(file, folder);
       
-      // Update preview and notify parent
+      // Update preview, publicId and notify parent
       setPreview(url);
+      setPublicId(uploadedPublicId);
       onImageChange(url);
+      
+      // Notify parent of publicId if callback provided
+      if (onPublicIdChange) {
+        onPublicIdChange(uploadedPublicId);
+      }
     } catch (err) {
       setError('Failed to upload image. Please try again.');
       console.error('Upload error:', err);
@@ -61,11 +70,31 @@ export default function ImageUpload({
     }
   };
 
-  const handleRemoveImage = () => {
-    setPreview('');
-    onImageChange('');
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+  const handleRemoveImage = async () => {
+    try {
+      // Delete from Cloudinary if publicId exists
+      if (publicId) {
+        console.log('Deleting image with publicId:', publicId);
+        await deleteImageFromCloudinary(publicId);
+        console.log('Image deleted from Cloudinary successfully');
+      }
+      
+      // Clear local state
+      setPreview('');
+      setPublicId('');
+      onImageChange('');
+      
+      // Notify parent that publicId is cleared
+      if (onPublicIdChange) {
+        onPublicIdChange('');
+      }
+      
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    } catch (err) {
+      console.error('Error deleting image:', err);
+      setError('Failed to delete image from Cloudinary');
     }
   };
 
@@ -81,24 +110,26 @@ export default function ImageUpload({
 
       {/* Upload Button */}
       <div className="flex items-start gap-4">
-        <button
-          type="button"
-          onClick={handleClick}
-          disabled={uploading}
-          className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {uploading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              <span>Uploading...</span>
-            </>
-          ) : (
-            <>
-              <Upload size={16} />
-              <span>Upload Image</span>
-            </>
-          )}
-        </button>
+        {!preview && (
+          <button
+            type="button"
+            onClick={handleClick}
+            disabled={uploading}
+            className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {uploading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span>Uploading...</span>
+              </>
+            ) : (
+              <>
+                <Upload size={16} />
+                <span>Upload Image</span>
+              </>
+            )}
+          </button>
+        )}
 
         {preview && (
           <button
