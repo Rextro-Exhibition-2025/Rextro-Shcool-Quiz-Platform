@@ -11,6 +11,7 @@ interface User {
     authToken: string;  // Add this field
     marks?: number;     // Make this optional since it's not in login response
     hasEndedQuiz?: boolean;
+    number: number;
 }
 
 interface UserContextType {
@@ -60,6 +61,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.removeItem('schoolName');
         localStorage.removeItem('teamName');
         localStorage.removeItem('marks');
+        localStorage.removeItem('number');
         setUser(null);
         window.location.href = '/login'; // Redirect to login page
     };
@@ -98,6 +100,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                     localStorage.removeItem('schoolName');
                     localStorage.removeItem('teamName');
                     localStorage.removeItem('marks');
+                    localStorage.removeItem('number');
                     setUser(null);
                 }
             } finally {

@@ -7,6 +7,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { transformQuestion } from './questionTransformer';
 import ImageUpload from '@/components/ImageUpload/ImageUpload';
+import { deleteImageFromCloudinary } from '@/lib/cloudinaryService';
 
 // Error modal state for alerts
 type ErrorModalState = { open: boolean; message: string };
@@ -15,11 +16,13 @@ interface Answer {
   id: string;
   text: string;
   image: string;
+  imagePublicId?: string;
 }
 
 export interface Question {
   question: string;
   image: string;
+  imagePublicId?: string;
   answers: Answer[];
   correctAnswer: string;
   quizSet: number | null;
@@ -51,6 +54,17 @@ export default function AddQuestion(): React.ReactElement | null {
     correctAnswer: '',
     quizSet: null,
   });
+
+  // Track Cloudinary publicIds for uploaded images
+  const [uploadedImageIds, setUploadedImageIds] = useState<{
+    questionImage?: string;
+    answers: Record<string, string>; // answerId -> publicId
+  }>({
+    answers: {}
+  });
+
+  // Key to force ImageUpload components to remount when form is cleared
+  const [formResetKey, setFormResetKey] = useState(0);
 
   const handleQuizSetChange = (value: string): void => {
     const parsed = value ? parseInt(value) : null;
@@ -118,7 +132,7 @@ export default function AddQuestion(): React.ReactElement | null {
       const response = await api.post('/questions', transformQuestion(question));
       console.log('Response:', response);
       
-      // Reset form
+      // Reset form - images remain in Cloudinary but are cleared from preview
       setQuestion({
         question: '',
         image: '',
@@ -131,6 +145,14 @@ export default function AddQuestion(): React.ReactElement | null {
         correctAnswer: '',
         quizSet: null,
       });
+
+      // Clear uploaded image IDs tracking (images stay in Cloudinary)
+      setUploadedImageIds({
+        answers: {}
+      });
+
+      // Force ImageUpload components to remount and reset their internal state
+      setFormResetKey(prev => prev + 1);
       
       setShowSaveConfirm(true);
     } catch (error) {
@@ -139,7 +161,29 @@ export default function AddQuestion(): React.ReactElement | null {
   };
 
 
-  const clearForm = (): void => {
+  const clearForm = async (): Promise<void> => {
+    try {
+      // Delete question image from Cloudinary if exists
+      if (uploadedImageIds.questionImage) {
+        console.log('Deleting question image from Cloudinary:', uploadedImageIds.questionImage);
+        await deleteImageFromCloudinary(uploadedImageIds.questionImage);
+      }
+
+      // Delete all answer images from Cloudinary if exist
+      for (const [answerId, publicId] of Object.entries(uploadedImageIds.answers)) {
+        if (publicId) {
+          console.log(`Deleting answer ${answerId} image from Cloudinary:`, publicId);
+          await deleteImageFromCloudinary(publicId);
+        }
+      }
+
+      console.log('All images cleared from Cloudinary');
+    } catch (error) {
+      console.error('Error deleting images from Cloudinary:', error);
+      // Continue with clearing the form even if deletion fails
+    }
+
+    // Clear the form state
     setQuestion({
       question: '',
       image: '',
@@ -152,6 +196,15 @@ export default function AddQuestion(): React.ReactElement | null {
       correctAnswer: '',
       quizSet: null,
     });
+
+    // Clear uploaded image IDs
+    setUploadedImageIds({
+      answers: {}
+    });
+
+    // Force ImageUpload components to remount and reset their internal state
+    setFormResetKey(prev => prev + 1);
+
     setShowClearConfirm(false);
   };
 
@@ -174,15 +227,7 @@ export default function AddQuestion(): React.ReactElement | null {
   }
 
   return (
-    <div
-      className="min-h-screen bg-gradient-to-br p-4 relative"
-      style={{
-        backgroundImage: 'url("/Container.png")',
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center'
-      }}
-    >
+    <div className="min-h-screen bg-gradient-to-br from-[#c16401] via-[#623400] to-[#251400] p-4">
       {/* Error Modal for Save Button Alerts */}
       {errorModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -206,38 +251,13 @@ export default function AddQuestion(): React.ReactElement | null {
           </div>
         </div>
       )}
-      <div style={{
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        background: 'rgba(255,255,255,0.6)',
-        zIndex: 1
-      }} />
       
-      <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Add New Question</h1>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowClearConfirm(true)}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
-              >
-                <RotateCcw size={16} />
-                <span>Clear</span>
-              </button>
-              <button
-                onClick={handleSave}
-                className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
-              >
-                <Save size={16} />
-                <span>Save Question</span>
-              </button>
             </div>
           </div>
         </div>
@@ -434,9 +454,14 @@ export default function AddQuestion(): React.ReactElement | null {
 
           {/* Question Image */}
           <ImageUpload
+            key={`question-image-${formResetKey}`}
             label="Question Image (Optional)"
             currentImage={question.image}
             onImageChange={handleQuestionImageChange}
+            onPublicIdChange={(publicId) => {
+              setUploadedImageIds(prev => ({ ...prev, questionImage: publicId }));
+              setQuestion(prev => ({ ...prev, imagePublicId: publicId }));
+            }}
             folder="quiz-questions"
             maxSizeMB={2}
             recommendedSize="1024×768px (displays up to 768px wide in quiz)"
@@ -480,15 +505,49 @@ export default function AddQuestion(): React.ReactElement | null {
 
                 {/* Answer Image Upload */}
                 <ImageUpload
+                  key={`answer-${answer.id}-image-${formResetKey}`}
                   label={`Image for Option ${answer.id.toUpperCase()} (Optional)`}
                   currentImage={answer.image}
                   onImageChange={(url) => handleAnswerChange(answer.id, 'image', url)}
+                  onPublicIdChange={(publicId) => {
+                    setUploadedImageIds(prev => ({
+                      ...prev,
+                      answers: { ...prev.answers, [answer.id]: publicId }
+                    }));
+                    // Also store publicId in the answer object
+                    setQuestion(prev => ({
+                      ...prev,
+                      answers: prev.answers.map(ans =>
+                        ans.id === answer.id ? { ...ans, imagePublicId: publicId } : ans
+                      )
+                    }));
+                  }}
                   folder="quiz-answers"
                   maxSizeMB={1}
                   recommendedSize="600×600px (displays up to 384px wide)"
                 />
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Action Buttons at the bottom */}
+        <div className="p-6 mt-6">
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => setShowClearConfirm(true)}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+            >
+              <RotateCcw size={16} />
+              <span>Clear</span>
+            </button>
+            <button
+              onClick={handleSave}
+              className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+            >
+              <Save size={16} />
+              <span>Save Question</span>
+            </button>
           </div>
         </div>
       </div>

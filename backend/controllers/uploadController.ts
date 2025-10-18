@@ -26,13 +26,16 @@ export const uploadImage = async (req: Request, res: Response): Promise<any> => 
     console.log('API Secret:', process.env.CLOUDINARY_API_SECRET ? '✓ Set' : '✗ Missing');
     console.log('Folder:', uploadFolder);
 
-    // Upload to Cloudinary
+    // Upload to Cloudinary with optimized settings
     const result = await cloudinary.uploader.upload(image, {
       folder: uploadFolder,
       resource_type: 'auto',
       // Optimize images
       quality: 'auto:good',
       fetch_format: 'auto',
+      // Timeout and chunk settings
+      timeout: 120000, // 120 seconds timeout
+      chunk_size: 6000000, // 6MB chunks for large files
     });
 
     console.log('✅ Upload successful:', result.secure_url);
@@ -62,13 +65,16 @@ export const deleteImage = async (req: Request, res: Response): Promise<any> => 
     const { publicId } = req.body;
 
     if (!publicId) {
+      console.error('No public ID provided in request body');
       return res.status(400).json({
         success: false,
         message: 'No public ID provided',
       });
     }
 
-    await cloudinary.uploader.destroy(publicId);
+    console.log('Attempting to delete image with publicId:', publicId);
+    const result = await cloudinary.uploader.destroy(publicId);
+    console.log('Cloudinary delete result:', result);
 
     res.status(200).json({
       success: true,
@@ -78,7 +84,7 @@ export const deleteImage = async (req: Request, res: Response): Promise<any> => 
     console.error('Cloudinary delete error:', error);
     res.status(500).json({
       success: false,
-      message: 'Error deleting image',
+      message: 'Failed to delete image',
       error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
