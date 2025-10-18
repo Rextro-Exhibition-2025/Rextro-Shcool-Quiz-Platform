@@ -1,6 +1,7 @@
 
 import NextAuth, { AuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
+import jwt from 'jsonwebtoken'
 
 const authOptions: AuthOptions = {
   providers: [
@@ -10,18 +11,59 @@ const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // Allow any Google-authenticated user (including test users) to sign in
+    // Allow Google users to sign in (tweak this to restrict to admin emails)
+    async signIn({ user, account }) {
       if (account?.provider === 'google' && user.email) {
-        return true;
+        return true
       }
-      return false;
+      return false
     },
+
+    // Persist custom fields on the JWT that will be available in `session` callback
+    async jwt({ token, user }) {
+      // On initial sign in, `user` will be available — copy useful fields into the token
+      if (user) {
+        token.email = user.email
+        token.name = user.name
+      
+        
+        // NextAuth might set `sub` already, but preserve if present
+        if ((user as any).id) token.sub = (user as any).id
+      }
+      return token
+    },
+
+    // Create a custom short-lived JWT and attach it to the session object returned to the client
     async session({ session, token }) {
-      return session;
-    },
-    async jwt({ token, user, account }) {
-      return token;
+      try {
+        const signSecret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET
+        if (!signSecret) {
+          console.warn('No JWT signing secret found (JWT_SECRET or NEXTAUTH_SECRET). Using insecure fallback.');
+        }
+
+        // Build payload — keep it minimal: email, name, sub
+        const payload: Record<string, unknown> = {
+          email: token.email,
+          name: token.name,
+        }
+        if (token.sub) payload.sub = token.sub
+
+        // Sign a short-lived token for backend APIs to verify
+        const customToken = jwt.sign(payload, signSecret || 'dev_secret', {
+          expiresIn: '15m',
+        })
+
+
+        console.log(customToken,"custom token");
+        
+
+        // Expose it on session.token so client-side code can read it and send as Authorization header
+        ;(session as any).token = customToken
+      } catch (e) {
+        console.error('Failed to sign custom JWT for session:', e)
+      }
+
+      return session
     },
   },
   pages: {
