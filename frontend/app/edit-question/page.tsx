@@ -376,7 +376,7 @@ export default function EditQuestionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br p-4 relative" style={{ backgroundImage: 'url("/Container.png")', backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
+    <div className="min-h-screen bg-gradient-to-br from-[#c16401] via-[#623400] to-[#251400] p-4">
       {/* Error Modal for Alerts */}
       {errorModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -501,10 +501,10 @@ export default function EditQuestionPage() {
           </div>
         </div>
       )}
-      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(255,255,255,0.6)', zIndex: 1 }} />
-      <div className="max-w-4xl mx-auto relative z-10">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <h1 className="text-2xl font-bold text-gray-800">Edit Question</h1>
               {hasUnsavedChanges && (
@@ -512,34 +512,6 @@ export default function EditQuestionPage() {
                   Unsaved Changes
                 </span>
               )}
-            </div>
-            <div className="flex items-center ml-auto space-x-2">
-              <button
-                onClick={() => {
-                  if (hasUnsavedChanges) {
-                    setShowUnsavedChangesModal(true);
-                  } else {
-                    router.push("/manage-questions");
-                  }
-                }}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
-              >
-                <Save size={16} />
-                <span>Save Changes</span>
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-red-500 to-red-800 text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
-              >
-                <Trash2 size={16} />
-                <span>Delete</span>
-              </button>
             </div>
           </div>
         </div>
@@ -689,7 +661,38 @@ export default function EditQuestionPage() {
               </div>
             ))}
           </div>
-          {/* Save button moved to top bar */}
+        </div>
+
+        {/* Action Buttons at the bottom */}
+        <div className="p-6 mt-6">
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => {
+                if (hasUnsavedChanges) {
+                  setShowUnsavedChangesModal(true);
+                } else {
+                  router.push("/manage-questions");
+                }
+              }}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+            >
+              <span>Cancel</span>
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-red-500 to-red-800 text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+            >
+              <Trash2 size={16} />
+              <span>Delete</span>
+            </button>
+            <button
+              onClick={handleSave}
+              className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+            >
+              <Save size={16} />
+              <span>Save Changes</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
