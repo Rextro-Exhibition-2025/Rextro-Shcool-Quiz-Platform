@@ -11,30 +11,13 @@ import ImageUploadPreview from "@/components/ImageUpload/ImageUploadPreview";
 import { deleteImageFromCloudinary, uploadImageToCloudinary } from "@/lib/cloudinaryService";
 
 // Error modal state for alerts
+
+
 type ErrorModalState = { open: boolean; message: string };
 
 
 
-// Dummy fetch function for demonstration
-const fetchQuestionById = async (id: string): Promise<Question | null> => {
-  // Replace with real API call
-  if (id === "1") {
-    return {
-      id: "1",
-      question: "What is the capital of France?",
-      image: "",
-      answers: [
-        { id: "a", text: "Paris", image: "" },
-        { id: "b", text: "London", image: "" },
-        { id: "c", text: "Berlin", image: "" },
-        { id: "d", text: "Madrid", image: "" }
-      ],
-      correctAnswer: "a",
-      quizSet: "set1"
-    };
-  }
-  return null;
-};
+
 
 export default function EditQuestionPage() {
   const router = useRouter();
@@ -185,6 +168,8 @@ export default function EditQuestionPage() {
     }
 
   }, [questionId]);
+
+
 
   if (status === "loading" || loading) {
     return (
