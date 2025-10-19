@@ -102,3 +102,45 @@ export const deleteQuestion = async (req: Request, res: Response): Promise<any> 
     });
   }
 };
+
+
+export const getAllQuestions = async (req: Request, res: Response): Promise<any> => {
+
+  try {
+
+    const questions = await Question.find();
+    res.status(200).json({ success: true, data: questions });
+    
+  } catch (error) {
+
+    console.error('❌ Error fetching questions:', error);
+    res.status(400).json({
+      success: false,
+      message: "Error Fetching Questions",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+    
+  }
+
+}
+
+
+export const getQuestionById = async (req: Request, res: Response) => {
+  try {
+    const questionId = req.params.questionId;
+    console.log("Fetching question with ID:", questionId);
+
+    const question = await Question.findById(questionId);
+    if(!question){
+      res.status(404).json({ success: false, message: `Question with ID ${questionId} not found.` });
+    }
+   res.status(200).json({ success: true, data: question });
+  } catch (error) {
+    console.error('❌ Error fetching question by ID:', error);
+    res.status(400).json({
+      success: false,
+      message: "Error Fetching Question",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+}

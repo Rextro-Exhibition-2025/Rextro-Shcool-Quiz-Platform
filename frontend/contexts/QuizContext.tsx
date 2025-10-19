@@ -1,7 +1,6 @@
 import { createStudentApi } from "@/interceptors/student";
 import { createContext, useContext, useState } from "react";
 import { useUser } from "./UserContext";
-import { log } from "console";
 
 interface QuizContextType {
     selectedAnswers: { questionId: number; answer: string }[];

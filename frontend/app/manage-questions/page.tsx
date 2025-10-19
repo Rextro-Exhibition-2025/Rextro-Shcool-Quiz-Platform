@@ -1,9 +1,13 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { Edit, Trash2, Plus } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { createAdminApi } from "@/interceptors/admins";
+import { QuestionApiResponse, QuestionItem, QuizApiResponse } from "@/types/quiz";
 import { Tab } from "@headlessui/react";
+import { Edit, Plus } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { transformQuizApiQuestions } from "./questionTransformer";
+
 
 // Dummy data for demonstration. Replace with API call in production.
 const DUMMY_QUESTIONS = [
@@ -34,10 +38,28 @@ const DUMMY_QUESTIONS = [
 ];
 
 export default function ManageQuestions() {
+
+
 	const router = useRouter();
 	const { data: session, status } = useSession();
-	const [questions, setQuestions] = useState(DUMMY_QUESTIONS);
+	const [questions, setQuestions] = useState<QuestionItem[]>();
 	const [selectedQuizSet, setSelectedQuizSet] = useState("set1");
+	useEffect(() => {
+
+		const fetchQuestions = async () => {
+			const api = await createAdminApi();
+			try {
+				const response = await api.get('/questions');
+				setQuestions(transformQuizApiQuestions((response?.data as { data: QuestionApiResponse[], success: boolean }).data));
+
+			} catch (error) {
+				console.error('Error fetching questions:', error);
+			}
+		}
+
+		fetchQuestions();
+	}, []);
+
 
 	useEffect(() => {
 		if (status === "unauthenticated") {
@@ -59,7 +81,7 @@ export default function ManageQuestions() {
 
 	const handleDelete = (id: string) => {
 		if (window.confirm("Are you sure you want to delete this question?")) {
-			setQuestions((prev) => prev.filter((q) => q.id !== id));
+			setQuestions((prev) => prev?.filter((q) => q.id !== id));
 		}
 	};
 
@@ -67,7 +89,7 @@ export default function ManageQuestions() {
 		router.push(`/edit-question?id=${id}`);
 	};
 
-	const filteredQuestions = questions.filter(
+	const filteredQuestions = questions?.filter(
 		(q) => q.quizSet === selectedQuizSet
 	);
 
@@ -101,7 +123,7 @@ export default function ManageQuestions() {
 					<Tab.Panels>
 						{["set1", "set2", "set3", "set4"].map((set, index) => (
 							<Tab.Panel key={index} className="bg-white rounded-2xl shadow-lg p-6">
-								{filteredQuestions.length === 0 ? (
+								{filteredQuestions?.length === 0 ? (
 									<div className="text-center text-gray-500">No questions found.</div>
 								) : (
 									<table className="min-w-full divide-y divide-gray-200">
@@ -113,7 +135,7 @@ export default function ManageQuestions() {
 											</tr>
 										</thead>
 										<tbody>
-											{filteredQuestions.map((q) => {
+											{filteredQuestions?.map((q) => {
 												const correct = q.answers.find(a => a.id === q.correctAnswer);
 												return (
 													<tr key={q.id} className="hover:bg-gray-50">
