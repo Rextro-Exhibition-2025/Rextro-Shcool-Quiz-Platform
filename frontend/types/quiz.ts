@@ -37,6 +37,7 @@ export interface Answer {
 	id: string;
 	text: string | null;
 	image?: string | null;
+	imagePublicId?: string;
 }
 
 export interface QuizQuestion {
@@ -51,6 +52,7 @@ export interface QuestionOption {
 	id: string;
 	text: string;
 	image?: string;
+	imagePublicId?: string;
 }
 
 export interface QuestionItem {
@@ -67,6 +69,7 @@ export interface Question {
   id?: string;
   question: string;
   image?: string;
+  imagePublicId?: string;
   answers: Answer[];
   correctAnswer: string;
   quizSet: string;
