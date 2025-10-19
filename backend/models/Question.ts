@@ -5,7 +5,7 @@ type OptionType = 'A' | 'B' | 'C' | 'D';
 
 interface Option {
 	option: OptionType;
-	optionText: string;
+	optionText?: string;
 	optionImage?: string;
 	optionImagePublicId?: string;
 }
@@ -22,9 +22,18 @@ export interface IQuestion extends Document {
 
 const OptionSchema: Schema = new Schema({
     option: { type: String, required: true, enum: ['A', 'B', 'C', 'D'] },
-    optionText: { type: String, required: true },
+    optionText: { type: String, required: false },
     optionImage: { type: String, required: false },
     optionImagePublicId: { type: String, required: false },
+});
+
+// Custom validator to ensure at least one of optionText or optionImage is provided
+OptionSchema.pre('validate', function(next) {
+    if (!this.optionText && !this.optionImage) {
+        this.invalidate('optionText', 'Either optionText or optionImage must be provided');
+        this.invalidate('optionImage', 'Either optionText or optionImage must be provided');
+    }
+    next();
 });
 
 

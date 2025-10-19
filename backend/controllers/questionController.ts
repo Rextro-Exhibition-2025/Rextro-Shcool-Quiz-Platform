@@ -10,6 +10,20 @@ export const createQuestion = async (req: Request, res: Response): Promise<any> 
   try {
     console.log('📝 Received question data:', JSON.stringify(req.body, null, 2));
 
+    // Validate that each option has either text or image
+    if (req.body.options && Array.isArray(req.body.options)) {
+      for (let i = 0; i < req.body.options.length; i++) {
+        const option = req.body.options[i];
+        if (!option.optionText && !option.optionImage) {
+          res.status(400).json({
+            success: false,
+            message: `Option ${option.option || i + 1} must have either text or image`,
+          });
+          return;
+        }
+      }
+    }
+
     const quiz = await Quiz.findOne({ quizId: req.body.quizId });
 
     if (!quiz) {
@@ -62,6 +76,21 @@ export const editQuestion =  async (req: Request, res: Response): Promise<any> =
   try{
     const questionId = req.params.questionId;
     const updatedData = req.body;
+
+    // Validate that each option has either text or image
+    if (updatedData.options && Array.isArray(updatedData.options)) {
+      for (let i = 0; i < updatedData.options.length; i++) {
+        const option = updatedData.options[i];
+        if (!option.optionText && !option.optionImage) {
+          res.status(400).json({
+            success: false,
+            message: `Option ${option.option || i + 1} must have either text or image`,
+          });
+          return;
+        }
+      }
+    }
+
     const question = await Question.findByIdAndUpdate(questionId, updatedData, { new: true });
     if(!question){
       return res.status(404).json({ success: false, message: `Question with ID ${questionId} not found.` });
