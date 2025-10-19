@@ -1,8 +1,8 @@
 "use client";
 
-import ImageUpload from '@/components/ImageUpload/ImageUpload';
+import ImageUploadPreview from '@/components/ImageUpload/ImageUploadPreview';
 import { createAdminApi } from '@/interceptors/admins';
-import { deleteImageFromCloudinary } from '@/lib/cloudinaryService';
+import { deleteImageFromCloudinary, uploadImageToCloudinary } from '@/lib/cloudinaryService';
 import { RotateCcw, Save } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -55,6 +55,14 @@ export default function AddQuestion(): React.ReactElement | null {
     quizSet: null,
   });
 
+  // Track pending image files (to upload on save)
+  const [pendingImageFiles, setPendingImageFiles] = useState<{
+    questionImage?: File;
+    answers: Record<string, File>; // answerId -> File
+  }>({
+    answers: {}
+  });
+
   // Track Cloudinary publicIds for uploaded images
   const [uploadedImageIds, setUploadedImageIds] = useState<{
     questionImage?: string;
@@ -98,12 +106,17 @@ export default function AddQuestion(): React.ReactElement | null {
       return;
     }
 
-    const hasValidAnswers = question.answers.some(answer => 
-      answer.text.trim() || answer.image.trim()
+    // Validate that ALL 4 answers have either text or image
+    const emptyAnswers = question.answers.filter(answer => 
+      !answer.text.trim() && !answer.image.trim()
     );
 
-    if (!hasValidAnswers) {
-      setErrorModal({ open: true, message: 'Please provide at least one answer option.' });
+    if (emptyAnswers.length > 0) {
+      const emptyIds = emptyAnswers.map(a => a.id.toUpperCase()).join(', ');
+      setErrorModal({ 
+        open: true, 
+        message: `All answer options must have text or image. Empty: ${emptyIds}` 
+      });
       return;
     }
 
@@ -124,15 +137,50 @@ export default function AddQuestion(): React.ReactElement | null {
       return;
     }
 
-    // Here you would typically send the data to your backend
-    console.log('Saving question:', question);
-
     try {
       const api = await createAdminApi();
-      const response = await api.post('/questions', transformQuestion(question));
-      console.log('Response:', response);
+      const updatedQuestion = { ...question };
+      const uploadedPublicIds: string[] = []; // Track for rollback
       
-      // Reset form - images remain in Cloudinary but are cleared from preview
+      // Upload question image if selected
+      if (pendingImageFiles.questionImage) {
+        const { url, publicId } = await uploadImageToCloudinary(pendingImageFiles.questionImage, 'quiz-questions');
+        updatedQuestion.image = url;
+        updatedQuestion.imagePublicId = publicId;
+        uploadedPublicIds.push(publicId); // Track for potential rollback
+      }
+      
+      // Upload answer images if selected
+      for (const [answerId, file] of Object.entries(pendingImageFiles.answers)) {
+        const answerIndex = updatedQuestion.answers.findIndex(a => a.id === answerId);
+        if (answerIndex !== -1) {
+          const { url, publicId } = await uploadImageToCloudinary(file, 'quiz-answers');
+          updatedQuestion.answers[answerIndex].image = url;
+          updatedQuestion.answers[answerIndex].imagePublicId = publicId;
+          uploadedPublicIds.push(publicId); // Track for potential rollback
+        }
+      }
+      
+      console.log('Saving question:', updatedQuestion);
+      
+      try {
+        const response = await api.post('/questions', transformQuestion(updatedQuestion));
+        console.log('Response:', response);
+      } catch (dbError) {
+        // Database save failed - rollback uploaded images
+        console.error('Database save failed, rolling back uploaded images:', dbError);
+        for (const publicId of uploadedPublicIds) {
+          try {
+            await deleteImageFromCloudinary(publicId);
+            console.log('Rolled back image:', publicId);
+          } catch (deleteError) {
+            console.error('Failed to rollback image:', publicId, deleteError);
+          }
+        }
+        throw dbError; // Re-throw to be caught by outer catch
+      }
+      
+      // Reset form - images are now uploaded
       setQuestion({
         question: '',
         image: '',
@@ -146,7 +194,12 @@ export default function AddQuestion(): React.ReactElement | null {
         quizSet: null,
       });
 
-      // Clear uploaded image IDs tracking (images stay in Cloudinary)
+      // Clear pending image files
+      setPendingImageFiles({
+        answers: {}
+      });
+
+      // Clear uploaded image IDs tracking
       setUploadedImageIds({
         answers: {}
       });
@@ -162,27 +215,9 @@ export default function AddQuestion(): React.ReactElement | null {
 
 
   const clearForm = async (): Promise<void> => {
-    try {
-      // Delete question image from Cloudinary if exists
-      if (uploadedImageIds.questionImage) {
-        console.log('Deleting question image from Cloudinary:', uploadedImageIds.questionImage);
-        await deleteImageFromCloudinary(uploadedImageIds.questionImage);
-      }
-
-      // Delete all answer images from Cloudinary if exist
-      for (const [answerId, publicId] of Object.entries(uploadedImageIds.answers)) {
-        if (publicId) {
-          console.log(`Deleting answer ${answerId} image from Cloudinary:`, publicId);
-          await deleteImageFromCloudinary(publicId);
-        }
-      }
-
-      console.log('All images cleared from Cloudinary');
-    } catch (error) {
-      console.error('Error deleting images from Cloudinary:', error);
-      // Continue with clearing the form even if deletion fails
-    }
-
+    // No need to delete from Cloudinary since images haven't been uploaded yet
+    // Just clear local state
+    
     // Clear the form state
     setQuestion({
       question: '',
@@ -195,6 +230,11 @@ export default function AddQuestion(): React.ReactElement | null {
       ],
       correctAnswer: '',
       quizSet: null,
+    });
+
+    // Clear pending image files
+    setPendingImageFiles({
+      answers: {}
     });
 
     // Clear uploaded image IDs
@@ -453,14 +493,24 @@ export default function AddQuestion(): React.ReactElement | null {
           </div>
 
           {/* Question Image */}
-          <ImageUpload
+          <ImageUploadPreview
             key={`question-image-${formResetKey}`}
             label="Question Image (Optional)"
             currentImage={question.image}
-            onImageChange={handleQuestionImageChange}
-            onPublicIdChange={(publicId) => {
-              setUploadedImageIds(prev => ({ ...prev, questionImage: publicId }));
-              setQuestion(prev => ({ ...prev, imagePublicId: publicId }));
+            onImageSelect={(file) => {
+              if (file) {
+                setPendingImageFiles(prev => ({ ...prev, questionImage: file }));
+                // Create preview URL for immediate display
+                const previewUrl = URL.createObjectURL(file);
+                setQuestion(prev => ({ ...prev, image: previewUrl }));
+              }
+            }}
+            onImageRemove={() => {
+              setPendingImageFiles(prev => {
+                const { questionImage, ...rest } = prev;
+                return rest;
+              });
+              setQuestion(prev => ({ ...prev, image: '' }));
             }}
             folder="quiz-questions"
             maxSizeMB={2}
@@ -504,23 +554,27 @@ export default function AddQuestion(): React.ReactElement | null {
                 </div>
 
                 {/* Answer Image Upload */}
-                <ImageUpload
+                <ImageUploadPreview
                   key={`answer-${answer.id}-image-${formResetKey}`}
                   label={`Image for Option ${answer.id.toUpperCase()} (Optional)`}
                   currentImage={answer.image}
-                  onImageChange={(url) => handleAnswerChange(answer.id, 'image', url)}
-                  onPublicIdChange={(publicId) => {
-                    setUploadedImageIds(prev => ({
-                      ...prev,
-                      answers: { ...prev.answers, [answer.id]: publicId }
-                    }));
-                    // Also store publicId in the answer object
-                    setQuestion(prev => ({
-                      ...prev,
-                      answers: prev.answers.map(ans =>
-                        ans.id === answer.id ? { ...ans, imagePublicId: publicId } : ans
-                      )
-                    }));
+                  onImageSelect={(file) => {
+                    if (file) {
+                      setPendingImageFiles(prev => ({
+                        ...prev,
+                        answers: { ...prev.answers, [answer.id]: file }
+                      }));
+                      // Create preview URL for immediate display
+                      const previewUrl = URL.createObjectURL(file);
+                      handleAnswerChange(answer.id, 'image', previewUrl);
+                    }
+                  }}
+                  onImageRemove={() => {
+                    setPendingImageFiles(prev => {
+                      const { [answer.id]: removed, ...restAnswers } = prev.answers;
+                      return { ...prev, answers: restAnswers };
+                    });
+                    handleAnswerChange(answer.id, 'image', '');
                   }}
                   folder="quiz-answers"
                   maxSizeMB={1}
