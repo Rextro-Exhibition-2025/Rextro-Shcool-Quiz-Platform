@@ -93,15 +93,15 @@ export default function ManageQuestions() {
 		router.push(`/edit-question?id=${id}`);
 	};
 
-	const handleTabChange = async (index: number) => {
-		setIsLoadingTab(true);
+	const handleTabChange = (index: number) => {
 		setSelectedQuizSet(`set${index + 1}`);
-		setIsLoadingTab(false);
 	};
 
 	const filteredQuestions = questions?.filter(
 		(q) => q.quizSet === selectedQuizSet
 	);
+
+	const isTableLoading = !filteredQuestions; // Add a loading state for the table content
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br p-4 relative" style={{ backgroundImage: 'url("/Container.png")', backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
@@ -141,7 +141,11 @@ export default function ManageQuestions() {
 					<Tab.Panels>
 						{["set1", "set2", "set3", "set4"].map((set, index) => (
 							<Tab.Panel key={index} className="bg-white rounded-2xl shadow-lg p-6">
-								{filteredQuestions?.length === 0 ? (
+								{isTableLoading ? (
+									<div className="flex justify-center items-center">
+										<div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-transparent"></div>
+									</div>
+								) : filteredQuestions?.length === 0 ? (
 									<div className="text-center text-gray-500">No questions found.</div>
 								) : (
 									<table className="min-w-full divide-y divide-gray-200">

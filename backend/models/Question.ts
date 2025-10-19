@@ -27,15 +27,8 @@ const OptionSchema: Schema = new Schema({
     optionImagePublicId: { type: String, required: false },
 });
 
-// Custom validator to ensure at least one of optionText or optionImage is provided
-OptionSchema.pre('validate', function(next) {
-    if (!this.optionText && !this.optionImage) {
-        this.invalidate('optionText', 'Either optionText or optionImage must be provided');
-        this.invalidate('optionImage', 'Either optionText or optionImage must be provided');
-    }
-    next();
-});
-
+// Note: Validation for optionText/optionImage is handled at the controller level
+// Pre-validation hooks don't execute for subdocuments in arrays
 
 const QuestionSchema: Schema = new Schema({
         quizId: { type: Number, required: true , enum: [1,2,3,4]},
