@@ -3,23 +3,14 @@ import React, { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Save, Trash2 } from "lucide-react";
+import { createAdminApi } from "@/interceptors/admins";
+import transformQuizApiQuestion from "../manage-questions/questionTransformer";
+import { Question, QuestionApiResponse } from "@/types/quiz";
+import { transformQuestionToApi } from "./questionTransformer";
 // Error modal state for alerts
 type ErrorModalState = { open: boolean; message: string };
 
-interface Answer {
-  id: string;
-  text: string;
-  image: string;
-}
 
-interface Question {
-  id?: string;
-  question: string;
-  image: string;
-  answers: Answer[];
-  correctAnswer: string;
-  quizSet: string;
-}
 
 // Dummy fetch function for demonstration
 const fetchQuestionById = async (id: string): Promise<Question | null> => {
@@ -52,6 +43,8 @@ export default function EditQuestionPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const questionId = searchParams.get("id");
+  console.log(questionId);
+
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -60,14 +53,35 @@ export default function EditQuestionPage() {
   }, [status, router]);
 
   useEffect(() => {
-    if (questionId) {
-      fetchQuestionById(questionId).then((q) => {
-        setQuestion(q);
+
+    console.log("use effect running");
+
+
+
+    const getQuestionById = async (id: string) => {
+
+      const api = await createAdminApi();
+      try {
+
+
+
+        const response = await api.get(`/questions/${id}`);
+        console.log(transformQuizApiQuestion((response?.data as { data: QuestionApiResponse; success: boolean }).data),"output");
+
+        setQuestion(transformQuizApiQuestion((response?.data as { data: QuestionApiResponse; success: boolean }).data));
+      } catch (error) {
+        console.error('Error fetching question:', error);
+      } finally {
         setLoading(false);
-      });
+      }
+    };
+
+    if (questionId) {
+      getQuestionById(questionId);
     } else {
       setLoading(false);
     }
+
   }, [questionId]);
 
   if (status === "loading" || loading) {
@@ -83,13 +97,13 @@ export default function EditQuestionPage() {
   }
 
   // Validation and save logic (copied from Add Question)
-  const handleSave = (): void => {
+  const handleSave = async (): Promise<void> => {
     if (!question) return;
     if (!question.question.trim()) {
       setErrorModal({ open: true, message: 'Please enter a question.' });
       return;
     }
-    const hasValidAnswers = question.answers.some(answer => answer.text.trim() || answer.image.trim());
+    const hasValidAnswers = question.answers.some(answer => answer?.text?.trim() || answer?.image?.trim());
     if (!hasValidAnswers) {
       setErrorModal({ open: true, message: 'Please provide at least one answer option.' });
       return;
@@ -100,7 +114,7 @@ export default function EditQuestionPage() {
     }
     // Validate that the selected correct answer is not empty
     const correct = question.answers.find(a => a.id === question.correctAnswer);
-    if (!correct || (!correct.text.trim() && !correct.image.trim())) {
+    if (!correct || (!correct?.text?.trim() && !correct?.image?.trim())) {
       setErrorModal({ open: true, message: 'The selected correct answer must have text or image.' });
       return;
     }
@@ -110,6 +124,22 @@ export default function EditQuestionPage() {
     }
     // Here you would typically send the data to your backend
     setShowSaveConfirm(true);
+
+
+    try {
+      const api = await createAdminApi();
+      console.log(question);
+      const transformedQuestion = transformQuestionToApi(question);
+      console.log(transformedQuestion);
+      console.log(question.id);
+
+
+      await api.put(`/questions/${question.id}`, transformedQuestion);
+      router.push("/manage-questions");
+
+    } catch (error) {
+      console.error('Error saving question:', error);
+    }
   };
 
   // Delete logic
@@ -228,15 +258,16 @@ export default function EditQuestionPage() {
             </div>
           </div>
         </div>
-  {/* ...existing code... */}
+        {/* ...existing code... */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Question Details</h2>
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Set *</label>
             <select
               value={question.quizSet}
-              onChange={e => setQuestion(q => q ? { ...q, quizSet: e.target.value } : q)}
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
+              disabled
+              aria-disabled="true"
+              className="w-full p-4 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-600 cursor-not-allowed"
             >
               <option value="">Select a quiz set</option>
               <option value="set1">Set 1</option>
@@ -259,7 +290,7 @@ export default function EditQuestionPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Question Image URL (Optional)</label>
             <input
               type="url"
-              value={question.image}
+              value={question.image || ""}
               onChange={e => setQuestion(q => q ? { ...q, image: e.target.value } : q)}
               className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
               placeholder="https://example.com/image.jpg"
@@ -294,7 +325,7 @@ export default function EditQuestionPage() {
                 <div className="mb-3">
                   <input
                     type="text"
-                    value={answer.text}
+                    value={answer?.text || ""}
                     onChange={e => setQuestion(q => q ? { ...q, answers: q.answers.map((a, i) => i === index ? { ...a, text: e.target.value } : a) } : q)}
                     className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
                     placeholder={`Enter text for option ${answer.id.toUpperCase()}`}
@@ -303,7 +334,7 @@ export default function EditQuestionPage() {
                 <div>
                   <input
                     type="url"
-                    value={answer.image}
+                    value={answer?.image || ""}
                     onChange={e => setQuestion(q => q ? { ...q, answers: q.answers.map((a, i) => i === index ? { ...a, image: e.target.value } : a) } : q)}
                     className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
                     placeholder={`Image URL for option ${answer.id.toUpperCase()} (optional)`}

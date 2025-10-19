@@ -1,17 +1,22 @@
 "use client";
+import { useUser } from '@/contexts/UserContext';
+import { createStudentApi } from '@/interceptors/student';
+import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
+
+
+import { transformQuizApiResponse } from './questionTransformer';
+import { QuizApiResponse } from '@/types/quiz';
+import { useQuiz } from '@/contexts/QuizContext';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, ChevronRight, Clock } from 'lucide-react';
+import {  Clock } from 'lucide-react';
 
-// Contexts and services
-import { useUser } from '@/contexts/UserContext';
-import { useQuiz } from '@/contexts/QuizContext';
-import { createStudentApi } from '@/interceptors/student';
+
+
 import { reportViolation } from '@/lib/violationService';
 
 // Utils and types
-import { transformQuizApiResponse } from './questionTransformer';
-import { QuizApiResponse } from '@/types/quiz';
+
 
 // Type definitions
 interface Answer {
@@ -87,6 +92,8 @@ export default function Quiz(): React.JSX.Element | null {
   // Constants
   const router = useRouter();
   const user = useUser();
+  console.log("user is", user);
+  
   const { setQuizId, updateSelectedAnswers, submitQuiz, score } = useQuiz();
 
   // Timer management
@@ -531,8 +538,23 @@ export default function Quiz(): React.JSX.Element | null {
   };
 
   const handleNext = (): void => {
+   
     setCurrentQuestion((prev) => Math.min(prev + 1, totalQuestions - 1));
+    // updateSelectedAnswers(currentQuestion, selectedAnswers[currentQuestion]);
   };
+
+  const handlePrevious = (): void => {
+  
+    setCurrentQuestion((prev) => Math.max(prev - 1, 0));
+    // updateSelectedAnswers(currentQuestion, selectedAnswers[currentQuestion]);
+  };
+
+  const handleQuestionNavigation = (questionIndex: number): void => {
+    setCurrentQuestion(questionIndex);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+ 
 
   const handleReEnterFullscreen = async (): Promise<void> => {
     setShowFullscreenPrompt(false);

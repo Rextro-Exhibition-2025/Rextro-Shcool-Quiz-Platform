@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import ImageUpload from '@/components/ImageUpload/ImageUpload';
 import { createAdminApi } from '@/interceptors/admins';
-import { Plus, Trash2, Save, ArrowLeft, LogOut, Shield, RotateCcw } from 'lucide-react';
+import { deleteImageFromCloudinary } from '@/lib/cloudinaryService';
+import { RotateCcw, Save } from 'lucide-react';
 import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import React, { useEffect, useState } from 'react';
 import { transformQuestion } from './questionTransformer';
-import ImageUpload from '@/components/ImageUpload/ImageUpload';
-import { deleteImageFromCloudinary } from '@/lib/cloudinaryService';
 
 // Error modal state for alerts
 type ErrorModalState = { open: boolean; message: string };

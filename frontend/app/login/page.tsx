@@ -86,6 +86,7 @@ export default function LoginPage() {
       const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
       console.log(formData);
 
+      
 
       const response = await fetch(url, {
         method: 'POST',
@@ -100,8 +101,7 @@ export default function LoginPage() {
       });
 
       const responseData: LoginFormResponse = await response.json();
-https://github.com/Rextro-Exhibition-2025/Rextro-Shcool-Quiz-Platform/pull/13/conflict?name=frontend%252Fapp%252Flogin%252Fpage.tsx&ancestor_oid=28db767e50be41f97c433541239a831aeb31eb73&base_oid=6476e8dfc0da3adf05b21c03c2c9a535d1c721d8&head_oid=3010eb9cd3251817809adbee06ab0c64e0dd7d3c
-      // Store user data in localStorage (or use proper state management)
+
       localStorage.setItem('studentData', JSON.stringify({
         memberName: formData.memberName,
         schoolName: formData.schoolName,
@@ -136,6 +136,41 @@ https://github.com/Rextro-Exhibition-2025/Rextro-Shcool-Quiz-Platform/pull/13/co
   };
 
 
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+
+      const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
+
+      console.log('Fetched schools:', response.data);
+
+      setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
+
+
+      } catch (error) {
+
+        console.error('Error fetching schools:', error);
+
+      }
+    }
+
+    fetchSchools();
+  }, []);
+
+
+  // // Sample school names for the dropdown
+  // const schools = [
+  //   'Select your school',
+  //   'Sunrise High School',
+  //   'Greenwood High School',
+  //   'Riverside Academy',
+  //   'Maple Valley School',
+  //   'Oakwood Preparatory School',
+  //   'Sunrise Elementary School',
+  //   'Mountain View School',
+  //   'Cedar Creek Institution',
+  //   'Pinewood Secondary School'
+  // ];
 
   return (
     <div
