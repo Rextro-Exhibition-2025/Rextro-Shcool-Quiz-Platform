@@ -522,9 +522,8 @@ export default function EditQuestionPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Set *</label>
             <select
               value={question.quizSet}
-              disabled
-              aria-disabled="true"
-              className="w-full p-4 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-600 cursor-not-allowed"
+              onChange={e => setQuestion(q => q ? { ...q, quizSet: e.target.value } : q)}
+              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 text-gray-800  transition-all duration-200 cursor-pointer"
             >
               <option value="">Select a quiz set</option>
               <option value="set1">Set 1</option>
