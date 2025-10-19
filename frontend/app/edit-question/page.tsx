@@ -8,30 +8,13 @@ import transformQuizApiQuestion from "../manage-questions/questionTransformer";
 import { Question, QuestionApiResponse } from "@/types/quiz";
 import { transformQuestionToApi } from "./questionTransformer";
 // Error modal state for alerts
+
+
 type ErrorModalState = { open: boolean; message: string };
 
 
 
-// Dummy fetch function for demonstration
-const fetchQuestionById = async (id: string): Promise<Question | null> => {
-  // Replace with real API call
-  if (id === "1") {
-    return {
-      id: "1",
-      question: "What is the capital of France?",
-      image: "",
-      answers: [
-        { id: "a", text: "Paris", image: "" },
-        { id: "b", text: "London", image: "" },
-        { id: "c", text: "Berlin", image: "" },
-        { id: "d", text: "Madrid", image: "" }
-      ],
-      correctAnswer: "a",
-      quizSet: "set1"
-    };
-  }
-  return null;
-};
+
 
 export default function EditQuestionPage() {
   const router = useRouter();
@@ -83,6 +66,8 @@ export default function EditQuestionPage() {
     }
 
   }, [questionId]);
+
+
 
   if (status === "loading" || loading) {
     return (
@@ -143,12 +128,20 @@ export default function EditQuestionPage() {
   };
 
   // Delete logic
-  const handleDelete = () => {
+  const handleDelete = async () => {
+    try {
+      const api = await createAdminApi();
+      const response = await api.delete(`/questions/${questionId}`);
+      console.log(response);
+      
+      if ((response?.data as any).success) {
+        router.push("/manage-questions");
+      }
+    } catch (error) {
+      console.error('Error deleting question:', error);
+    }
     // TODO: Replace with real delete logic
-    setShowDeleteConfirm(false);
-    setTimeout(() => {
-      router.push("/manage-questions");
-    }, 500);
+  
   };
 
   return (
