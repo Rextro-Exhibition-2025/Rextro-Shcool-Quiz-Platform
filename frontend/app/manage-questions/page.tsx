@@ -96,8 +96,6 @@ export default function ManageQuestions() {
 	const handleTabChange = async (index: number) => {
 		setIsLoadingTab(true);
 		setSelectedQuizSet(`set${index + 1}`);
-		// Small delay to show loading state
-		await new Promise(resolve => setTimeout(resolve, 300));
 		setIsLoadingTab(false);
 	};
 

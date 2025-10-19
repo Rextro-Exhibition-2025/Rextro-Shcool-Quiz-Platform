@@ -226,10 +226,7 @@ export default function AddQuestion(): React.ReactElement | null {
     setIsClearing(true);
     // No need to delete from Cloudinary since images haven't been uploaded yet
     // Just clear local state
-    
-    // Small delay for UX
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
+
     // Clear the form state
     setQuestion({
       question: '',

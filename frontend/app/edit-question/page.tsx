@@ -134,7 +134,7 @@ export default function EditQuestionPage() {
           id: loadedQuestion.id,
           question: loadedQuestion.question,
           image: loadedQuestion.questionImage || '',
-          imagePublicId: loadedQuestion.questionImage ? undefined : undefined,
+          imagePublicId: loadedQuestion.questionImage ? extractPublicIdFromUrl(loadedQuestion.questionImage) || undefined : undefined,
           answers: loadedQuestion.answers.map(ans => ({
             id: ans.id,
             text: ans.text || null,
