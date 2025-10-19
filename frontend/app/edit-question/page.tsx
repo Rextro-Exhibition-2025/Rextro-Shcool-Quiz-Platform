@@ -66,7 +66,7 @@ export default function EditQuestionPage() {
 
 
         const response = await api.get(`/questions/${id}`);
-        console.log(response.data);
+        console.log(transformQuizApiQuestion((response?.data as { data: QuestionApiResponse; success: boolean }).data),"output");
 
         setQuestion(transformQuizApiQuestion((response?.data as { data: QuestionApiResponse; success: boolean }).data));
       } catch (error) {
@@ -290,7 +290,7 @@ export default function EditQuestionPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Question Image URL (Optional)</label>
             <input
               type="url"
-              value={question.image}
+              value={question.image || ""}
               onChange={e => setQuestion(q => q ? { ...q, image: e.target.value } : q)}
               className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
               placeholder="https://example.com/image.jpg"
