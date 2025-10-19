@@ -128,8 +128,25 @@ export default function EditQuestionPage() {
         console.log(transformQuizApiQuestion((response?.data as { data: QuestionApiResponse; success: boolean }).data),"output");
 
         const loadedQuestion = transformQuizApiQuestion((response?.data as { data: QuestionApiResponse; success: boolean }).data);
-        setQuestion(loadedQuestion);
-        setOriginalQuestion(JSON.parse(JSON.stringify(loadedQuestion))); // Deep clone for comparison
+        
+        // Convert QuestionItem to Question format (questionImage -> image)
+        const convertedQuestion: Question = {
+          id: loadedQuestion.id,
+          question: loadedQuestion.question,
+          image: loadedQuestion.questionImage || '',
+          imagePublicId: loadedQuestion.questionImage ? undefined : undefined,
+          answers: loadedQuestion.answers.map(ans => ({
+            id: ans.id,
+            text: ans.text || null,
+            image: ans.image || null,
+            imagePublicId: ans.imagePublicId
+          })),
+          correctAnswer: loadedQuestion.correctAnswer,
+          quizSet: loadedQuestion.quizSet
+        };
+        
+        setQuestion(convertedQuestion);
+        setOriginalQuestion(JSON.parse(JSON.stringify(convertedQuestion))); // Deep clone for comparison
         
         // Extract and store publicIds from existing images
         const newUploadedImageIds: {
@@ -137,14 +154,14 @@ export default function EditQuestionPage() {
           answers: Record<string, string>;
         } = { answers: {} };
         
-        if (loadedQuestion.image) {
-          const publicId = extractPublicIdFromUrl(loadedQuestion.image);
+        if (convertedQuestion.image) {
+          const publicId = extractPublicIdFromUrl(convertedQuestion.image);
           if (publicId) {
             newUploadedImageIds.questionImage = publicId;
           }
         }
         
-        loadedQuestion.answers.forEach(answer => {
+        convertedQuestion.answers.forEach(answer => {
           if (answer.image) {
             const publicId = extractPublicIdFromUrl(answer.image);
             if (publicId) {
