@@ -11,19 +11,33 @@ import {
 
 const Footer = () => {
   return (
-    <footer className="w-full border-t border-gray-200 bg-white py-6 px-4">
-      <div className="max-w-7xl mx-auto flex flex-col gap-6">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+    <footer className="w-full border-t border-gray-200 bg-white py-4 md:py-6 px-4">
+      <div className="max-w-7xl mx-auto flex flex-col gap-4 md:gap-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
           {/* Logos */}
-          <div className="flex items-center gap-4">
-            <Image src="/fe-logo.png" alt="FE Logo" width={80} height={80} />
-            <Image src="/fe-logo2.png" alt="FE Logo 2" width={80} height={80} />
+          <div className="flex items-center gap-3 md:gap-4">
+            <Image 
+              src="/fe-logo.png" 
+              alt="FE Logo" 
+              width={60} 
+              height={60}
+              className="md:w-[80px] md:h-[80px]"
+            />
+            <Image 
+              src="/fe-logo2.png" 
+              alt="FE Logo 2" 
+              width={60} 
+              height={60}
+              className="md:w-[80px] md:h-[80px]"
+            />
           </div>
+          
           {/* Address & Contacts */}
-          <div className="flex flex-col md:flex-row items-center gap-8 flex-1 justify-center">
-            <div className="flex items-start gap-2">
-              <FaMapMarkerAlt className="text-[#4b2e83] mt-1" />
-              <div className="text-sm text-gray-800">
+          <div className="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-8 flex-1 justify-center w-full md:w-auto">
+            <div className="flex items-start gap-2 text-center md:text-left">
+              <FaMapMarkerAlt className="text-[#4b2e83] mt-1 hidden md:block" />
+              <div className="text-xs md:text-sm text-gray-800">
+                <FaMapMarkerAlt className="text-[#4b2e83] inline md:hidden mr-2" />
                 Faculty of Engineering,
                 <br />
                 University of Ruhuna,
@@ -33,9 +47,10 @@ const Footer = () => {
                 Sri Lanka. 80000
               </div>
             </div>
-            <div className="flex items-start gap-2">
-              <FaPhoneAlt className="text-[#4b2e83] mt-1" />
-              <div className="text-sm text-gray-800">
+            <div className="flex items-start gap-2 text-center md:text-left">
+              <FaPhoneAlt className="text-[#4b2e83] mt-1 hidden md:block" />
+              <div className="text-xs md:text-sm text-gray-800">
+                <FaPhoneAlt className="text-[#4b2e83] inline md:hidden mr-2" />
                 +94 912245765
                 <br />
                 +94 912245766
@@ -43,23 +58,26 @@ const Footer = () => {
                 +94 912245767
               </div>
             </div>
-            <div className="flex items-start gap-2">
-              <FaEnvelope className="text-[#4b2e83] mt-1" />
-              <div className="text-sm text-gray-800">
+            <div className="flex items-start gap-2 text-center md:text-left">
+              <FaEnvelope className="text-[#4b2e83] mt-1 hidden md:block" />
+              <div className="text-xs md:text-sm text-gray-800">
+                <FaEnvelope className="text-[#4b2e83] inline md:hidden mr-2" />
                 Fax: +94 912245762
                 <br />
                 Email: ar@eng.ruh.ac.lk
               </div>
             </div>
           </div>
+          
           {/* Social */}
           <div className="flex flex-col items-center gap-2">
-            <span className="font-semibold">Follow us:</span>
-            <div className="flex gap-3 text-2xl text-[#4b2e83]">
+            <span className="font-semibold text-sm md:text-base">Follow us:</span>
+            <div className="flex gap-3 md:gap-4 text-xl md:text-2xl text-[#4b2e83]">
               <a
                 href="https://facebook.com"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="hover:text-[#a67c52] transition-colors"
               >
                 <FaFacebookF />
               </a>
@@ -67,6 +85,7 @@ const Footer = () => {
                 href="https://linkedin.com"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="hover:text-[#a67c52] transition-colors"
               >
                 <FaLinkedinIn />
               </a>
@@ -74,14 +93,16 @@ const Footer = () => {
                 href="https://youtube.com"
                 target="_blank"
                 rel="noopener noreferrer"
+                className="hover:text-[#a67c52] transition-colors"
               >
                 <FaYoutube />
               </a>
             </div>
           </div>
         </div>
+        
         {/* Copyright */}
-        <div className="text-center text-sm text-gray-700 mt-4">
+        <div className="text-center text-xs md:text-sm text-gray-700 mt-2 md:mt-4">
           © 2025 Faculty of Engineering, University of Ruhuna. All Rights
           Reserved.
         </div>

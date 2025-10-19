@@ -44,6 +44,9 @@ export default function ManageQuestions() {
 	const { data: session, status } = useSession();
 	const [questions, setQuestions] = useState<QuestionItem[]>();
 	const [selectedQuizSet, setSelectedQuizSet] = useState("set1");
+	const [isLoadingTab, setIsLoadingTab] = useState(false);
+	const [loadingQuestionId, setLoadingQuestionId] = useState<string | null>(null);
+	
 	useEffect(() => {
 
 		const fetchQuestions = async () => {
@@ -86,12 +89,19 @@ export default function ManageQuestions() {
 	};
 
 	const handleEdit = (id: string) => {
+		setLoadingQuestionId(id);
 		router.push(`/edit-question?id=${id}`);
+	};
+
+	const handleTabChange = (index: number) => {
+		setSelectedQuizSet(`set${index + 1}`);
 	};
 
 	const filteredQuestions = questions?.filter(
 		(q) => q.quizSet === selectedQuizSet
 	);
+
+	const isTableLoading = !filteredQuestions; // Add a loading state for the table content
 
 	return (
 		<div className="min-h-screen bg-gradient-to-br p-4 relative" style={{ backgroundImage: 'url("/Container.png")', backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
@@ -106,24 +116,36 @@ export default function ManageQuestions() {
 						<Plus size={18} /> Add New Question
 					</button>
 				</div>
-				<Tab.Group onChange={(index: number) => setSelectedQuizSet(`set${index + 1}`)}>
+				<Tab.Group onChange={handleTabChange}>
 					<Tab.List className="flex space-x-1 rounded-xl bg-gray-200 p-1 mb-4">
 						{['Quiz 1', 'Quiz 2', 'Quiz 3', 'Quiz 4'].map((quiz, index) => (
 							<Tab
 								key={index}
+								disabled={isLoadingTab}
 								className={({ selected }: { selected: boolean }) =>
-									`w-full py-2.5 text-sm leading-5 font-medium text-gray-700 rounded-lg
-									${selected ? 'bg-white shadow' : 'text-gray-500 hover:bg-white/[0.12] hover:text-gray-700'}`
+									`w-full py-2.5 text-sm leading-5 font-medium text-gray-700 rounded-lg relative
+									${selected ? 'bg-white shadow' : 'text-gray-500 hover:bg-white/[0.12] hover:text-gray-700'}
+									${isLoadingTab ? 'opacity-50 cursor-not-allowed' : ''}`
 								}
 							>
-								{quiz}
+								{isLoadingTab ? (
+									<div className="flex items-center justify-center">
+										<div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent"></div>
+									</div>
+								) : (
+									quiz
+								)}
 							</Tab>
 						))}
 					</Tab.List>
 					<Tab.Panels>
 						{["set1", "set2", "set3", "set4"].map((set, index) => (
 							<Tab.Panel key={index} className="bg-white rounded-2xl shadow-lg p-6">
-								{filteredQuestions?.length === 0 ? (
+								{isTableLoading ? (
+									<div className="flex justify-center items-center">
+										<div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-transparent"></div>
+									</div>
+								) : filteredQuestions?.length === 0 ? (
 									<div className="text-center text-gray-500">No questions found.</div>
 								) : (
 									<table className="min-w-full divide-y divide-gray-200">
@@ -144,10 +166,17 @@ export default function ManageQuestions() {
 														<td className="px-4 py-2">
 															<button
 																onClick={() => handleEdit(q.id)}
-																className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+																disabled={loadingQuestionId === q.id}
+																className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
 																title="Edit"
 															>
-																<Edit size={16} /> Edit
+																{loadingQuestionId === q.id ? (
+																	<div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+																) : (
+																	<>
+																		<Edit size={16} /> Edit
+																	</>
+																)}
 															</button>
 														</td>
 													</tr>

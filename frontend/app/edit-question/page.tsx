@@ -7,6 +7,9 @@ import { createAdminApi } from "@/interceptors/admins";
 import transformQuizApiQuestion from "../manage-questions/questionTransformer";
 import { Question, QuestionApiResponse } from "@/types/quiz";
 import { transformQuestionToApi } from "./questionTransformer";
+import ImageUploadPreview from "@/components/ImageUpload/ImageUploadPreview";
+import { deleteImageFromCloudinary, uploadImageToCloudinary } from "@/lib/cloudinaryService";
+
 // Error modal state for alerts
 
 
@@ -21,19 +24,75 @@ export default function EditQuestionPage() {
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [question, setQuestion] = useState<Question | null>(null);
+  const [originalQuestion, setOriginalQuestion] = useState<Question | null>(null); // Store original for comparison
   const [loading, setLoading] = useState(true);
   const [errorModal, setErrorModal] = useState<ErrorModalState>({ open: false, message: "" });
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const questionId = searchParams.get("id");
+  
+  // Track pending image changes (files to upload, URLs to delete)
+  const [pendingImageChanges, setPendingImageChanges] = useState<{
+    questionImage?: { action: 'upload' | 'delete', file?: File, oldUrl?: string };
+    answers: Record<string, { action: 'upload' | 'delete', file?: File, oldUrl?: string }>;
+  }>({
+    answers: {}
+  });
+  
+  // Track Cloudinary publicIds for uploaded images
+  const [uploadedImageIds, setUploadedImageIds] = useState<{
+    questionImage?: string;
+    answers: Record<string, string>; // answerId -> publicId
+  }>({
+    answers: {}
+  });
+
   console.log(questionId);
 
+  // Helper function to extract publicId from Cloudinary URL
+  const extractPublicIdFromUrl = (url: string): string | null => {
+    try {
+      // Cloudinary URL format: https://res.cloudinary.com/{cloud_name}/image/upload/v{version}/{public_id}.{format}
+      const matches = url.match(/\/upload\/(?:v\d+\/)?(.+)\.\w+$/);
+      return matches ? matches[1] : null;
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/admin/login");
     }
   }, [status, router]);
+
+  // Detect changes in question data
+  useEffect(() => {
+    if (question && originalQuestion) {
+      const hasChanges = JSON.stringify(question) !== JSON.stringify(originalQuestion);
+      setHasUnsavedChanges(hasChanges);
+    }
+  }, [question, originalQuestion]);
+
+  // Warn user before leaving page with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = ''; // Chrome requires returnValue to be set
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges]);
 
   useEffect(() => {
 
@@ -51,7 +110,50 @@ export default function EditQuestionPage() {
         const response = await api.get(`/questions/${id}`);
         console.log(transformQuizApiQuestion((response?.data as { data: QuestionApiResponse; success: boolean }).data),"output");
 
-        setQuestion(transformQuizApiQuestion((response?.data as { data: QuestionApiResponse; success: boolean }).data));
+        const loadedQuestion = transformQuizApiQuestion((response?.data as { data: QuestionApiResponse; success: boolean }).data);
+        
+        // Convert QuestionItem to Question format (questionImage -> image)
+        const convertedQuestion: Question = {
+          id: loadedQuestion.id,
+          question: loadedQuestion.question,
+          image: loadedQuestion.questionImage || '',
+          imagePublicId: loadedQuestion.questionImage ? extractPublicIdFromUrl(loadedQuestion.questionImage) || undefined : undefined,
+          answers: loadedQuestion.answers.map(ans => ({
+            id: ans.id,
+            text: ans.text || null,
+            image: ans.image || null,
+            imagePublicId: ans.imagePublicId
+          })),
+          correctAnswer: loadedQuestion.correctAnswer,
+          quizSet: loadedQuestion.quizSet
+        };
+        
+        setQuestion(convertedQuestion);
+        setOriginalQuestion(JSON.parse(JSON.stringify(convertedQuestion))); // Deep clone for comparison
+        
+        // Extract and store publicIds from existing images
+        const newUploadedImageIds: {
+          questionImage?: string;
+          answers: Record<string, string>;
+        } = { answers: {} };
+        
+        if (convertedQuestion.image) {
+          const publicId = extractPublicIdFromUrl(convertedQuestion.image);
+          if (publicId) {
+            newUploadedImageIds.questionImage = publicId;
+          }
+        }
+        
+        convertedQuestion.answers.forEach(answer => {
+          if (answer.image) {
+            const publicId = extractPublicIdFromUrl(answer.image);
+            if (publicId) {
+              newUploadedImageIds.answers[answer.id] = publicId;
+            }
+          }
+        });
+        
+        setUploadedImageIds(newUploadedImageIds);
       } catch (error) {
         console.error('Error fetching question:', error);
       } finally {
@@ -88,11 +190,21 @@ export default function EditQuestionPage() {
       setErrorModal({ open: true, message: 'Please enter a question.' });
       return;
     }
-    const hasValidAnswers = question.answers.some(answer => answer?.text?.trim() || answer?.image?.trim());
-    if (!hasValidAnswers) {
-      setErrorModal({ open: true, message: 'Please provide at least one answer option.' });
+    
+    // Validate that ALL 4 answers have either text or image
+    const emptyAnswers = question.answers.filter(answer => 
+      !answer?.text?.trim() && !answer?.image?.trim()
+    );
+
+    if (emptyAnswers.length > 0) {
+      const emptyIds = emptyAnswers.map(a => a.id.toUpperCase()).join(', ');
+      setErrorModal({ 
+        open: true, 
+        message: `All answer options must have text or image. Empty: ${emptyIds}` 
+      });
       return;
     }
+    
     if (!question.correctAnswer) {
       setErrorModal({ open: true, message: 'Please select the correct answer.' });
       return;
@@ -107,45 +219,174 @@ export default function EditQuestionPage() {
       setErrorModal({ open: true, message: 'Please select a quiz set.' });
       return;
     }
-    // Here you would typically send the data to your backend
-    setShowSaveConfirm(true);
-
 
     try {
+      setIsSaving(true);
+      setShowSaveConfirm(true);
       const api = await createAdminApi();
-      console.log(question);
-      const transformedQuestion = transformQuestionToApi(question);
+      
+      // Process image changes before saving
+      const updatedQuestion = { ...question };
+      const newUploadedPublicIds: string[] = []; // Track newly uploaded images for rollback
+      
+      // Handle question image
+      if (pendingImageChanges.questionImage) {
+        if (pendingImageChanges.questionImage.action === 'upload' && pendingImageChanges.questionImage.file) {
+          // Upload new image
+          const { url, publicId } = await uploadImageToCloudinary(pendingImageChanges.questionImage.file, 'quiz-questions');
+          updatedQuestion.image = url;
+          updatedQuestion.imagePublicId = publicId;
+          newUploadedPublicIds.push(publicId); // Track for rollback
+          
+          // Delete old image if exists
+          if (pendingImageChanges.questionImage.oldUrl) {
+            const oldPublicId = extractPublicIdFromUrl(pendingImageChanges.questionImage.oldUrl);
+            if (oldPublicId) {
+              await deleteImageFromCloudinary(oldPublicId).catch(err => 
+                console.warn('Failed to delete old question image:', err)
+              );
+            }
+          }
+        } else if (pendingImageChanges.questionImage.action === 'delete') {
+          // Delete existing image
+          if (pendingImageChanges.questionImage.oldUrl) {
+            const oldPublicId = extractPublicIdFromUrl(pendingImageChanges.questionImage.oldUrl);
+            if (oldPublicId) {
+              await deleteImageFromCloudinary(oldPublicId).catch(err => 
+                console.warn('Failed to delete question image:', err)
+              );
+            }
+          }
+          updatedQuestion.image = '';
+          updatedQuestion.imagePublicId = '';
+        }
+      }
+      
+      // Handle answer images
+      for (const [answerId, change] of Object.entries(pendingImageChanges.answers)) {
+        const answerIndex = updatedQuestion.answers.findIndex(a => a.id === answerId);
+        if (answerIndex === -1) continue;
+        
+        if (change.action === 'upload' && change.file) {
+          // Upload new image
+          const { url, publicId } = await uploadImageToCloudinary(change.file, 'quiz-answers');
+          updatedQuestion.answers[answerIndex].image = url;
+          updatedQuestion.answers[answerIndex].imagePublicId = publicId;
+          newUploadedPublicIds.push(publicId); // Track for rollback
+          
+          // Delete old image if exists
+          if (change.oldUrl) {
+            const oldPublicId = extractPublicIdFromUrl(change.oldUrl);
+            if (oldPublicId) {
+              await deleteImageFromCloudinary(oldPublicId).catch(err => 
+                console.warn(`Failed to delete old answer ${answerId} image:`, err)
+              );
+            }
+          }
+        } else if (change.action === 'delete') {
+          // Delete existing image
+          if (change.oldUrl) {
+            const oldPublicId = extractPublicIdFromUrl(change.oldUrl);
+            if (oldPublicId) {
+              await deleteImageFromCloudinary(oldPublicId).catch(err => 
+                console.warn(`Failed to delete answer ${answerId} image:`, err)
+              );
+            }
+          }
+          updatedQuestion.answers[answerIndex].image = '';
+          updatedQuestion.answers[answerIndex].imagePublicId = '';
+        }
+      }
+      
+      console.log(updatedQuestion);
+      const transformedQuestion = transformQuestionToApi(updatedQuestion);
       console.log(transformedQuestion);
-      console.log(question.id);
+      console.log(updatedQuestion.id);
 
-
-      await api.put(`/questions/${question.id}`, transformedQuestion);
-      router.push("/manage-questions");
+      try {
+        await api.put(`/questions/${updatedQuestion.id}`, transformedQuestion);
+        
+        // Reset pending changes and unsaved changes flag after successful save
+        setPendingImageChanges({ answers: {} });
+        setHasUnsavedChanges(false);
+        setOriginalQuestion(JSON.parse(JSON.stringify(updatedQuestion))); // Update original to current
+        
+        router.push("/manage-questions");
+      } catch (dbError) {
+        // Database save failed - rollback newly uploaded images
+        console.error('Database save failed, rolling back newly uploaded images:', dbError);
+        for (const publicId of newUploadedPublicIds) {
+          try {
+            await deleteImageFromCloudinary(publicId);
+            console.log('Rolled back image:', publicId);
+          } catch (deleteError) {
+            console.error('Failed to rollback image:', publicId, deleteError);
+          }
+        }
+        throw dbError; // Re-throw to be caught by outer catch
+      }
 
     } catch (error) {
       console.error('Error saving question:', error);
+      setShowSaveConfirm(false);
+      setErrorModal({ open: true, message: 'Failed to save question. Please try again.' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
   // Delete logic
   const handleDelete = async () => {
+    if (!question) return;
+    
     try {
+      setIsDeleting(true);
       const api = await createAdminApi();
-      const response = await api.delete(`/questions/${questionId}`);
-      console.log(response);
       
-      if ((response?.data as any).success) {
-        router.push("/manage-questions");
+      // Delete the question from the database first
+      await api.delete(`/questions/${question.id}`);
+      
+      // Then delete images from Cloudinary
+      // Delete question image if exists
+      if (question.image) {
+        const publicId = uploadedImageIds.questionImage || extractPublicIdFromUrl(question.image);
+        if (publicId) {
+          console.log('Deleting question image from Cloudinary:', publicId);
+          await deleteImageFromCloudinary(publicId).catch(err => 
+            console.warn('Failed to delete question image:', err)
+          );
+        }
       }
+      
+      // Delete answer images if exist
+      for (const answer of question.answers) {
+        if (answer.image) {
+          const publicId = uploadedImageIds.answers[answer.id] || extractPublicIdFromUrl(answer.image);
+          if (publicId) {
+            console.log(`Deleting answer ${answer.id} image from Cloudinary:`, publicId);
+            await deleteImageFromCloudinary(publicId).catch(err => 
+              console.warn(`Failed to delete answer ${answer.id} image:`, err)
+            );
+          }
+        }
+      }
+      
+      setShowDeleteConfirm(false);
+      setHasUnsavedChanges(false); // Clear flag before navigation
+      setTimeout(() => {
+        router.push("/manage-questions");
+      }, 500);
     } catch (error) {
       console.error('Error deleting question:', error);
+      setErrorModal({ open: true, message: 'Failed to delete question. Please try again.' });
+      setShowDeleteConfirm(false);
+    } finally {
+      setIsDeleting(false);
     }
-    // TODO: Replace with real delete logic
-  
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br p-4 relative" style={{ backgroundImage: 'url("/Container.png")', backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
+    <div className="min-h-screen bg-gradient-to-br from-[#c16401] via-[#623400] to-[#251400] p-4">
       {/* Error Modal for Alerts */}
       {errorModal.open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
@@ -222,32 +463,65 @@ export default function EditQuestionPage() {
           </div>
         </div>
       )}
-      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(255,255,255,0.6)', zIndex: 1 }} />
-      <div className="max-w-4xl mx-auto relative z-10">
+      {/* Unsaved Changes Warning Popup */}
+      {showUnsavedChangesModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full border-2 border-[#df7500]">
+            <div className="mb-4 text-center">
+              <div className="w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center bg-gradient-to-r from-orange-500 to-orange-700 shadow-lg">
+                <span className="text-white text-2xl font-bold">⚠</span>
+              </div>
+              <h2 className="text-xl font-bold bg-gradient-to-r from-[#df7500] to-[#651321] bg-clip-text text-transparent mb-1">Unsaved Changes</h2>
+              <p className="text-[#651321] mb-2">You have unsaved changes that will be lost if you leave this page.</p>
+              <p className="text-sm text-gray-600">Would you like to save your changes before leaving?</p>
+            </div>
+            <div className="flex justify-center gap-3 mt-6">
+              <button
+                onClick={() => setShowUnsavedChangesModal(false)}
+                className="px-5 py-2 rounded-lg font-semibold bg-gradient-to-r from-gray-200 to-gray-400 text-[#651321] shadow hover:scale-105 hover:shadow transition-all duration-200 border border-gray-300"
+                style={{ minWidth: 110 }}
+              >
+                Stay Here
+              </button>
+              <button
+                onClick={() => {
+                  setShowUnsavedChangesModal(false);
+                  setHasUnsavedChanges(false);
+                  router.push("/manage-questions");
+                }}
+                className="px-5 py-2 rounded-lg font-semibold bg-gradient-to-r from-red-500 to-red-700 text-white shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-200"
+                style={{ minWidth: 110 }}
+              >
+                Leave
+              </button>
+              <button
+                onClick={async () => {
+                  setShowUnsavedChangesModal(false);
+                  await handleSave();
+                }}
+                className="px-5 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-200"
+                style={{ minWidth: 110 }}
+              >
+                <div className="flex items-center space-x-1">
+                  <Save size={16} />
+                  <span>Save</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-2xl font-bold text-gray-800">Edit Question</h1>
-            <div className="flex items-center ml-auto space-x-2">
-              <button
-                onClick={() => router.push("/manage-questions")}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
-              >
-                <Save size={16} />
-                <span>Save Changes</span>
-              </button>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-red-500 to-red-800 text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
-              >
-                <Trash2 size={16} />
-                <span>Delete</span>
-              </button>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-bold text-gray-800">Edit Question</h1>
+              {hasUnsavedChanges && (
+                <span className="px-3 py-1 text-xs font-semibold bg-orange-100 text-orange-700 rounded-full border border-orange-300">
+                  Unsaved Changes
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -258,9 +532,8 @@ export default function EditQuestionPage() {
             <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Set *</label>
             <select
               value={question.quizSet}
-              disabled
-              aria-disabled="true"
-              className="w-full p-4 border-2 border-gray-200 rounded-xl bg-gray-100 text-gray-600 cursor-not-allowed"
+              onChange={e => setQuestion(q => q ? { ...q, quizSet: e.target.value } : q)}
+              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 text-gray-800  transition-all duration-200 cursor-pointer"
             >
               <option value="">Select a quiz set</option>
               <option value="set1">Set 1</option>
@@ -279,22 +552,43 @@ export default function EditQuestionPage() {
               placeholder="Enter your question here..."
             />
           </div>
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Question Image URL (Optional)</label>
-            <input
-              type="url"
-              value={question.image || ""}
-              onChange={e => setQuestion(q => q ? { ...q, image: e.target.value } : q)}
-              className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
-              placeholder="https://example.com/image.jpg"
-            />
-            {question.image && (
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                <img src={question.image} alt="Question preview" className="max-w-md w-full h-auto rounded-lg shadow-md border border-gray-200" />
-              </div>
-            )}
-          </div>
+          
+          {/* Question Image Upload */}
+          <ImageUploadPreview
+            label="Question Image (Optional)"
+            currentImage={question.image || ""}
+            onImageSelect={(file) => {
+              if (file) {
+                setPendingImageChanges(prev => ({
+                  ...prev,
+                  questionImage: { action: 'upload', file, oldUrl: question.image || undefined }
+                }));
+                // Create preview URL for immediate display
+                const previewUrl = URL.createObjectURL(file);
+                setQuestion(q => q ? { ...q, image: previewUrl } : q);
+              }
+            }}
+            onImageRemove={() => {
+              const oldUrl = originalQuestion?.image;
+              if (oldUrl) {
+                // Mark for deletion on save
+                setPendingImageChanges(prev => ({
+                  ...prev,
+                  questionImage: { action: 'delete', oldUrl }
+                }));
+              } else {
+                // Just clear pending upload
+                setPendingImageChanges(prev => {
+                  const { questionImage, ...rest } = prev;
+                  return rest;
+                });
+              }
+              setQuestion(q => q ? { ...q, image: '' } : q);
+            }}
+            folder="quiz-questions"
+            maxSizeMB={2}
+            recommendedSize="1024×768px (displays up to 768px wide in quiz)"
+          />
         </div>
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Answer Options</h2>
@@ -324,25 +618,101 @@ export default function EditQuestionPage() {
                     placeholder={`Enter text for option ${answer.id.toUpperCase()}`}
                   />
                 </div>
-                <div>
-                  <input
-                    type="url"
-                    value={answer?.image || ""}
-                    onChange={e => setQuestion(q => q ? { ...q, answers: q.answers.map((a, i) => i === index ? { ...a, image: e.target.value } : a) } : q)}
-                    className="w-full p-4 border-2 border-gray-200 rounded-xl focus:border-[#df7500] focus:ring-2 focus:ring-[#df7500]/20 focus:outline-none hover:border-gray-300 hover:bg-gray-50 focus:bg-[#df7500]/5 transition-all duration-200 placeholder-gray-400 text-gray-800 font-medium shadow-sm focus:shadow-md"
-                    placeholder={`Image URL for option ${answer.id.toUpperCase()} (optional)`}
-                  />
-                  {answer.image && (
-                    <div className="mt-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-xs text-gray-600 mb-1">Preview:</p>
-                      <img src={answer.image} alt={`Option ${answer.id} preview`} className="w-24 h-20 object-cover rounded-lg shadow-sm border border-gray-200" />
-                    </div>
-                  )}
-                </div>
+                
+                {/* Answer Image Upload */}
+                <ImageUploadPreview
+                  label={`Image for Option ${answer.id.toUpperCase()} (Optional)`}
+                  currentImage={answer?.image || ""}
+                  onImageSelect={(file) => {
+                    if (file) {
+                      setPendingImageChanges(prev => ({
+                        ...prev,
+                        answers: {
+                          ...prev.answers,
+                          [answer.id]: { action: 'upload', file, oldUrl: answer.image || undefined }
+                        }
+                      }));
+                      // Create preview URL for immediate display
+                      const previewUrl = URL.createObjectURL(file);
+                      setQuestion(q => q ? { 
+                        ...q, 
+                        answers: q.answers.map((a, i) => i === index ? { ...a, image: previewUrl } : a) 
+                      } : q);
+                    }
+                  }}
+                  onImageRemove={() => {
+                    const oldUrl = originalQuestion?.answers[index]?.image;
+                    if (oldUrl) {
+                      // Mark for deletion on save
+                      setPendingImageChanges(prev => ({
+                        ...prev,
+                        answers: {
+                          ...prev.answers,
+                          [answer.id]: { action: 'delete', oldUrl }
+                        }
+                      }));
+                    } else {
+                      // Just clear pending upload
+                      setPendingImageChanges(prev => {
+                        const { [answer.id]: removed, ...restAnswers } = prev.answers;
+                        return { ...prev, answers: restAnswers };
+                      });
+                    }
+                    setQuestion(q => q ? { 
+                      ...q, 
+                      answers: q.answers.map((a, i) => i === index ? { ...a, image: '' } : a) 
+                    } : q);
+                  }}
+                  folder="quiz-answers"
+                  maxSizeMB={1}
+                  recommendedSize="600×600px (displays up to 384px wide)"
+                />
               </div>
             ))}
           </div>
-          {/* Save button moved to top bar */}
+        </div>
+
+        {/* Action Buttons at the bottom */}
+        <div className="p-6 mt-6">
+          <div className="flex justify-end space-x-3">
+            <button
+              onClick={() => {
+                if (hasUnsavedChanges) {
+                  setShowUnsavedChangesModal(true);
+                } else {
+                  router.push("/manage-questions");
+                }
+              }}
+              disabled={isSaving || isDeleting}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              <span>Cancel</span>
+            </button>
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={isSaving || isDeleting}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-red-500 to-red-800 text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {isDeleting ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              ) : (
+                <Trash2 size={16} />
+              )}
+              <span>{isDeleting ? 'Deleting...' : 'Delete'}</span>
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving || isDeleting}
+              className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {isSaving ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              ) : (
+                <Save size={16} />
+              )}
+              <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

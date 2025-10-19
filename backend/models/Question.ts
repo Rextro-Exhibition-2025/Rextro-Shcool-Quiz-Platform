@@ -5,7 +5,7 @@ type OptionType = 'A' | 'B' | 'C' | 'D';
 
 interface Option {
 	option: OptionType;
-	optionText: string;
+	optionText?: string;
 	optionImage?: string;
 	optionImagePublicId?: string;
 }
@@ -22,11 +22,13 @@ export interface IQuestion extends Document {
 
 const OptionSchema: Schema = new Schema({
     option: { type: String, required: true, enum: ['A', 'B', 'C', 'D'] },
-    optionText: { type: String, required: true },
+    optionText: { type: String, required: false },
     optionImage: { type: String, required: false },
     optionImagePublicId: { type: String, required: false },
 });
 
+// Note: Validation for optionText/optionImage is handled at the controller level
+// Pre-validation hooks don't execute for subdocuments in arrays
 
 const QuestionSchema: Schema = new Schema({
         quizId: { type: Number, required: true , enum: [1,2,3,4]},

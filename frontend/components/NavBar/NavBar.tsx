@@ -10,7 +10,7 @@ import AdminMenu from "./AdminMenu";
 // Dropdown for Admin Portal
 import { signIn } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
-import { Shield } from "lucide-react";
+import { Shield, Menu, X } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home" },
@@ -22,56 +22,102 @@ const navLinks = [
 const NavBar = () => {
   const pathname = usePathname();
   const { data: session, status } = useSession();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <nav className="w-full flex items-center justify-between px-8 py-2 border-b border-gray-200 bg-white">
-      <div className="flex items-center gap-4">
-        <Image
-          src="/logo.png" // Place your logo in /public/logo.png
-          alt="Faculty of Engineering Logo"
-          width={120}
-          height={60}
-          style={{ objectFit: "contain" }}
-        />
-        <div className="flex flex-col leading-tight">
-          <span className="text-xs text-[#a67c52] font-semibold">
-            25 Years of Innovation & Excellence
-          </span>
-          <span className="text-lg font-semibold text-[#4b2e83]">
-            Faculty of Engineering
-          </span>
-          <span className="text-sm text-[#4b2e83]">University of Ruhuna</span>
+    <nav className="w-full border-b border-gray-200 bg-white">
+      <div className="flex items-center justify-between px-4 md:px-8 py-2">
+        {/* Logo Section */}
+        <div className="flex items-center gap-2 md:gap-4">
+          <Image
+            src="/logo.png"
+            alt="Faculty of Engineering Logo"
+            width={80}
+            height={40}
+            className="md:w-[120px] md:h-[60px]"
+            style={{ objectFit: "contain" }}
+          />
+          <div className="flex flex-col leading-tight">
+            <span className="text-[10px] md:text-xs text-[#a67c52] font-semibold">
+              25 Years of Innovation & Excellence
+            </span>
+            <span className="text-sm md:text-lg font-semibold text-[#4b2e83]">
+              Faculty of Engineering
+            </span>
+            <span className="text-xs md:text-sm text-[#4b2e83]">University of Ruhuna</span>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center gap-8">
-        {navLinks.map((link) => {
-          if (link.label === "Admin Portal") {
+
+        {/* Desktop Navigation */}
+        <div className="hidden lg:flex items-center gap-8">
+          {navLinks.map((link) => {
+            if (link.label === "Admin Portal") {
+              return (
+                <div key={link.href} className="relative">
+                  <AdminPortalDropdown session={session} />
+                </div>
+              );
+            }
             return (
-              <div key={link.href} className="relative">
-                <AdminPortalDropdown session={session} />
-              </div>
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`font-semibold ${pathname === link.href
+                    ? "text-[#4b2e83] border-b-2 border-[#4b2e83]"
+                    : "text-gray-700 hover:text-[#a67c52] border-b-2 border-transparent"
+                  } pb-1 transition-colors`}
+              >
+                {link.label}
+              </Link>
             );
-          }
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`font-semibold ${pathname === link.href
-                  ? "text-[#4b2e83] border-b-2 border-[#4b2e83]"
-                  : "text-gray-700 hover:text-[#a67c52] border-b-2 border-transparent"
-                } pb-1 transition-colors`}
-            >
-              {link.label}
-            </Link>
-          );
-        })}
+          })}
+        </div>
+
+        {/* Mobile Menu Button */}
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="lg:hidden p-2 text-gray-700 hover:text-[#4b2e83] transition-colors"
+          aria-label="Toggle menu"
+        >
+          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        </button>
       </div>
+
+      {/* Mobile Navigation */}
+      {mobileMenuOpen && (
+        <div className="lg:hidden border-t border-gray-200 bg-white">
+          <div className="flex flex-col p-4 gap-4">
+            {navLinks.map((link) => {
+              if (link.label === "Admin Portal") {
+                return (
+                  <div key={link.href}>
+                    <AdminPortalDropdown session={session} mobile={true} />
+                  </div>
+                );
+              }
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`font-semibold py-2 ${pathname === link.href
+                      ? "text-[#4b2e83] border-l-4 border-[#4b2e83] pl-3"
+                      : "text-gray-700 hover:text-[#a67c52] pl-3"
+                    } transition-colors`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
 
 
-const AdminPortalDropdown = ({ session }: { session: any }) => {
+const AdminPortalDropdown = ({ session, mobile = false }: { session: any; mobile?: boolean }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(false);
@@ -109,13 +155,13 @@ const AdminPortalDropdown = ({ session }: { session: any }) => {
   return (
     <div className="relative" ref={ref}>
       <button
-        className={`font-semibold text-gray-700 hover:text-[#a67c52] border-b-2 border-transparent pb-1 transition-colors flex items-center gap-2`}
+        className={`font-semibold text-gray-700 hover:text-[#a67c52] ${mobile ? 'py-2 pl-3' : 'border-b-2 border-transparent pb-1'} transition-colors flex items-center gap-2`}
         onClick={() => setOpen((v) => !v)}
       >
         <Shield className="w-5 h-5 text-[#df7500]" /> Admin Portal
       </button>
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 p-0" style={{ minWidth: 320 }}>
+        <div className={`${mobile ? 'relative' : 'absolute right-0'} mt-2 w-full ${mobile ? 'max-w-full' : 'w-80'} bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 p-0`} style={!mobile ? { minWidth: 320 } : {}}>
           {!session ? (
             <div className="p-6">
               <div className="text-center mb-4">
