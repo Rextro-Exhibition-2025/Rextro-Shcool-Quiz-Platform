@@ -186,11 +186,21 @@ export default function EditQuestionPage() {
       setErrorModal({ open: true, message: 'Please enter a question.' });
       return;
     }
-    const hasValidAnswers = question.answers.some(answer => answer?.text?.trim() || answer?.image?.trim());
-    if (!hasValidAnswers) {
-      setErrorModal({ open: true, message: 'Please provide at least one answer option.' });
+    
+    // Validate that ALL 4 answers have either text or image
+    const emptyAnswers = question.answers.filter(answer => 
+      !answer?.text?.trim() && !answer?.image?.trim()
+    );
+
+    if (emptyAnswers.length > 0) {
+      const emptyIds = emptyAnswers.map(a => a.id.toUpperCase()).join(', ');
+      setErrorModal({ 
+        open: true, 
+        message: `All answer options must have text or image. Empty: ${emptyIds}` 
+      });
       return;
     }
+    
     if (!question.correctAnswer) {
       setErrorModal({ open: true, message: 'Please select the correct answer.' });
       return;
@@ -212,6 +222,7 @@ export default function EditQuestionPage() {
       
       // Process image changes before saving
       const updatedQuestion = { ...question };
+      const newUploadedPublicIds: string[] = []; // Track newly uploaded images for rollback
       
       // Handle question image
       if (pendingImageChanges.questionImage) {
@@ -220,6 +231,7 @@ export default function EditQuestionPage() {
           const { url, publicId } = await uploadImageToCloudinary(pendingImageChanges.questionImage.file, 'quiz-questions');
           updatedQuestion.image = url;
           updatedQuestion.imagePublicId = publicId;
+          newUploadedPublicIds.push(publicId); // Track for rollback
           
           // Delete old image if exists
           if (pendingImageChanges.questionImage.oldUrl) {
@@ -255,6 +267,7 @@ export default function EditQuestionPage() {
           const { url, publicId } = await uploadImageToCloudinary(change.file, 'quiz-answers');
           updatedQuestion.answers[answerIndex].image = url;
           updatedQuestion.answers[answerIndex].imagePublicId = publicId;
+          newUploadedPublicIds.push(publicId); // Track for rollback
           
           // Delete old image if exists
           if (change.oldUrl) {
@@ -285,14 +298,28 @@ export default function EditQuestionPage() {
       console.log(transformedQuestion);
       console.log(updatedQuestion.id);
 
-      await api.put(`/questions/${updatedQuestion.id}`, transformedQuestion);
-      
-      // Reset pending changes and unsaved changes flag after successful save
-      setPendingImageChanges({ answers: {} });
-      setHasUnsavedChanges(false);
-      setOriginalQuestion(JSON.parse(JSON.stringify(updatedQuestion))); // Update original to current
-      
-      router.push("/manage-questions");
+      try {
+        await api.put(`/questions/${updatedQuestion.id}`, transformedQuestion);
+        
+        // Reset pending changes and unsaved changes flag after successful save
+        setPendingImageChanges({ answers: {} });
+        setHasUnsavedChanges(false);
+        setOriginalQuestion(JSON.parse(JSON.stringify(updatedQuestion))); // Update original to current
+        
+        router.push("/manage-questions");
+      } catch (dbError) {
+        // Database save failed - rollback newly uploaded images
+        console.error('Database save failed, rolling back newly uploaded images:', dbError);
+        for (const publicId of newUploadedPublicIds) {
+          try {
+            await deleteImageFromCloudinary(publicId);
+            console.log('Rolled back image:', publicId);
+          } catch (deleteError) {
+            console.error('Failed to rollback image:', publicId, deleteError);
+          }
+        }
+        throw dbError; // Re-throw to be caught by outer catch
+      }
 
     } catch (error) {
       console.error('Error saving question:', error);
