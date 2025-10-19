@@ -48,6 +48,8 @@ export default function EditQuestionPage() {
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const questionId = searchParams.get("id");
   
   // Track pending image changes (files to upload, URLs to delete)
@@ -217,6 +219,7 @@ export default function EditQuestionPage() {
     }
 
     try {
+      setIsSaving(true);
       setShowSaveConfirm(true);
       const api = await createAdminApi();
       
@@ -325,6 +328,8 @@ export default function EditQuestionPage() {
       console.error('Error saving question:', error);
       setShowSaveConfirm(false);
       setErrorModal({ open: true, message: 'Failed to save question. Please try again.' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -333,6 +338,7 @@ export default function EditQuestionPage() {
     if (!question) return;
     
     try {
+      setIsDeleting(true);
       const api = await createAdminApi();
       
       // Delete the question from the database first
@@ -372,6 +378,8 @@ export default function EditQuestionPage() {
       console.error('Error deleting question:', error);
       setErrorModal({ open: true, message: 'Failed to delete question. Please try again.' });
       setShowDeleteConfirm(false);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -673,23 +681,34 @@ export default function EditQuestionPage() {
                   router.push("/manage-questions");
                 }
               }}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+              disabled={isSaving || isDeleting}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
               <span>Cancel</span>
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-red-500 to-red-800 text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+              disabled={isSaving || isDeleting}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-red-500 to-red-800 text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              <Trash2 size={16} />
-              <span>Delete</span>
+              {isDeleting ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              ) : (
+                <Trash2 size={16} />
+              )}
+              <span>{isDeleting ? 'Deleting...' : 'Delete'}</span>
             </button>
             <button
               onClick={handleSave}
-              className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+              disabled={isSaving || isDeleting}
+              className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              <Save size={16} />
-              <span>Save Changes</span>
+              {isSaving ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              ) : (
+                <Save size={16} />
+              )}
+              <span>{isSaving ? 'Saving...' : 'Save Changes'}</span>
             </button>
           </div>
         </div>

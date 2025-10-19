@@ -44,6 +44,9 @@ export default function ManageQuestions() {
 	const { data: session, status } = useSession();
 	const [questions, setQuestions] = useState<QuestionItem[]>();
 	const [selectedQuizSet, setSelectedQuizSet] = useState("set1");
+	const [isLoadingTab, setIsLoadingTab] = useState(false);
+	const [loadingQuestionId, setLoadingQuestionId] = useState<string | null>(null);
+	
 	useEffect(() => {
 
 		const fetchQuestions = async () => {
@@ -86,7 +89,16 @@ export default function ManageQuestions() {
 	};
 
 	const handleEdit = (id: string) => {
+		setLoadingQuestionId(id);
 		router.push(`/edit-question?id=${id}`);
+	};
+
+	const handleTabChange = async (index: number) => {
+		setIsLoadingTab(true);
+		setSelectedQuizSet(`set${index + 1}`);
+		// Small delay to show loading state
+		await new Promise(resolve => setTimeout(resolve, 300));
+		setIsLoadingTab(false);
 	};
 
 	const filteredQuestions = questions?.filter(
@@ -106,17 +118,25 @@ export default function ManageQuestions() {
 						<Plus size={18} /> Add New Question
 					</button>
 				</div>
-				<Tab.Group onChange={(index: number) => setSelectedQuizSet(`set${index + 1}`)}>
+				<Tab.Group onChange={handleTabChange}>
 					<Tab.List className="flex space-x-1 rounded-xl bg-gray-200 p-1 mb-4">
 						{['Quiz 1', 'Quiz 2', 'Quiz 3', 'Quiz 4'].map((quiz, index) => (
 							<Tab
 								key={index}
+								disabled={isLoadingTab}
 								className={({ selected }: { selected: boolean }) =>
-									`w-full py-2.5 text-sm leading-5 font-medium text-gray-700 rounded-lg
-									${selected ? 'bg-white shadow' : 'text-gray-500 hover:bg-white/[0.12] hover:text-gray-700'}`
+									`w-full py-2.5 text-sm leading-5 font-medium text-gray-700 rounded-lg relative
+									${selected ? 'bg-white shadow' : 'text-gray-500 hover:bg-white/[0.12] hover:text-gray-700'}
+									${isLoadingTab ? 'opacity-50 cursor-not-allowed' : ''}`
 								}
 							>
-								{quiz}
+								{isLoadingTab ? (
+									<div className="flex items-center justify-center">
+										<div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent"></div>
+									</div>
+								) : (
+									quiz
+								)}
 							</Tab>
 						))}
 					</Tab.List>
@@ -144,10 +164,17 @@ export default function ManageQuestions() {
 														<td className="px-4 py-2">
 															<button
 																onClick={() => handleEdit(q.id)}
-																className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+																disabled={loadingQuestionId === q.id}
+																className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
 																title="Edit"
 															>
-																<Edit size={16} /> Edit
+																{loadingQuestionId === q.id ? (
+																	<div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+																) : (
+																	<>
+																		<Edit size={16} /> Edit
+																	</>
+																)}
 															</button>
 														</td>
 													</tr>

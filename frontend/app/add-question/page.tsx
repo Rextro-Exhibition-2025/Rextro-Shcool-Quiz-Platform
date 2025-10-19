@@ -32,6 +32,8 @@ export default function AddQuestion(): React.ReactElement | null {
   const [errorModal, setErrorModal] = useState<ErrorModalState>({ open: false, message: '' });
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showSaveConfirm, setShowSaveConfirm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
   
@@ -138,6 +140,7 @@ export default function AddQuestion(): React.ReactElement | null {
     }
 
     try {
+      setIsSaving(true);
       const api = await createAdminApi();
       const updatedQuestion = { ...question };
       const uploadedPublicIds: string[] = []; // Track for rollback
@@ -207,16 +210,25 @@ export default function AddQuestion(): React.ReactElement | null {
       // Force ImageUpload components to remount and reset their internal state
       setFormResetKey(prev => prev + 1);
       
+      // Scroll to top of the page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
       setShowSaveConfirm(true);
     } catch (error) {
       setErrorModal({ open: true, message: 'Failed to save question. Please try again.' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
 
   const clearForm = async (): Promise<void> => {
+    setIsClearing(true);
     // No need to delete from Cloudinary since images haven't been uploaded yet
     // Just clear local state
+    
+    // Small delay for UX
+    await new Promise(resolve => setTimeout(resolve, 300));
     
     // Clear the form state
     setQuestion({
@@ -246,6 +258,7 @@ export default function AddQuestion(): React.ReactElement | null {
     setFormResetKey(prev => prev + 1);
 
     setShowClearConfirm(false);
+    setIsClearing(false);
   };
 
   const handleLogout = async () => {
@@ -590,17 +603,27 @@ export default function AddQuestion(): React.ReactElement | null {
           <div className="flex justify-end space-x-3">
             <button
               onClick={() => setShowClearConfirm(true)}
-              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+              disabled={isSaving || isClearing}
+              className="flex items-center space-x-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              <RotateCcw size={16} />
-              <span>Clear</span>
+              {isClearing ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              ) : (
+                <RotateCcw size={16} />
+              )}
+              <span>{isClearing ? 'Clearing...' : 'Clear'}</span>
             </button>
             <button
               onClick={handleSave}
-              className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+              disabled={isSaving || isClearing}
+              className="flex items-center space-x-2 px-6 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             >
-              <Save size={16} />
-              <span>Save Question</span>
+              {isSaving ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+              ) : (
+                <Save size={16} />
+              )}
+              <span>{isSaving ? 'Saving...' : 'Save Question'}</span>
             </button>
           </div>
         </div>
