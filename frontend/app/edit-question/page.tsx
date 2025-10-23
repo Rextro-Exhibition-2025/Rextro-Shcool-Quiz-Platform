@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Save, Trash2 } from "lucide-react";
@@ -19,7 +19,7 @@ type ErrorModalState = { open: boolean; message: string };
 
 
 
-export default function EditQuestionPage() {
+function EditQuestionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
@@ -716,5 +716,17 @@ export default function EditQuestionPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function EditQuestionPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-100">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#df7500]"></div>
+      </div>
+    }>
+      <EditQuestionContent />
+    </Suspense>
   );
 }

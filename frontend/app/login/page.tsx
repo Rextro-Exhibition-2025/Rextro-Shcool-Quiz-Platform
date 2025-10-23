@@ -121,6 +121,7 @@ export default function LoginPage() {
           schoolName: responseData.data.schoolName,
           teamName: responseData.data.teamName,
           authToken: responseData.data.authToken,
+          number: 0 // Assuming 'number' is same as 'memberName'
         });
         console.log(user);
 
