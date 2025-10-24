@@ -24,6 +24,8 @@ export const getSchoolTeams = async (req: Request, res: Response): Promise<void>
     
     try {
         const schoolTeams = await SchoolTeam.find();
+        console.log(schoolTeams , "fetched school teams");
+        
         res.status(200).json({
             success: true,
             count: schoolTeams.length,
