@@ -19,6 +19,9 @@ export const createSchoolTeam = async (req: Request, res: Response): Promise<voi
 };
 
 export const getSchoolTeams = async (req: Request, res: Response): Promise<void> => {
+
+    console.log("FE can reach the BE API");
+    
     try {
         const schoolTeams = await SchoolTeam.find();
         res.status(200).json({
@@ -27,6 +30,8 @@ export const getSchoolTeams = async (req: Request, res: Response): Promise<void>
             data: schoolTeams,
         });
     } catch (error) {
+        console.log(error,"error fetching school teams");
+        
         res.status(500).json({
             success: false,
             message: "Error fetching school teams",
