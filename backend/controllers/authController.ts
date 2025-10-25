@@ -67,7 +67,7 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
                 memberName: updatedMember.name,
                 schoolName: schoolTeam.schoolName,
                 hasEndedQuiz: updatedMember.hasEndedQuiz,
-                number: updatedMember.number,
+                number: updatedMember.number ?? null, // ensure number is present (or null)
                 authToken,
             },
         });
