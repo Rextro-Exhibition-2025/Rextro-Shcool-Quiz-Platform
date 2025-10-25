@@ -42,10 +42,21 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
 
         // Generate auth token for the member
         const authToken = schoolTeam.generateAuthTokenForMember(memberName);
-        member.isLoggedIn = true;
-        member.authToken = authToken;
 
-        await schoolTeam.save();
+        // Update only the matched member using positional operator to avoid full-document validation
+        const updatedTeam = await SchoolTeam.findOneAndUpdate(
+            { _id: schoolTeam._id, "members.name": memberName },
+            {
+                $set: {
+                    "members.$.isLoggedIn": true,
+                    "members.$.authToken": authToken,
+                },
+            },
+            { new: true } // return the updated document
+        );
+
+        // Find updated member for response
+        const updatedMember = updatedTeam?.members.find((m) => m.name === memberName) || member;
 
         res.status(200).json({
             success: true,
@@ -53,10 +64,10 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
             data: {
                 teamId: schoolTeam._id,
                 teamName: schoolTeam.teamName,
-                memberName: member.name,
+                memberName: updatedMember.name,
                 schoolName: schoolTeam.schoolName,
-                hasEndedQuiz: member.hasEndedQuiz,
-                number: member.number,
+                hasEndedQuiz: updatedMember.hasEndedQuiz,
+                number: updatedMember.number ?? null, // ensure number is present (or null)
                 authToken,
             },
         });

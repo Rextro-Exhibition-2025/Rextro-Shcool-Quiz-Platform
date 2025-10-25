@@ -14,6 +14,7 @@ interface LoginFormResponse {
     schoolName: string;
     teamName: string;
     authToken: string;
+    number: number;
   };
   message?: string;
 }
@@ -86,7 +87,7 @@ export default function LoginPage() {
       const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
       console.log(formData);
 
-      
+
 
       const response = await fetch(url, {
         method: 'POST',
@@ -121,7 +122,7 @@ export default function LoginPage() {
           schoolName: responseData.data.schoolName,
           teamName: responseData.data.teamName,
           authToken: responseData.data.authToken,
-          number: 0 // Assuming 'number' is same as 'memberName'
+          number: responseData.data.number
         });
         console.log(user);
 
@@ -141,11 +142,11 @@ export default function LoginPage() {
     const fetchSchools = async () => {
       try {
 
-      const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
+        const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
 
-      console.log('Fetched schools:', response.data);
+        console.log('Fetched schools:', response.data);
 
-      setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
+        setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
 
 
       } catch (error) {
