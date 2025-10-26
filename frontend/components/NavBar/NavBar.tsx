@@ -30,7 +30,7 @@ const NavBar = () => {
         {/* Logo Section */}
         <div className="flex items-center gap-2 md:gap-4">
           <Image
-            src="/logo.png"
+            src="/t_Final logo_light_h.png"
             alt="Faculty of Engineering Logo"
             width={80}
             height={40}
@@ -63,8 +63,8 @@ const NavBar = () => {
                 key={link.href}
                 href={link.href}
                 className={`font-semibold ${pathname === link.href
-                    ? "text-[#4b2e83] border-b-2 border-[#4b2e83]"
-                    : "text-gray-700 hover:text-[#a67c52] border-b-2 border-transparent"
+                  ? "text-[#4b2e83] border-b-2 border-[#4b2e83]"
+                  : "text-gray-700 hover:text-[#a67c52] border-b-2 border-transparent"
                   } pb-1 transition-colors`}
               >
                 {link.label}
@@ -101,8 +101,8 @@ const NavBar = () => {
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`font-semibold py-2 ${pathname === link.href
-                      ? "text-[#4b2e83] border-l-4 border-[#4b2e83] pl-3"
-                      : "text-gray-700 hover:text-[#a67c52] pl-3"
+                    ? "text-[#4b2e83] border-l-4 border-[#4b2e83] pl-3"
+                    : "text-gray-700 hover:text-[#a67c52] pl-3"
                     } transition-colors`}
                 >
                   {link.label}
