@@ -14,8 +14,6 @@ import { Shield, Menu, X } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home" },
-  { href: "/events", label: "Events" },
-  { href: "/contact", label: "Contact Us" },
   { href: "/add-question", label: "Admin Portal" },
 ];
 
