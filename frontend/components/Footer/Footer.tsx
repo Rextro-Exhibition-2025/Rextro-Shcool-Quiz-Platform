@@ -16,22 +16,22 @@ const Footer = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8">
           {/* Logos */}
           <div className="flex items-center gap-3 md:gap-4">
-            <Image 
-              src="/fe-logo.png" 
-              alt="FE Logo" 
-              width={60} 
+            <Image
+              src="/ruhuna.gif"
+              alt="RU Logo"
+              width={60}
               height={60}
               className="md:w-[80px] md:h-[80px]"
             />
-            <Image 
-              src="/fe-logo2.png" 
-              alt="FE Logo 2" 
-              width={60} 
+            <Image
+              src="/ruhuna_eng_logo.png"
+              alt="RU FE Logo"
+              width={60}
               height={60}
               className="md:w-[80px] md:h-[80px]"
             />
           </div>
-          
+
           {/* Address & Contacts */}
           <div className="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-8 flex-1 justify-center w-full md:w-auto">
             <div className="flex items-start gap-2 text-center md:text-left">
@@ -68,7 +68,7 @@ const Footer = () => {
               </div>
             </div>
           </div>
-          
+
           {/* Social */}
           <div className="flex flex-col items-center gap-2">
             <span className="font-semibold text-sm md:text-base">Follow us:</span>
@@ -100,7 +100,7 @@ const Footer = () => {
             </div>
           </div>
         </div>
-        
+
         {/* Copyright */}
         <div className="text-center text-xs md:text-sm text-gray-700 mt-2 md:mt-4">
           © 2025 Faculty of Engineering, University of Ruhuna. All Rights
