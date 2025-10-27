@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs"; // Fixed typo: bycrypt -> bcrypt
 import jwt from "jsonwebtoken"; // Fixed import: use default import
 
 export interface IStudent extends Document {
+    studentId: string;
     name: string;
     marks: number;
     isLoggedIn?: boolean;
@@ -34,6 +35,7 @@ const schoolTeamSchema: Schema = new Schema({
     teacherContact: { type: String },
     members: [
         {
+            studentId: { type: String, required: [true, "Member must have a student ID"], unique: true },
             name: { type: String, required: [true, "Member must have a name"] },
             marks: { type: Number, default: 0 },
             isLoggedIn: { type: Boolean, default: false },
