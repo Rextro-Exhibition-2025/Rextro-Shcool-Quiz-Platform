@@ -28,7 +28,7 @@ const swaggerDocument = YAML.load(path.join(__dirname, 'openapi.yaml'));
 
 //CORS
 app.use(cors({
-  origin: ['http://localhost:3001', 'http://localhost:3000'], // Allow both frontend ports
+  origin: ['http://localhost:3001', 'http://localhost:3000' , 'https://rextro-shcool-quiz-platform.vercel.app','https://mathquest.rextro.lk'], // Allow both frontend ports
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

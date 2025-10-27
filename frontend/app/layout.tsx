@@ -1,4 +1,5 @@
 "use client";
+import React, { useEffect } from 'react';
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Poppins } from "next/font/google";
 import "./globals.css";
@@ -20,6 +21,12 @@ const poppins = Poppins({
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const hideNavAndFooter = pathname.startsWith("/quiz");
+  // Ensure a title is present on the client in case app/head.tsx isn't picked up
+  useEffect(() => {
+    if (!document.title || document.title === window.location.hostname) {
+      document.title = 'Rextro Math Quest';
+    }
+  }, []);
   return (
     <html lang="en">
   <body className={`${poppins.variable} antialiased`}>
