@@ -11,10 +11,17 @@ const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    // Allow Google users to sign in (tweak this to restrict to admin emails)
+    // Restrict Google sign-in to emails listed in ADMIN_EMAILS
     async signIn({ user, account }) {
+      console.log('Auth signIn callback invoked');
+
+      // Read allowed admin emails from environment, default to a placeholder list
+      const adminEmailsEnv = process.env.ADMIN_EMAILS || 'admin@school.edu,teacher@school.edu'
+      const adminEmails = adminEmailsEnv.split(',').map(email => email.trim())
+
       if (account?.provider === 'google' && user.email) {
-        return true
+        // Only allow sign-in if the user's email is in the admin list
+        return adminEmails.includes(user.email)
       }
       return false
     },
