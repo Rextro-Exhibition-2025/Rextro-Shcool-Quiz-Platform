@@ -3,12 +3,12 @@ import SchoolTeam from "../models/SchoolTeam.js";
 
 export const loginMember = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { schoolName, password, memberName } = req.body;
+        const { schoolName, password, studentId } = req.body;
 
-        if (!schoolName || !password || !memberName) {
+        if (!schoolName || !password || !studentId) {
             res.status(400).json({
                 success: false,
-                message: "School name, password, and member name are required",
+                message: "School name, password, and student ID are required",
             });
             return;
         }
@@ -31,7 +31,7 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
             return;
         }
 
-        const member = schoolTeam.members.find((m) => m.name === memberName);
+        const member = schoolTeam.members.find((m) => m.studentId === studentId);
         if (!member) {
             res.status(404).json({
                 success: false,
@@ -41,11 +41,11 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
         }
 
         // Generate auth token for the member
-        const authToken = schoolTeam.generateAuthTokenForMember(memberName);
+        const authToken = schoolTeam.generateAuthTokenForMember(member.name);
 
         // Update only the matched member using positional operator to avoid full-document validation
         const updatedTeam = await SchoolTeam.findOneAndUpdate(
-            { _id: schoolTeam._id, "members.name": memberName },
+            { _id: schoolTeam._id, "members.studentId": studentId },
             {
                 $set: {
                     "members.$.isLoggedIn": true,
@@ -56,13 +56,14 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
         );
 
         // Find updated member for response
-        const updatedMember = updatedTeam?.members.find((m) => m.name === memberName) || member;
+        const updatedMember = updatedTeam?.members.find((m) => m.studentId === studentId) || member;
 
         res.status(200).json({
             success: true,
             message: "Login successful",
             data: {
                 teamId: schoolTeam._id,
+                studentId: updatedMember.studentId,
                 teamName: schoolTeam.teamName,
                 memberName: updatedMember.name,
                 schoolName: schoolTeam.schoolName,
@@ -71,7 +72,7 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
                 authToken,
             },
         });
-        console.log("Member logged in:", memberName, "from school:", schoolTeam.schoolName);
+        console.log("Member logged in:", updatedMember.name, "from school:", schoolTeam.schoolName);
     } catch (error) {
         console.error("Error logging in member:", error);
         res.status(500).json({
