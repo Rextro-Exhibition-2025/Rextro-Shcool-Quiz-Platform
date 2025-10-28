@@ -85,7 +85,7 @@ export default function LoginPage() {
       // You can add your authentication logic here
       // For now, we'll simulate a successful login after 1 second
       const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
-      console.log(formData);
+    
 
 
 
@@ -96,7 +96,7 @@ export default function LoginPage() {
         },
         body: JSON.stringify({
           schoolName: formData.schoolName, // Backend expects 'teamName'
-          memberName: formData.memberName,
+          studentId: formData.memberName,
           password: formData.password
         })
       });
@@ -159,20 +159,6 @@ export default function LoginPage() {
     fetchSchools();
   }, []);
 
-
-  // // Sample school names for the dropdown
-  // const schools = [
-  //   'Select your school',
-  //   'Sunrise High School',
-  //   'Greenwood High School',
-  //   'Riverside Academy',
-  //   'Maple Valley School',
-  //   'Oakwood Preparatory School',
-  //   'Sunrise Elementary School',
-  //   'Mountain View School',
-  //   'Cedar Creek Institution',
-  //   'Pinewood Secondary School'
-  // ];
 
   return (
     <div
@@ -306,8 +292,8 @@ export default function LoginPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled
-              className={`w-full bg-gradient-to-r from-[#df7500] to-[#651321] text-white py-3 px-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition-all duration-300 transform  hover:shadow-lg  opacity-70 cursor-not-allowed '
+              disabled={loading}
+              className={`w-full bg-gradient-to-r from-[#df7500] to-[#651321] text-white py-3 px-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition-all duration-300 transform  hover:shadow-lg  hover:scale-[1.02] cursor-pointer '
                 }`}
             >
               {loading ? (
@@ -318,7 +304,7 @@ export default function LoginPage() {
               ) : (
                 <>
                   <LogIn className="w-5 h-5" />
-                  Comming Soon
+                  Login to start quiz
                 </>
               )}
             </button>
@@ -328,7 +314,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center space-y-2">
             <button
               onClick={() => router.push('/')}
-              className="text-[#651321] hover:text-[#df7500] font-medium transition-colors block w-full"
+              className="text-[#651321] hover:text-[#df7500] font-medium transition-colors block w-full cursor-pointer"
             >
               Back to Home
             </button>

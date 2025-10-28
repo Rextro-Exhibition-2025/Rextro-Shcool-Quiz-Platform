@@ -208,6 +208,9 @@ export default function Quiz(): React.JSX.Element | null {
       })
     });
 
+    console.log(response);
+    
+
     if (!response.ok) {
       throw new Error('Failed to update quiz state');
     }
@@ -283,7 +286,7 @@ export default function Quiz(): React.JSX.Element | null {
       await submitQuiz();
 
     } catch (error) {
-      alert('Error submitting quiz. Please try again.');
+      alert( error);
       console.error('Submit quiz error:', error);
       setIsSubmitting(false);
     }
@@ -301,8 +304,8 @@ export default function Quiz(): React.JSX.Element | null {
       }
     };
 
-    setQuizId(1);
-    fetchQuiz(1);
+    setQuizId(user?.user?.number || 1);
+    fetchQuiz(user?.user?.number || 1);
   }, [setQuizId, user.user?.authToken]);
 
   // Debug user context
@@ -513,6 +516,29 @@ export default function Quiz(): React.JSX.Element | null {
     };
   }, []);
 
+  // Prevent background scrolling when modal (completion or fullscreen prompt) is visible
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+
+    if (showCompletionCard || showFullscreenPrompt) {
+      // prevent layout shift by compensating for scrollbar width
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [showCompletionCard, showFullscreenPrompt]);
+
   // Scroll to top on component mount
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -522,6 +548,9 @@ export default function Quiz(): React.JSX.Element | null {
   const totalQuestions = quizData.length;
   const answeredCount = Object.keys(selectedAnswers).length;
   const progress = (answeredCount / totalQuestions) * 100;
+
+  // Display score: show numeric 0 as "0.00" instead of treating falsy 0 as missing
+  const displayScore = (typeof score === 'number' && !isNaN(score)) ? score.toFixed(2) : '0';
 
   // Event handlers
   const handleGoToLeaderboard = (): void => {
@@ -782,8 +811,10 @@ export default function Quiz(): React.JSX.Element | null {
 
       {/* Full-Screen Prompt */}
       {showFullscreenPrompt && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center">
-          <div className="bg-white p-8 rounded-xl shadow-xl text-center text-black">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* translucent dark overlay with blur */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl" />
+          <div className="relative bg-white p-8 rounded-xl shadow-xl text-center text-black">
             <h2 className="text-lg font-bold mb-4">Full Screen Required</h2>
             <p className="mb-6">Please click the button below to return to full-screen mode and continue your quiz.</p>
             <button
@@ -798,9 +829,11 @@ export default function Quiz(): React.JSX.Element | null {
 
       {/* Quiz Completion Card */}
       {showCompletionCard && completionData && (
-        <div className="fixed inset-0 z-50 bg-black bg-opacity-75 flex items-center justify-center p-4">
-          <div className="max-w-2xl w-full mx-4">
-            <div className="p-6 bg-gradient-to-r from-[#df7500]/10 to-[#651321]/10 rounded-2xl border-2 border-[#df7500]/20 shadow-lg bg-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* translucent blurred backdrop */}
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-3xl" />
+          <div className="relative max-w-2xl w-full mx-4">
+            <div className="p-6 bg-white/95 rounded-2xl border border-white/30 shadow-lg">
               <div className="text-center">
                 <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-[#df7500] to-[#651321] rounded-full mb-4">
                   <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -819,7 +852,7 @@ export default function Quiz(): React.JSX.Element | null {
                   </div>
                   <div className="bg-white/50 rounded-lg p-4">
                     <div className="text-sm text-gray-600">Score</div>
-                    <div className="font-bold text-2xl text-[#df7500]">{score ? score.toFixed(2) : 'N/A'}%</div>
+                    <div className="font-bold text-2xl text-[#df7500]">{displayScore !== 'N/A' ? `${displayScore}%` : 'N/A'}</div>
                   </div>
                 </div>
                 <div className="mt-4 text-sm text-gray-600">

@@ -4,6 +4,7 @@ import SchoolTeam from "../models/SchoolTeam.js";
 export const loginMember = async (req: Request, res: Response): Promise<void> => {
     try {
         const { schoolName, password, studentId } = req.body;
+        console.log(req.body, "request body");
 
         if (!schoolName || !password || !studentId) {
             res.status(400).json({
@@ -182,10 +183,16 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const updateStateOfMember = async (req: Request, res: Response): Promise<void> => {
+    console.log("hooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo");
+    
     try {
         const { schoolName, memberName, hasEndedQuiz } = req.body;
+        console.log(req.body, "update state request body");
+        
 
         if (!schoolName || !memberName || typeof hasEndedQuiz !== 'boolean') {
+            console.log("caseeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+            
             res.status(400).json({
                 success: false,
                 message: "School name, member name, and hasEndedQuiz status are required",
@@ -194,6 +201,9 @@ export const updateStateOfMember = async (req: Request, res: Response): Promise<
         }
 
         const schoolTeam = await SchoolTeam.findOne({ schoolName });
+        console.log(schoolTeam, "school team found");
+        
+        
         if (!schoolTeam) {
             res.status(404).json({
                 success: false,
@@ -202,7 +212,11 @@ export const updateStateOfMember = async (req: Request, res: Response): Promise<
             return;
         }
 
-        const member = schoolTeam.members.find((m) => m.name === memberName);
+        const member = schoolTeam.members.find((m) => m.studentId === memberName);
+        console.log(memberName);
+        
+        console.log(member, "member found");
+        
         if (!member) {
             res.status(404).json({
                 success: false,
@@ -215,13 +229,16 @@ export const updateStateOfMember = async (req: Request, res: Response): Promise<
 
         await schoolTeam.save();
 
+        console.log("aliveeeeeeeeeeeeeeeeeeeeeeeeee");
+        
+
         res.status(200).json({
             success: true,
             message: "Member state updated successfully",
             data: { memberName: member.name, hasEndedQuiz: member.hasEndedQuiz }
         });
     } catch (error) {
-        console.error("Error updating member state:", error);
+        console.log("Error updating member state:", error);
         res.status(500).json({
             success: false,
             message: "Internal server error",
