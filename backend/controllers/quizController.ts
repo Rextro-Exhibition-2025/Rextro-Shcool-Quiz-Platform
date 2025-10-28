@@ -1,6 +1,7 @@
 import Quiz from '../models/Quiz.js';
 import type { Request, Response } from 'express';
 import SchoolTeam from '../models/SchoolTeam.js';
+import { log } from 'node:console';
 export const getQuizWithQuestions = async (req: Request, res: Response) => {
   try {
     const quizId = Number(req.params.quizId);
@@ -179,5 +180,58 @@ export const getLeaderBoard = async (req: Request, res: Response) => {
       error: error instanceof Error ? error.message : 'Unknown error',
     });
     
+  }
+}
+
+export const publishAllQuizzes = async (req: Request, res: Response) => {
+console.log("huuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu");
+
+  try {
+    const result = await Quiz.updateMany({}, { $set: { isPublished: true } });
+    console.log('publishAllQuizzes result:', result);
+    return res.status(200).json({ success: true, message: 'All quizzes published successfully.', modifiedCount: (result as any).modifiedCount ?? 0 });
+  }
+  catch (error) {
+    console.log(error);
+    
+    return res.status(500).json({
+      success: false,
+      message: 'Error publishing quizzes',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+
+} 
+
+export const unpublishAllQuizzes = async (req: Request, res: Response) => {
+
+  try {
+    const result = await Quiz.updateMany({}, { $set: { isPublished: false } });
+    console.log('unpublishAllQuizzes result:', result);
+    return res.status(200).json({ success: true, message: 'All quizzes unpublished successfully.', modifiedCount: (result as any).modifiedCount ?? 0 });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error unpublishing quizzes',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+
+}
+
+export const checkQuizzesPublishedStatus = async (req: Request, res: Response) => {
+
+  try {
+    const quiz = await Quiz.findOne({ quizId: 1 }); // assuming quizId 1 is ZES
+    if (!quiz) {
+      return res.status(404).json({ success: false, message: 'Quiz not found.' });
+    }
+    return res.status(200).json({ success: true, isPublished: quiz.isPublished || false });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error checking quiz published status',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 }

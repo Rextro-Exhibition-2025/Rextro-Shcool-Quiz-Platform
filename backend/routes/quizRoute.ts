@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { getLeaderBoard, getQuizWithQuestions, submitQuiz } from "../controllers/quizController.js";
+import { checkQuizzesPublishedStatus, getLeaderBoard, getQuizWithQuestions, publishAllQuizzes, submitQuiz, unpublishAllQuizzes } from "../controllers/quizController.js";
 import { protect } from "../middleware/authMiddleware.js";
+import { adminOnly } from "../middleware/adminAuthMiddleware.js";
 
 
 const QuizRouter = Router();
@@ -12,6 +13,17 @@ QuizRouter.route("/submit-quiz")
 
 QuizRouter.route("/get-leaderboard")
   .get(getLeaderBoard);
+
+
+QuizRouter.route("/check-quiz-published-status")
+.get(checkQuizzesPublishedStatus);
+
+
+QuizRouter.route("/publish-all-quizzes")
+.post(adminOnly, publishAllQuizzes);
+
+QuizRouter.route("/unpublish-all-quizzes")
+.post(adminOnly, unpublishAllQuizzes);
 
 
 

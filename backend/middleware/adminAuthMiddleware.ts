@@ -19,6 +19,8 @@ export const adminOnly = async (
         ) {
             token = req.headers.authorization.split(' ')[1];
         }
+        console.log(token);
+        
 
         // Check if token exists
         if (!token) {

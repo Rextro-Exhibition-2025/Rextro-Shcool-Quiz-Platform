@@ -33,6 +33,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, setUser } = useUser();
   const [schools, setSchools] = useState<string[]>([]);
+  
 
   // Add this useEffect to your login page to debug
 

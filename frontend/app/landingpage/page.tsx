@@ -5,9 +5,25 @@ import { ChevronRight, Trophy, Brain, Users, Star, Zap, Target, Award } from 'lu
 
 
 export default function LandingPage() {
+
+
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [published, setPublished] = useState(false);
   const router = useRouter();
+useEffect(() => {
+	const checkPublishedStatus = async () => {
+		
+		try {
+			const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes/check-quiz-published-status`);
+			const data = await response.json();
+			setPublished(data?.isPublished ?? false);
+		} catch (error) {
+			console.error('Error fetching published status:', error);
+		}
+	};
+	checkPublishedStatus();
+}, []);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -53,18 +69,19 @@ export default function LandingPage() {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
             <button
-              className="group bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:from-[#df7500]/80 hover:to-[#651321]/80 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
+            disabled={!published}
+              className="group bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:from-[#df7500]/80 hover:to-[#651321]/80 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => {
                 router.push('/login');
               }}
             >
               <Zap className="w-5 h-5 group-hover:animate-pulse" />
-              Start Quiz
+              {published ? 'Start Quiz' : 'Comming Soon'}
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
 
             <button
-              disabled
+              disabled={!published}
               className="group bg-[#df7500]/10 backdrop-blur-sm text-[#651321] px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:bg-[#df7500]/20 transition-all duration-300 transform hover:scale-105 border border-[#df7500]/20 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => router.push('/leaderboard')}
             >
