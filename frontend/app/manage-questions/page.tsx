@@ -7,35 +7,9 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { transformQuizApiQuestions } from "./questionTransformer";
-
-
+import { useQuiz } from '@/contexts/QuizContext';
 // Dummy data for demonstration. Replace with API call in production.
-const DUMMY_QUESTIONS = [
-	{
-		id: "1",
-		question: "What is the capital of France?",
-		quizSet: "set1",
-		answers: [
-			{ id: "a", text: "Paris" },
-			{ id: "b", text: "London" },
-			{ id: "c", text: "Berlin" },
-			{ id: "d", text: "Madrid" }
-		],
-		correctAnswer: "a"
-	},
-	{
-		id: "2",
-		question: "Which planet is known as the Red Planet?",
-		quizSet: "set2",
-		answers: [
-			{ id: "a", text: "Earth" },
-			{ id: "b", text: "Mars" },
-			{ id: "c", text: "Jupiter" },
-			{ id: "d", text: "Venus" }
-		],
-		correctAnswer: "b"
-	}
-];
+
 
 export default function ManageQuestions() {
 
@@ -46,7 +20,21 @@ export default function ManageQuestions() {
 	const [selectedQuizSet, setSelectedQuizSet] = useState("set1");
 	const [isLoadingTab, setIsLoadingTab] = useState(false);
 	const [loadingQuestionId, setLoadingQuestionId] = useState<string | null>(null);
-	
+	const [published, setPublished] = useState<boolean>(false);
+
+useEffect(() => {
+	const checkPublishedStatus = async () => {
+		const api = await createAdminApi();
+		try {
+			const response = await api.get<{ isPublished: boolean }>('/quizzes/check-quiz-published-status');
+			setPublished(response?.data?.isPublished ?? false);
+		} catch (error) {
+			console.error('Error fetching published status:', error);
+		}
+	};
+	checkPublishedStatus();
+}, []);
+
 	useEffect(() => {
 
 		const fetchQuestions = async () => {
@@ -103,18 +91,50 @@ export default function ManageQuestions() {
 
 	const isTableLoading = !filteredQuestions; // Add a loading state for the table content
 
+	const handlePublish = async () => {
+		
+		try{
+			const api =await createAdminApi();
+			
+			if(published){
+				
+				
+
+				await  api.post('/quizzes/unpublish-all-quizzes');
+				setPublished(false);
+
+			}else{
+				console.log("publishiingggggggggggg");
+				await api.post('/quizzes/publish-all-quizzes');
+				setPublished(true);
+			}
+		} catch (error) {
+			console.error('Error publishing quiz:', error);
+		}
+	}
+
 	return (
 		<div className="min-h-screen bg-gradient-to-br p-4 relative" style={{ backgroundImage: 'url("/Container.png")', backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
 			<div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(255,255,255,0.6)', zIndex: 1 }} />
 			<div className="max-w-4xl mx-auto relative z-10">
 				<div className="flex items-center justify-between mb-6">
 					<h1 className="text-2xl font-bold text-gray-800">Manage Questions</h1>
-					<button
-						onClick={() => router.push("/add-question")}
-						className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
-					>
-						<Plus size={18} /> Add New Question
-					</button>
+					<div className="flex items-center gap-3">
+						<button
+							onClick={handlePublish}
+							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-white text-[#651321] border border-[#dfd7d0] shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+							aria-label="Publish Quizzers"
+						>
+							{/* simple publish label; use icon if desired */}
+							{published ? 'Unpublish Quizzers' : 'Publish Quizzers'}
+						</button>
+						<button
+							onClick={() => router.push("/add-question")}
+							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+						>
+							<Plus size={18} /> Add New Question
+						</button>
+					</div>
 				</div>
 				<Tab.Group onChange={handleTabChange}>
 					<Tab.List className="flex space-x-1 rounded-xl bg-gray-200 p-1 mb-4">

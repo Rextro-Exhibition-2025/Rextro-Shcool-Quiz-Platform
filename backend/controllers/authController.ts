@@ -4,6 +4,7 @@ import SchoolTeam from "../models/SchoolTeam.js";
 export const loginMember = async (req: Request, res: Response): Promise<void> => {
     try {
         const { schoolName, password, studentId } = req.body;
+   
 
         if (!schoolName || !password || !studentId) {
             res.status(400).json({
@@ -182,10 +183,13 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const updateStateOfMember = async (req: Request, res: Response): Promise<void> => {
+    
     try {
         const { schoolName, memberName, hasEndedQuiz } = req.body;
+        
 
         if (!schoolName || !memberName || typeof hasEndedQuiz !== 'boolean') {
+            
             res.status(400).json({
                 success: false,
                 message: "School name, member name, and hasEndedQuiz status are required",
@@ -194,6 +198,9 @@ export const updateStateOfMember = async (req: Request, res: Response): Promise<
         }
 
         const schoolTeam = await SchoolTeam.findOne({ schoolName });
+   
+        
+        
         if (!schoolTeam) {
             res.status(404).json({
                 success: false,
@@ -202,7 +209,11 @@ export const updateStateOfMember = async (req: Request, res: Response): Promise<
             return;
         }
 
-        const member = schoolTeam.members.find((m) => m.name === memberName);
+        const member = schoolTeam.members.find((m) => m.studentId === memberName);
+
+        
+     
+        
         if (!member) {
             res.status(404).json({
                 success: false,
@@ -215,13 +226,15 @@ export const updateStateOfMember = async (req: Request, res: Response): Promise<
 
         await schoolTeam.save();
 
+        
+
         res.status(200).json({
             success: true,
             message: "Member state updated successfully",
             data: { memberName: member.name, hasEndedQuiz: member.hasEndedQuiz }
         });
     } catch (error) {
-        console.error("Error updating member state:", error);
+   
         res.status(500).json({
             success: false,
             message: "Internal server error",
