@@ -1,11 +1,11 @@
 "use client";
 import { createAdminApi } from "@/interceptors/admins";
 import { QuestionApiResponse, QuestionItem, QuizApiResponse } from "@/types/quiz";
-import { Tab } from "@headlessui/react";
+// Replaced Tab-based UI with a simple dropdown selector for quiz sets
 import { Edit, Plus } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { transformQuizApiQuestions } from "./questionTransformer";
 import { useQuiz } from '@/contexts/QuizContext';
 // Dummy data for demonstration. Replace with API call in production.
@@ -89,6 +89,17 @@ useEffect(() => {
 		(q) => q.quizSet === selectedQuizSet
 	);
 
+	// Counts per quiz set and total questions for header display
+	const countsBySet = useMemo(() => {
+		if (!questions) return {} as Record<string, number>;
+		return questions.reduce((acc: Record<string, number>, q) => {
+			acc[q.quizSet] = (acc[q.quizSet] || 0) + 1;
+			return acc;
+		}, {} as Record<string, number>);
+	}, [questions]);
+
+	const totalQuestions = questions?.length ?? 0;
+
 	const isTableLoading = !filteredQuestions; // Add a loading state for the table content
 
 	const handlePublish = async () => {
@@ -128,6 +139,21 @@ useEffect(() => {
 							{/* simple publish label; use icon if desired */}
 							{published ? 'Unpublish Quizzers' : 'Publish Quizzers'}
 						</button>
+						{/* Quiz selector placed between Publish and Add buttons */}
+						<div className="w-38">
+							<label htmlFor="quizSelectHeader" className="sr-only">Select Quiz</label>
+							<select
+								id="quizSelectHeader"
+								value={selectedQuizSet}
+								onChange={(e) => setSelectedQuizSet(e.target.value)}
+								disabled={isLoadingTab}
+								className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321] bg-white"
+							>
+								{['set1', 'set2', 'set3', 'set4','set5', 'set6', 'set7', 'set8'].map((set, idx) => (
+									<option key={set} value={set}>{`Quiz ${idx + 1} - ${countsBySet[set] ?? 0}/${totalQuestions}`}</option>
+								))}
+							</select>
+						</div>
 						<button
 							onClick={() => router.push("/add-question")}
 							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
@@ -136,79 +162,55 @@ useEffect(() => {
 						</button>
 					</div>
 				</div>
-				<Tab.Group onChange={handleTabChange}>
-					<Tab.List className="flex space-x-1 rounded-xl bg-gray-200 p-1 mb-4">
-						{['Quiz 1', 'Quiz 2', 'Quiz 3', 'Quiz 4'].map((quiz, index) => (
-							<Tab
-								key={index}
-								disabled={isLoadingTab}
-								className={({ selected }: { selected: boolean }) =>
-									`w-full py-2.5 text-sm leading-5 font-medium text-gray-700 rounded-lg relative
-									${selected ? 'bg-white shadow' : 'text-gray-500 hover:bg-white/[0.12] hover:text-gray-700'}
-									${isLoadingTab ? 'opacity-50 cursor-not-allowed' : ''}`
-								}
-							>
-								{isLoadingTab ? (
-									<div className="flex items-center justify-center">
-										<div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent"></div>
-									</div>
-								) : (
-									quiz
-								)}
-							</Tab>
-						))}
-					</Tab.List>
-					<Tab.Panels>
-						{["set1", "set2", "set3", "set4"].map((set, index) => (
-							<Tab.Panel key={index} className="bg-white rounded-2xl shadow-lg p-6">
-								{isTableLoading ? (
-									<div className="flex justify-center items-center">
-										<div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-transparent"></div>
-									</div>
-								) : filteredQuestions?.length === 0 ? (
-									<div className="text-center text-gray-500">No questions found.</div>
-								) : (
-									<table className="min-w-full divide-y divide-gray-200">
-										<thead>
-											<tr>
-												<th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Question</th>
-												<th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Correct Answer</th>
-												<th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-											</tr>
-										</thead>
-										<tbody>
-											{filteredQuestions?.map((q) => {
-												const correct = q.answers.find(a => a.id === q.correctAnswer);
-												return (
-													<tr key={q.id} className="hover:bg-gray-50">
-														<td className="px-4 py-2 text-gray-800 max-w-xs truncate">{q.question}</td>
-														<td className="px-4 py-2 text-gray-800 ">{correct ? correct.text : '-'}</td>
-														<td className="px-4 py-2">
-															<button
-																onClick={() => handleEdit(q.id)}
-																disabled={loadingQuestionId === q.id}
-																className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-																title="Edit"
-															>
-																{loadingQuestionId === q.id ? (
-																	<div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-																) : (
-																	<>
-																		<Edit size={16} /> Edit
-																	</>
-																)}
-															</button>
-														</td>
-													</tr>
-												);
-											})}
-										</tbody>
-									</table>
-								)}
-							</Tab.Panel>
-						))}
-					</Tab.Panels>
-				</Tab.Group>
+
+
+				{/* Panel content for the selected quiz set */}
+				<div className="bg-white rounded-2xl shadow-lg p-6">
+					{isTableLoading ? (
+						<div className="flex justify-center items-center">
+							<div className="animate-spin rounded-full h-8 w-8 border-4 border-gray-300 border-t-transparent"></div>
+						</div>
+					) : filteredQuestions?.length === 0 ? (
+						<div className="text-center text-gray-500">No questions found.</div>
+					) : (
+						<table className="min-w-full divide-y divide-gray-200">
+							<thead>
+								<tr>
+									<th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Question</th>
+									<th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Correct Answer</th>
+									<th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								{filteredQuestions?.map((q) => {
+									const correct = q.answers.find(a => a.id === q.correctAnswer);
+									return (
+										<tr key={q.id} className="hover:bg-gray-50">
+											<td className="px-4 py-2 text-gray-800 max-w-xs truncate">{q.question}</td>
+											<td className="px-4 py-2 text-gray-800 ">{correct ? correct.text : '-'}</td>
+											<td className="px-4 py-2">
+												<button
+													onClick={() => handleEdit(q.id)}
+													disabled={loadingQuestionId === q.id}
+													className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+													title="Edit"
+												>
+													{loadingQuestionId === q.id ? (
+														<div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+													) : (
+														<>
+															<Edit size={16} /> Edit
+														</>
+													)}
+												</button>
+											</td>
+										</tr>
+									);
+								})}
+							</tbody>
+						</table>
+					)}
+				</div>
 			</div>
 		</div>
 	);

@@ -24,7 +24,8 @@ export default function LoginPage() {
     studentId: '',
     memberName: '',
     password: '',
-    schoolName: ''
+    schoolName: '',
+    medium: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -74,7 +75,7 @@ export default function LoginPage() {
     setError('');
 
     // Basic validation
-    if (!formData.memberName || !formData.password || !formData.schoolName) {
+    if (!formData.memberName || !formData.password || !formData.schoolName || !formData.medium) {
       setError('Please fill in all fields');
       setLoading(false);
       return;
@@ -104,7 +105,8 @@ export default function LoginPage() {
         body: JSON.stringify({
           schoolName: formData.schoolName, // Backend expects 'teamName'
           studentId: formData.memberName,
-          password: formData.password
+          password: formData.password,
+          medium: formData.medium
         })
       });
 
@@ -113,6 +115,7 @@ export default function LoginPage() {
       localStorage.setItem('studentData', JSON.stringify({
         memberName: formData.memberName,
         schoolName: formData.schoolName,
+        medium: formData.medium,
         loginTime: new Date().toISOString()
       }));
 
@@ -260,6 +263,25 @@ export default function LoginPage() {
                     {school}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            {/* Medium Selection */}
+            <div>
+              <label htmlFor="medium" className="block text-sm font-medium text-gray-700 mb-2">
+                Medium
+              </label>
+              <select
+                id="medium"
+                name="medium"
+                value={formData.medium}
+                onChange={handleInputChange}
+                className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321]"
+                required
+              >
+                <option value="" disabled className="text-gray-500">Select medium</option>
+                <option value="සිංහල">සිංහල</option>
+                <option value="English">English</option>
               </select>
             </div>
 
