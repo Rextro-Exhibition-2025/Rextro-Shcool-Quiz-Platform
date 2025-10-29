@@ -78,7 +78,7 @@ schoolTeamSchema.methods.generateAuthTokenForMember = function (memberName: stri
         teamName: this.teamName,
         memberName: member.name,
     };
-    const secretKey = 'your_secret_key';
+    const secretKey = process.env.JWT_SECRET || 'your_secret_key';
 
     // Fixed: Proper type assertion and parameter order
     const token = jwt.sign(
