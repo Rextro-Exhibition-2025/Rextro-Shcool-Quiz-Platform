@@ -98,10 +98,33 @@ export default function Quiz(): React.JSX.Element | null {
 
   // Timer management
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const [timeLeft, setTimeLeft] = useState<number>(QUIZ_DURATION);
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const end = localStorage.getItem('quizEndTimestamp');
+        if (end) {
+          const remain = Math.max(0, Math.round((Number(end) - Date.now()) / 1000));
+          return remain;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return QUIZ_DURATION;
+  });
 
   // Quiz state
-  const [currentQuestion, setCurrentQuestion] = useState<number>(0);
+  const [currentQuestion, setCurrentQuestion] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('quizCurrentQuestion');
+        if (saved) return Math.max(0, Number(saved));
+      } catch {
+        // ignore
+      }
+    }
+    return 0;
+  });
   const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
 
   // State initialization with localStorage
@@ -116,6 +139,63 @@ export default function Quiz(): React.JSX.Element | null {
     }
     return {};
   });
+
+  // Auto-save selectedAnswers to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('quizSelectedAnswers', JSON.stringify(selectedAnswers));
+      } catch (e) {
+        // ignore storage errors
+      }
+    }
+  }, [selectedAnswers]);
+
+  // Persist current question index to localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem('quizCurrentQuestion', String(currentQuestion));
+    } catch (e) {
+      // ignore
+    }
+  }, [currentQuestion]);
+
+  // Hydrate QuizContext from saved selected answers on mount (sync page state -> context)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem('quizSelectedAnswers');
+      const parsed: SelectedAnswers = saved ? JSON.parse(saved) : selectedAnswers;
+      if (parsed && Object.keys(parsed).length) {
+        Object.keys(parsed).forEach((qIdx) => {
+          const idx = Number(qIdx);
+          const ans = parsed[qIdx as any];
+          if (ans !== undefined && updateSelectedAnswers) {
+            // keep context in sync
+            // ignore promise intentionally
+            updateSelectedAnswers(idx, ans).catch(() => {});
+          }
+        });
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist end timestamp so the timer can be continued after refresh.
+  // We write an end timestamp derived from the current timeLeft — this is updated as timeLeft changes.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const endTs = Date.now() + timeLeft * 1000;
+      localStorage.setItem('quizEndTimestamp', String(endTs));
+    } catch (e) {
+      // ignore storage errors
+    }
+  }, [timeLeft]);
 
   // UI state
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState<boolean>(false);
@@ -269,6 +349,15 @@ export default function Quiz(): React.JSX.Element | null {
 
       // Store results locally
       localStorage.setItem('quizResult', JSON.stringify(submissionData));
+
+      // Clear saved answers after submission (so refresh won't restore them)
+      try {
+        localStorage.removeItem('quizSelectedAnswers');
+        localStorage.removeItem('quizCurrentQuestion');
+        localStorage.removeItem('quizEndTimestamp');
+      } catch (e) {
+        // ignore
+      }
 
       // Exit fullscreen
       if (document.fullscreenElement) {
