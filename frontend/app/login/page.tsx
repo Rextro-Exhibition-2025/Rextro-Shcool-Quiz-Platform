@@ -33,7 +33,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, setUser } = useUser();
   const [schools, setSchools] = useState<string[]>([]);
-  
+
 
   // Add this useEffect to your login page to debug
 
@@ -86,8 +86,14 @@ export default function LoginPage() {
       // You can add your authentication logic here
       // For now, we'll simulate a successful login after 1 second
       const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
-    
 
+      const studentId = formData.memberName;
+
+      if (studentId.length !== 9) {
+        setError('Student ID must be exactly 9 characters. Check for ending/starting spaces.');
+        setLoading(false);
+        return;
+      }
 
 
       const response = await fetch(url, {
@@ -225,7 +231,7 @@ export default function LoginPage() {
                   value={formData.memberName}
                   onChange={handleInputChange}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321] placeholder-gray-500"
-                  placeholder="Enter your member name"
+                  placeholder="Enter your student ID"
                   required
                 />
               </div>
