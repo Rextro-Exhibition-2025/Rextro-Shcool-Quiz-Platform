@@ -19,14 +19,21 @@ export const createSchoolTeam = async (req: Request, res: Response): Promise<voi
 };
 
 export const getSchoolTeams = async (req: Request, res: Response): Promise<void> => {
+
+  
+    
     try {
         const schoolTeams = await SchoolTeam.find();
+       
+        
         res.status(200).json({
             success: true,
             count: schoolTeams.length,
             data: schoolTeams,
         });
     } catch (error) {
+        console.log(error,"error fetching school teams");
+        
         res.status(500).json({
             success: false,
             message: "Error fetching school teams",

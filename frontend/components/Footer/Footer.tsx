@@ -21,14 +21,14 @@ const Footer = () => {
               alt="RU Logo"
               width={60}
               height={60}
-              className="md:w-[80px] md:h-[80px]"
+              className="md:w-[80px]  object-contain"
             />
             <Image
               src="/ruhuna_eng_logo.png"
               alt="RU FE Logo"
               width={60}
               height={60}
-              className="md:w-[80px] md:h-[80px]"
+              className="md:w-[80px]  object-contain"
             />
           </div>
 

@@ -51,7 +51,7 @@ function EditQuestionContent() {
     answers: {}
   });
 
-  console.log(questionId);
+
 
   // Helper function to extract publicId from Cloudinary URL
   const extractPublicIdFromUrl = (url: string): string | null => {
@@ -96,7 +96,7 @@ function EditQuestionContent() {
 
   useEffect(() => {
 
-    console.log("use effect running");
+
 
 
 
@@ -108,7 +108,6 @@ function EditQuestionContent() {
 
 
         const response = await api.get(`/questions/${id}`);
-        console.log(transformQuizApiQuestion((response?.data as { data: QuestionApiResponse; success: boolean }).data),"output");
 
         const loadedQuestion = transformQuizApiQuestion((response?.data as { data: QuestionApiResponse; success: boolean }).data);
         

@@ -59,8 +59,8 @@ const AdminMenu: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
       <button
         onClick={async () => {
           handleMenuClick();
-          await signOut({ callbackUrl: 'http://localhost:3000/' });
-          router.push('http://localhost:3000/');
+          await signOut({ callbackUrl: '/' });
+          router.push('/');
         }}
         className="flex items-center gap-2 w-full px-4 py-2 text-[#651321] hover:bg-gray-100 border-t border-gray-100 text-left text-sm font-semibold"
       >

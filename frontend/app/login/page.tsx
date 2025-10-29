@@ -24,7 +24,8 @@ export default function LoginPage() {
     studentId: '',
     memberName: '',
     password: '',
-    schoolName: ''
+    schoolName: '',
+    medium: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -33,6 +34,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, setUser } = useUser();
   const [schools, setSchools] = useState<string[]>([]);
+  
 
   // Add this useEffect to your login page to debug
 
@@ -73,7 +75,7 @@ export default function LoginPage() {
     setError('');
 
     // Basic validation
-    if (!formData.memberName || !formData.password || !formData.schoolName) {
+    if (!formData.memberName || !formData.password || !formData.schoolName || !formData.medium) {
       setError('Please fill in all fields');
       setLoading(false);
       return;
@@ -85,7 +87,7 @@ export default function LoginPage() {
       // You can add your authentication logic here
       // For now, we'll simulate a successful login after 1 second
       const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
-      console.log(formData);
+    
 
 
 
@@ -96,8 +98,9 @@ export default function LoginPage() {
         },
         body: JSON.stringify({
           schoolName: formData.schoolName, // Backend expects 'teamName'
-          memberName: formData.memberName,
-          password: formData.password
+          studentId: formData.memberName,
+          password: formData.password,
+          medium: formData.medium
         })
       });
 
@@ -106,6 +109,7 @@ export default function LoginPage() {
       localStorage.setItem('studentData', JSON.stringify({
         memberName: formData.memberName,
         schoolName: formData.schoolName,
+        medium: formData.medium,
         loginTime: new Date().toISOString()
       }));
 
@@ -159,20 +163,6 @@ export default function LoginPage() {
     fetchSchools();
   }, []);
 
-
-  // // Sample school names for the dropdown
-  // const schools = [
-  //   'Select your school',
-  //   'Sunrise High School',
-  //   'Greenwood High School',
-  //   'Riverside Academy',
-  //   'Maple Valley School',
-  //   'Oakwood Preparatory School',
-  //   'Sunrise Elementary School',
-  //   'Mountain View School',
-  //   'Cedar Creek Institution',
-  //   'Pinewood Secondary School'
-  // ];
 
   return (
     <div
@@ -270,6 +260,25 @@ export default function LoginPage() {
               </select>
             </div>
 
+            {/* Medium Selection */}
+            <div>
+              <label htmlFor="medium" className="block text-sm font-medium text-gray-700 mb-2">
+                Medium
+              </label>
+              <select
+                id="medium"
+                name="medium"
+                value={formData.medium}
+                onChange={handleInputChange}
+                className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321]"
+                required
+              >
+                <option value="" disabled className="text-gray-500">Select medium</option>
+                <option value="සිංහල">සිංහල</option>
+                <option value="English">English</option>
+              </select>
+            </div>
+
             {/* Password */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
@@ -307,7 +316,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full bg-gradient-to-r from-[#df7500] to-[#651321] text-white py-3 px-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition-all duration-300 transform hover:scale-105 hover:shadow-lg ${loading ? 'opacity-70 cursor-not-allowed' : ''
+              className={`w-full bg-gradient-to-r from-[#df7500] to-[#651321] text-white py-3 px-4 rounded-lg font-semibold text-lg flex items-center justify-center gap-2 transition-all duration-300 transform  hover:shadow-lg  hover:scale-[1.02] cursor-pointer '
                 }`}
             >
               {loading ? (
@@ -318,7 +327,7 @@ export default function LoginPage() {
               ) : (
                 <>
                   <LogIn className="w-5 h-5" />
-                  Login & Start Quiz
+                  Login to start quiz
                 </>
               )}
             </button>
@@ -328,7 +337,7 @@ export default function LoginPage() {
           <div className="mt-6 text-center space-y-2">
             <button
               onClick={() => router.push('/')}
-              className="text-[#651321] hover:text-[#df7500] font-medium transition-colors block w-full"
+              className="text-[#651321] hover:text-[#df7500] font-medium transition-colors block w-full cursor-pointer"
             >
               Back to Home
             </button>

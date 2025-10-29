@@ -14,8 +14,6 @@ import { Shield, Menu, X } from "lucide-react";
 
 const navLinks = [
   { href: "/", label: "Home" },
-  { href: "/events", label: "Events" },
-  { href: "/contact", label: "Contact Us" },
   { href: "/add-question", label: "Admin Portal" },
 ];
 
@@ -30,7 +28,7 @@ const NavBar = () => {
         {/* Logo Section */}
         <div className="flex items-center gap-2 md:gap-4">
           <Image
-            src="/t_Final logo_light_h.png"
+            src="/t_Final logo_light_v.svg"
             alt="Faculty of Engineering Logo"
             width={80}
             height={40}
