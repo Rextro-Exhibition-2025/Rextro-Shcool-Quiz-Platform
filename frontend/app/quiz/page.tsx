@@ -9,11 +9,12 @@ import { QuizApiResponse } from '@/types/quiz';
 import { useQuiz } from '@/contexts/QuizContext';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import {  Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 
 
 import { reportViolation } from '@/lib/violationService';
+import { User } from 'next-auth';
 
 // Utils and types
 
@@ -92,16 +93,39 @@ export default function Quiz(): React.JSX.Element | null {
   // Constants
   const router = useRouter();
   const user = useUser();
-  console.log("user is", user);
-  
+
+
   const { setQuizId, updateSelectedAnswers, submitQuiz, score } = useQuiz();
 
   // Timer management
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const [timeLeft, setTimeLeft] = useState<number>(QUIZ_DURATION);
+  const [timeLeft, setTimeLeft] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const end = localStorage.getItem('quizEndTimestamp');
+        if (end) {
+          const remain = Math.max(0, Math.round((Number(end) - Date.now()) / 1000));
+          return remain;
+        }
+      } catch {
+        // ignore
+      }
+    }
+    return QUIZ_DURATION;
+  });
 
   // Quiz state
-  const [currentQuestion, setCurrentQuestion] = useState<number>(0);
+  const [currentQuestion, setCurrentQuestion] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('quizCurrentQuestion');
+        if (saved) return Math.max(0, Number(saved));
+      } catch {
+        // ignore
+      }
+    }
+    return 0;
+  });
   const [quizData, setQuizData] = useState<QuizQuestion[]>([]);
 
   // State initialization with localStorage
@@ -116,6 +140,63 @@ export default function Quiz(): React.JSX.Element | null {
     }
     return {};
   });
+
+  // Auto-save selectedAnswers to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('quizSelectedAnswers', JSON.stringify(selectedAnswers));
+      } catch (e) {
+        // ignore storage errors
+      }
+    }
+  }, [selectedAnswers]);
+
+  // Persist current question index to localStorage
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem('quizCurrentQuestion', String(currentQuestion));
+    } catch (e) {
+      // ignore
+    }
+  }, [currentQuestion]);
+
+  // Hydrate QuizContext from saved selected answers on mount (sync page state -> context)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const saved = localStorage.getItem('quizSelectedAnswers');
+      const parsed: SelectedAnswers = saved ? JSON.parse(saved) : selectedAnswers;
+      if (parsed && Object.keys(parsed).length) {
+        Object.keys(parsed).forEach((qIdx) => {
+          const idx = Number(qIdx);
+          const ans = parsed[qIdx as any];
+          if (ans !== undefined && updateSelectedAnswers) {
+            // keep context in sync
+            // ignore promise intentionally
+            updateSelectedAnswers(idx, ans).catch(() => { });
+          }
+        });
+      }
+    } catch (e) {
+      // ignore parse errors
+    }
+    // run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist end timestamp so the timer can be continued after refresh.
+  // We write an end timestamp derived from the current timeLeft — this is updated as timeLeft changes.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const endTs = Date.now() + timeLeft * 1000;
+      localStorage.setItem('quizEndTimestamp', String(endTs));
+    } catch (e) {
+      // ignore storage errors
+    }
+  }, [timeLeft]);
 
   // UI state
   const [showFullscreenPrompt, setShowFullscreenPrompt] = useState<boolean>(false);
@@ -208,8 +289,8 @@ export default function Quiz(): React.JSX.Element | null {
       })
     });
 
-    console.log(response);
-    
+
+
 
     if (!response.ok) {
       throw new Error('Failed to update quiz state');
@@ -233,6 +314,27 @@ export default function Quiz(): React.JSX.Element | null {
       hasEndedQuiz: true
     };
     localStorage.setItem('studentData', JSON.stringify(updatedStudentData));
+  };
+
+  // Cross-browser exit fullscreen helper
+  const exitFullscreenIfActive = async (): Promise<void> => {
+    try {
+      const isFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).mozFullScreenElement || (document as any).msFullscreenElement);
+      if (!isFullscreen) return;
+
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        await (document as any).webkitExitFullscreen();
+      } else if ((document as any).mozCancelFullScreen) {
+        await (document as any).mozCancelFullScreen();
+      } else if ((document as any).msExitFullscreen) {
+        await (document as any).msExitFullscreen();
+      }
+    } catch (err) {
+      // Log but don't fail submission flow
+      console.warn('Failed to exit fullscreen:', err);
+    }
   };
 
   // Handle quiz submission
@@ -270,32 +372,75 @@ export default function Quiz(): React.JSX.Element | null {
       // Store results locally
       localStorage.setItem('quizResult', JSON.stringify(submissionData));
 
-      // Exit fullscreen
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
+      // Clear saved answers after submission (so refresh won't restore them)
+      try {
+        localStorage.removeItem('quizSelectedAnswers');
+        localStorage.removeItem('quizCurrentQuestion');
+        localStorage.removeItem('quizEndTimestamp');
+      } catch (e) {
+        // ignore
       }
+
+      // Exit fullscreen (cross-browser helper)
+      await exitFullscreenIfActive();
 
       // Show completion
       setCompletionData(submissionData);
       setShowCompletionCard(true);
 
       // Clear authentication
-      localStorage.removeItem('studentData');
+      // Clear authentication and cached user info so the token is removed from storage
+      try {
+        localStorage.removeItem('studentData');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+      } catch (e) {
+        // ignore storage errors
+      }
+
+      // Clear user context (do not force a redirect here; completion UI will show)
+      try {
+        if (user && typeof user.setUser === 'function') {
+          user.setUser(null);
+        }
+      } catch (e) {
+        // ignore
+      }
 
       // Submit to quiz context
       await submitQuiz();
 
     } catch (error) {
-      alert( error);
+      alert(error);
       console.error('Submit quiz error:', error);
       setIsSubmitting(false);
     }
   }, [selectedAnswers, quizData.length, router, user, submitQuiz]);
-
+  useEffect(() => {
+    if (user.user?.medium && user.user?.number) {
+      console.log('User context data:', user);
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}') as any;
+      userData.medium = user?.user?.medium || '';
+      userData.number = user?.user?.number ?? 0;
+      userData.authToken = user?.user?.authToken || '';
+      userData.loginTime = new Date().toISOString();
+      userData.schoolName = user?.user?.schoolName || '';
+      userData.memberName = user?.user?.memberName || '';
+      userData.teamId = user?.user?.teamId || '';
+      userData.teamName = user?.user?.teamName || '';
+      localStorage.setItem('userData', JSON.stringify(userData));
+    }
+  }, [user]);
   // Fetch quiz data
   useEffect(() => {
+    console.log("calling ");
+
     const fetchQuiz = async (id: number) => {
+      console.log("calling 2", id);
+
       try {
+
+
         const api = await createStudentApi({ token: user.user?.authToken || '' });
         const response: any = await api.get(`/quizzes/${id}`);
         setQuizData(transformQuizApiResponse(response.data.quiz));
@@ -303,15 +448,40 @@ export default function Quiz(): React.JSX.Element | null {
         console.error('Fetch quiz error:', error);
       }
     };
+    const quizid = getQuizId(user.user);
 
-    setQuizId(user?.user?.number || 1);
-    fetchQuiz(user?.user?.number || 1);
-  }, [setQuizId, user.user?.authToken]);
 
-  // Debug user context
-  useEffect(() => {
-    console.log('User context data:', user);
-  }, [user]);
+
+    setQuizId(quizid);
+    fetchQuiz(quizid);
+  }, []);
+
+
+  const getQuizId = (user: any | null): number => {
+    // Defensive access: user may come from different shapes, coerce values
+    const userId = Number((user as any)?.id ?? (user as any)?.number ?? 1);
+    const isEnglish = Boolean((user as any)?.medium === "E");
+    console.log(user)
+    console.log(userId, "user id");
+    console.log(isEnglish, "is English");
+
+
+    switch (userId) {
+      case 1:
+        return isEnglish ? 1 : 5;
+      case 2:
+        return isEnglish ? 2 : 6;
+      case 3:
+        return isEnglish ? 3 : 7;
+      case 4:
+        return isEnglish ? 4 : 8;
+      default:
+        return 1;
+    }
+  };
+
+
+
 
   // Inactivity tracking setup
   useEffect(() => {
@@ -399,15 +569,47 @@ export default function Quiz(): React.JSX.Element | null {
     if (!isAuthenticated) return;
     // Request fullscreen - handle async operation inside useEffect
     const requestFullscreen = async () => {
+      // If the browser doesn't allow fullscreen or it's not enabled, show the prompt
+      if (!document.fullscreenEnabled) {
+        setShowFullscreenPrompt(true);
+        return;
+      }
+
       try {
         if (document.documentElement.requestFullscreen) {
           await document.documentElement.requestFullscreen();
+        } else {
+          // No API available — ask user to re-enter via UI
+          setShowFullscreenPrompt(true);
         }
-      } catch (error) {
-        console.error('Error entering fullscreen:', error);
+      } catch (err) {
+        // Most browsers require a user gesture to enter fullscreen. Treat this as expected
+        // when navigating back and avoid logging a noisy stack trace.
+        console.warn('Could not enter fullscreen automatically (user gesture required).');
+        setShowFullscreenPrompt(true);
+
+        // Retry once on the next user gesture (click or keydown)
+        const tryOnGesture = async () => {
+          try {
+            if (document.documentElement.requestFullscreen) {
+              await document.documentElement.requestFullscreen();
+              setShowFullscreenPrompt(false);
+            }
+          } catch (_) {
+            // ignore further errors
+          } finally {
+            window.removeEventListener('click', tryOnGesture);
+            window.removeEventListener('keydown', tryOnGesture);
+          }
+        };
+
+        window.addEventListener('click', tryOnGesture, { once: true });
+        window.addEventListener('keydown', tryOnGesture, { once: true });
       }
     };
 
+    // Try to enter fullscreen on mount. If it fails (common when no user gesture),
+    // the code above will show a friendly prompt and wait for user interaction.
     requestFullscreen();
 
     // Copy/Paste detection and violation reporting
@@ -567,13 +769,13 @@ export default function Quiz(): React.JSX.Element | null {
   };
 
   const handleNext = (): void => {
-   
+
     setCurrentQuestion((prev) => Math.min(prev + 1, totalQuestions - 1));
     // updateSelectedAnswers(currentQuestion, selectedAnswers[currentQuestion]);
   };
 
   const handlePrevious = (): void => {
-  
+
     setCurrentQuestion((prev) => Math.max(prev - 1, 0));
     // updateSelectedAnswers(currentQuestion, selectedAnswers[currentQuestion]);
   };
@@ -583,7 +785,7 @@ export default function Quiz(): React.JSX.Element | null {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
- 
+
 
   const handleReEnterFullscreen = async (): Promise<void> => {
     setShowFullscreenPrompt(false);
@@ -686,11 +888,11 @@ export default function Quiz(): React.JSX.Element | null {
             </div>
           </div>
         </div>
-        
+
 
         {/* Progress and Question Card */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          
+
 
           {/* Question Card */}
           <div className="my-8">

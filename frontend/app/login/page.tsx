@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { User, Lock, LogIn, Eye, EyeOff, Shield, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import axios from 'axios';
+import { useRedirectToQuizIfAuthenticated } from '@/lib/authToken';
 import { SchoolsApiResponse, SchoolTeam } from '@/types/schools';
 
 interface LoginFormResponse {
@@ -24,7 +25,8 @@ export default function LoginPage() {
     studentId: '',
     memberName: '',
     password: '',
-    schoolName: ''
+    schoolName: '',
+    medium: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -33,7 +35,21 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, setUser } = useUser();
   const [schools, setSchools] = useState<string[]>([]);
-  
+  const [checkingAuth, setCheckingAuth] = useState<boolean>(true);
+  // Use shared hook to redirect and handle checking state
+  const { checking } = useRedirectToQuizIfAuthenticated();
+
+  // Keep local checkingAuth in sync for rendering decisions below
+  useEffect(() => {
+    setCheckingAuth(checking);
+  }, [checking]);
+
+  // While we check whether an active auth token exists, avoid rendering the
+  // login form (prevents a visible flash of login UI when the user should be
+  // redirected back into an active quiz).
+  // don't early-return here — we must call hooks in the same order on every render.
+  // The actual spinner is rendered in the final JSX below when `checkingAuth` is true.
+
 
   // Add this useEffect to your login page to debug
 
@@ -74,7 +90,7 @@ export default function LoginPage() {
     setError('');
 
     // Basic validation
-    if (!formData.memberName || !formData.password || !formData.schoolName) {
+    if (!formData.memberName || !formData.password || !formData.schoolName || !formData.medium) {
       setError('Please fill in all fields');
       setLoading(false);
       return;
@@ -86,8 +102,14 @@ export default function LoginPage() {
       // You can add your authentication logic here
       // For now, we'll simulate a successful login after 1 second
       const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
-    
 
+      const studentId = formData.memberName;
+
+      if (studentId.length !== 9) {
+        setError('Student ID must be exactly 9 characters. Check for ending/starting spaces.');
+        setLoading(false);
+        return;
+      }
 
 
       const response = await fetch(url, {
@@ -98,7 +120,8 @@ export default function LoginPage() {
         body: JSON.stringify({
           schoolName: formData.schoolName, // Backend expects 'teamName'
           studentId: formData.memberName,
-          password: formData.password
+          password: formData.password,
+          medium: formData.medium
         })
       });
 
@@ -107,6 +130,8 @@ export default function LoginPage() {
       localStorage.setItem('studentData', JSON.stringify({
         memberName: formData.memberName,
         schoolName: formData.schoolName,
+        medium: formData.medium,
+        
         loginTime: new Date().toISOString()
       }));
 
@@ -123,7 +148,8 @@ export default function LoginPage() {
           schoolName: responseData.data.schoolName,
           teamName: responseData.data.teamName,
           authToken: responseData.data.authToken,
-          number: responseData.data.number
+          number: responseData.data.number,
+          medium: formData.medium
         });
         console.log(user);
 
@@ -161,7 +187,11 @@ export default function LoginPage() {
   }, []);
 
 
-  return (
+  return checkingAuth ? (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#df7500]"></div>
+    </div>
+  ) : (
     <div
       className="min-h-screen bg-gradient-to-br p-4 relative flex items-center justify-center"
       style={{
@@ -225,7 +255,7 @@ export default function LoginPage() {
                   value={formData.memberName}
                   onChange={handleInputChange}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321] placeholder-gray-500"
-                  placeholder="Enter your member name"
+                  placeholder="Enter your student ID"
                   required
                 />
               </div>
@@ -254,6 +284,25 @@ export default function LoginPage() {
                     {school}
                   </option>
                 ))}
+              </select>
+            </div>
+
+            {/* Medium Selection */}
+            <div>
+              <label htmlFor="medium" className="block text-sm font-medium text-gray-700 mb-2">
+                Medium
+              </label>
+              <select
+                id="medium"
+                name="medium"
+                value={formData.medium}
+                onChange={handleInputChange}
+                className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321]"
+                required
+              >
+                <option value="" disabled className="text-gray-500">Select medium</option>
+                <option value="S">සිංහල</option>
+                <option value="E">English</option>
               </select>
             </div>
 

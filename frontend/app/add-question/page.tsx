@@ -164,18 +164,18 @@ export default function AddQuestion(): React.ReactElement | null {
         }
       }
       
-      console.log('Saving question:', updatedQuestion);
+      
       
       try {
         const response = await api.post('/questions', transformQuestion(updatedQuestion));
-        console.log('Response:', response);
+ 
       } catch (dbError) {
         // Database save failed - rollback uploaded images
         console.error('Database save failed, rolling back uploaded images:', dbError);
         for (const publicId of uploadedPublicIds) {
           try {
             await deleteImageFromCloudinary(publicId);
-            console.log('Rolled back image:', publicId);
+    
           } catch (deleteError) {
             console.error('Failed to rollback image:', publicId, deleteError);
           }
@@ -486,6 +486,10 @@ export default function AddQuestion(): React.ReactElement | null {
               <option value="2">Set 2</option>
               <option value="3">Set 3</option>
               <option value="4">Set 4</option>
+              <option value="5">Set 5</option>
+              <option value="6">Set 6</option>
+              <option value="7">Set 7</option>
+              <option value="8">Set 8</option>
             </select>
           </div>
           {/* Question Text */}

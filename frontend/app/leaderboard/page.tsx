@@ -4,6 +4,7 @@ import { Trophy, Star, Menu, ChevronDown, X } from 'lucide-react';
 import { createStudentApi } from '@/interceptors/student';
 import { useUser } from '@/contexts/UserContext';
 import { transformLeaderboard } from './leaderboardTransformer';
+import { useRedirectToQuizIfAuthenticated } from '@/lib/authToken';
 
 interface StudentData {
   id: number;
@@ -20,6 +21,7 @@ interface SchoolData {
 }
 
 const Leaderboard: React.FC = () => {
+  const { checking } = useRedirectToQuizIfAuthenticated();
   const [selectedSchool, setSelectedSchool] = useState<SchoolData | null>(null);
   // const [userQuizResult, setUserQuizResult] = useState<any>(null);
   const [schools, setSchools] = useState<SchoolData[]>([]);
@@ -258,6 +260,14 @@ const Leaderboard: React.FC = () => {
       document.body.style.paddingRight = originalPaddingRight;
     };
   }, [selectedSchool]);
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#df7500]"></div>
+      </div>
+    );
+  }
 
   return (
     <div
