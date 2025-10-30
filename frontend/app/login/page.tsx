@@ -34,6 +34,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, setUser } = useUser();
   const [schools, setSchools] = useState<string[]>([]);
+  const [published, setPublished] = useState<boolean>(false);
 
 
   // Add this useEffect to your login page to debug
@@ -58,6 +59,19 @@ export default function LoginPage() {
     }
 
     fetchSchools();
+  }, []);
+
+  useEffect(() => {
+    const checkPublishedStatus = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes/check-quiz-published-status`);
+        const data = await response.json();
+        setPublished(data?.isPublished ?? false);
+      } catch (error) {
+        setPublished(false);
+      }
+    };
+    checkPublishedStatus();
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -169,6 +183,17 @@ export default function LoginPage() {
     fetchSchools();
   }, []);
 
+
+  if (!published) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-[#651321] mb-4">Quiz Coming Soon</div>
+          <div className="text-gray-600">The quiz is not yet published. Please check back later.</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
