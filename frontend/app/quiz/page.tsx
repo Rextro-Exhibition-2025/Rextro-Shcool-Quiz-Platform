@@ -316,6 +316,27 @@ export default function Quiz(): React.JSX.Element | null {
     localStorage.setItem('studentData', JSON.stringify(updatedStudentData));
   };
 
+  // Cross-browser exit fullscreen helper
+  const exitFullscreenIfActive = async (): Promise<void> => {
+    try {
+      const isFullscreen = !!(document.fullscreenElement || (document as any).webkitFullscreenElement || (document as any).mozFullScreenElement || (document as any).msFullscreenElement);
+      if (!isFullscreen) return;
+
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        await (document as any).webkitExitFullscreen();
+      } else if ((document as any).mozCancelFullScreen) {
+        await (document as any).mozCancelFullScreen();
+      } else if ((document as any).msExitFullscreen) {
+        await (document as any).msExitFullscreen();
+      }
+    } catch (err) {
+      // Log but don't fail submission flow
+      console.warn('Failed to exit fullscreen:', err);
+    }
+  };
+
   // Handle quiz submission
   const handleSubmitQuiz = useCallback(async (): Promise<void> => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -360,17 +381,31 @@ export default function Quiz(): React.JSX.Element | null {
         // ignore
       }
 
-      // Exit fullscreen
-      if (document.fullscreenElement) {
-        await document.exitFullscreen();
-      }
+      // Exit fullscreen (cross-browser helper)
+      await exitFullscreenIfActive();
 
       // Show completion
       setCompletionData(submissionData);
       setShowCompletionCard(true);
 
       // Clear authentication
-      localStorage.removeItem('studentData');
+      // Clear authentication and cached user info so the token is removed from storage
+      try {
+        localStorage.removeItem('studentData');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('userData');
+      } catch (e) {
+        // ignore storage errors
+      }
+
+      // Clear user context (do not force a redirect here; completion UI will show)
+      try {
+        if (user && typeof user.setUser === 'function') {
+          user.setUser(null);
+        }
+      } catch (e) {
+        // ignore
+      }
 
       // Submit to quiz context
       await submitQuiz();
@@ -534,15 +569,47 @@ export default function Quiz(): React.JSX.Element | null {
     if (!isAuthenticated) return;
     // Request fullscreen - handle async operation inside useEffect
     const requestFullscreen = async () => {
+      // If the browser doesn't allow fullscreen or it's not enabled, show the prompt
+      if (!document.fullscreenEnabled) {
+        setShowFullscreenPrompt(true);
+        return;
+      }
+
       try {
         if (document.documentElement.requestFullscreen) {
           await document.documentElement.requestFullscreen();
+        } else {
+          // No API available — ask user to re-enter via UI
+          setShowFullscreenPrompt(true);
         }
-      } catch (error) {
-        console.error('Error entering fullscreen:', error);
+      } catch (err) {
+        // Most browsers require a user gesture to enter fullscreen. Treat this as expected
+        // when navigating back and avoid logging a noisy stack trace.
+        console.warn('Could not enter fullscreen automatically (user gesture required).');
+        setShowFullscreenPrompt(true);
+
+        // Retry once on the next user gesture (click or keydown)
+        const tryOnGesture = async () => {
+          try {
+            if (document.documentElement.requestFullscreen) {
+              await document.documentElement.requestFullscreen();
+              setShowFullscreenPrompt(false);
+            }
+          } catch (_) {
+            // ignore further errors
+          } finally {
+            window.removeEventListener('click', tryOnGesture);
+            window.removeEventListener('keydown', tryOnGesture);
+          }
+        };
+
+        window.addEventListener('click', tryOnGesture, { once: true });
+        window.addEventListener('keydown', tryOnGesture, { once: true });
       }
     };
 
+    // Try to enter fullscreen on mount. If it fails (common when no user gesture),
+    // the code above will show a friendly prompt and wait for user interaction.
     requestFullscreen();
 
     // Copy/Paste detection and violation reporting

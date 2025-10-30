@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronRight, Trophy, Brain, Users, Star, Zap, Target, Award } from 'lucide-react';
+import { useRedirectToQuizIfAuthenticated } from '@/lib/authToken';
 
 
 export default function LandingPage() {
@@ -11,6 +12,15 @@ export default function LandingPage() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [published, setPublished] = useState(false);
   const router = useRouter();
+  const [checkingAuth, setCheckingAuth] = useState<boolean>(true);
+
+  // On mount, check for existing auth token and redirect to quiz if present
+  // Use shared hook to redirect and expose checking state
+  const { checking } = useRedirectToQuizIfAuthenticated();
+
+  useEffect(() => {
+    setCheckingAuth(checking);
+  }, [checking]);
 useEffect(() => {
 	const checkPublishedStatus = async () => {
 		
@@ -34,7 +44,14 @@ useEffect(() => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  return (
+  // Do not early-return here (hooks must run in same order). The spinner is
+  // rendered in the final JSX below when `checkingAuth` is true.
+
+  return checkingAuth ? (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#df7500]"></div>
+    </div>
+  ) : (
     <div className="min-h-screen bg-white relative overflow-hidden">
       {/* Animated background elements */}
       <div className="absolute inset-0 overflow-hidden">
@@ -69,7 +86,7 @@ useEffect(() => {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
             <button
-            disabled={!published}
+              disabled={!published}
               className="group bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:from-[#df7500]/80 hover:to-[#651321]/80 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={() => {
                 router.push('/login');
@@ -91,7 +108,6 @@ useEffect(() => {
           </div>
         </div>
       </div>
-
     </div>
   );
 }
