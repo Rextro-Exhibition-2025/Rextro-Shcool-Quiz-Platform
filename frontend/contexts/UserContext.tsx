@@ -12,6 +12,7 @@ interface User {
     marks?: number;     // Make this optional since it's not in login response
     hasEndedQuiz?: boolean;
     number: number;
+    medium?: string;
 }
 
 interface UserContextType {
@@ -62,6 +63,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
         localStorage.removeItem('teamName');
         localStorage.removeItem('marks');
         localStorage.removeItem('number');
+        localStorage.removeItem('medium');
         setUser(null);
         window.location.href = '/login'; // Redirect to login page
     };
@@ -88,7 +90,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 if (response.data.success && mounted) {
                     const userData = response.data.data;
                     setUser(userData);
-                    localStorage.setItem('userData', JSON.stringify(userData));
+   
                 }
             } catch (err) {
                 if (mounted) {
