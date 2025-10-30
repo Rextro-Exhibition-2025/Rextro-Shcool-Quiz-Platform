@@ -58,6 +58,25 @@ useEffect(() => {
 		}
 	}, [status, router]);
 
+	// Derived values that use hooks (useMemo) must be defined before any
+	// early returns so the hooks order stays stable across renders.
+	const filteredQuestions = questions?.filter(
+		(q) => q.quizSet === selectedQuizSet
+	);
+
+	// Counts per quiz set and total questions for header display
+	const countsBySet = useMemo(() => {
+		if (!questions) return {} as Record<string, number>;
+		return questions.reduce((acc: Record<string, number>, q) => {
+			acc[q.quizSet] = (acc[q.quizSet] || 0) + 1;
+			return acc;
+		}, {} as Record<string, number>);
+	}, [questions]);
+
+	const totalQuestions = questions?.length ?? 0;
+
+	const isTableLoading = !filteredQuestions; // Add a loading state for the table content
+
 	if (status === "loading") {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-red-100">
@@ -84,23 +103,6 @@ useEffect(() => {
 	const handleTabChange = (index: number) => {
 		setSelectedQuizSet(`set${index + 1}`);
 	};
-
-	const filteredQuestions = questions?.filter(
-		(q) => q.quizSet === selectedQuizSet
-	);
-
-	// Counts per quiz set and total questions for header display
-	const countsBySet = useMemo(() => {
-		if (!questions) return {} as Record<string, number>;
-		return questions.reduce((acc: Record<string, number>, q) => {
-			acc[q.quizSet] = (acc[q.quizSet] || 0) + 1;
-			return acc;
-		}, {} as Record<string, number>);
-	}, [questions]);
-
-	const totalQuestions = questions?.length ?? 0;
-
-	const isTableLoading = !filteredQuestions; // Add a loading state for the table content
 
 	const handlePublish = async () => {
 		

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { User, Lock, LogIn, Eye, EyeOff, Shield, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { useUser } from '@/contexts/UserContext';
 import axios from 'axios';
+import { useRedirectToQuizIfAuthenticated } from '@/lib/authToken';
 import { SchoolsApiResponse, SchoolTeam } from '@/types/schools';
 
 interface LoginFormResponse {
@@ -34,6 +35,20 @@ export default function LoginPage() {
   const router = useRouter();
   const { user, setUser } = useUser();
   const [schools, setSchools] = useState<string[]>([]);
+  const [checkingAuth, setCheckingAuth] = useState<boolean>(true);
+  // Use shared hook to redirect and handle checking state
+  const { checking } = useRedirectToQuizIfAuthenticated();
+
+  // Keep local checkingAuth in sync for rendering decisions below
+  useEffect(() => {
+    setCheckingAuth(checking);
+  }, [checking]);
+
+  // While we check whether an active auth token exists, avoid rendering the
+  // login form (prevents a visible flash of login UI when the user should be
+  // redirected back into an active quiz).
+  // don't early-return here — we must call hooks in the same order on every render.
+  // The actual spinner is rendered in the final JSX below when `checkingAuth` is true.
 
 
   // Add this useEffect to your login page to debug
@@ -172,7 +187,11 @@ export default function LoginPage() {
   }, []);
 
 
-  return (
+  return checkingAuth ? (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#df7500]"></div>
+    </div>
+  ) : (
     <div
       className="min-h-screen bg-gradient-to-br p-4 relative flex items-center justify-center"
       style={{
