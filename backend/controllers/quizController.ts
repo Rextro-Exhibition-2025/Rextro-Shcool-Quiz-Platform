@@ -1,12 +1,14 @@
 import Quiz from '../models/Quiz.js';
 import type { Request, Response } from 'express';
 import SchoolTeam from '../models/SchoolTeam.js';
-import { log } from 'node:console';
+
 export const getQuizWithQuestions = async (req: Request, res: Response) => {
+
+  
   try {
     const quizId = Number(req.params.quizId);
-    if (![1, 2, 3, 4].includes(quizId)) {
-      return res.status(400).json({ success: false, message: 'Invalid quizId. Must be 1, 2, 3, or 4.' });
+    if (![1, 2, 3, 4, 5, 6, 7, 8].includes(quizId)) {
+      return res.status(400).json({ success: false, message: 'Invalid quizId. Must be 1, 2, 3, 4, 5, 6, 7, or 8.' });
     }
 
     // Find the quiz and populate questions
@@ -14,6 +16,10 @@ export const getQuizWithQuestions = async (req: Request, res: Response) => {
     if (!quiz) {
       return res.status(404).json({ success: false, message: `Quiz with quizId ${quizId} not found.` });
     }
+
+
+    
+    
 
     // Remove correctOption from each question
     const quizObj = quiz.toObject();

@@ -116,6 +116,7 @@ export default function LoginPage() {
         memberName: formData.memberName,
         schoolName: formData.schoolName,
         medium: formData.medium,
+        
         loginTime: new Date().toISOString()
       }));
 
@@ -132,7 +133,8 @@ export default function LoginPage() {
           schoolName: responseData.data.schoolName,
           teamName: responseData.data.teamName,
           authToken: responseData.data.authToken,
-          number: responseData.data.number
+          number: responseData.data.number,
+          medium: formData.medium
         });
         console.log(user);
 
@@ -280,8 +282,8 @@ export default function LoginPage() {
                 required
               >
                 <option value="" disabled className="text-gray-500">Select medium</option>
-                <option value="සිංහල">සිංහල</option>
-                <option value="English">English</option>
+                <option value="S">සිංහල</option>
+                <option value="E">English</option>
               </select>
             </div>
 

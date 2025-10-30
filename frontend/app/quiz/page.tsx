@@ -9,11 +9,12 @@ import { QuizApiResponse } from '@/types/quiz';
 import { useQuiz } from '@/contexts/QuizContext';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import {  Clock } from 'lucide-react';
+import { Clock } from 'lucide-react';
 
 
 
 import { reportViolation } from '@/lib/violationService';
+import { User } from 'next-auth';
 
 // Utils and types
 
@@ -92,8 +93,8 @@ export default function Quiz(): React.JSX.Element | null {
   // Constants
   const router = useRouter();
   const user = useUser();
-  console.log("user is", user);
-  
+
+
   const { setQuizId, updateSelectedAnswers, submitQuiz, score } = useQuiz();
 
   // Timer management
@@ -174,7 +175,7 @@ export default function Quiz(): React.JSX.Element | null {
           if (ans !== undefined && updateSelectedAnswers) {
             // keep context in sync
             // ignore promise intentionally
-            updateSelectedAnswers(idx, ans).catch(() => {});
+            updateSelectedAnswers(idx, ans).catch(() => { });
           }
         });
       }
@@ -288,8 +289,8 @@ export default function Quiz(): React.JSX.Element | null {
       })
     });
 
-    console.log(response);
-    
+
+
 
     if (!response.ok) {
       throw new Error('Failed to update quiz state');
@@ -375,16 +376,36 @@ export default function Quiz(): React.JSX.Element | null {
       await submitQuiz();
 
     } catch (error) {
-      alert( error);
+      alert(error);
       console.error('Submit quiz error:', error);
       setIsSubmitting(false);
     }
   }, [selectedAnswers, quizData.length, router, user, submitQuiz]);
-
+  useEffect(() => {
+    if (user.user?.medium && user.user?.number) {
+      console.log('User context data:', user);
+      const userData = JSON.parse(localStorage.getItem('userData') || '{}') as any;
+      userData.medium = user?.user?.medium || '';
+      userData.number = user?.user?.number ?? 0;
+      userData.authToken = user?.user?.authToken || '';
+      userData.loginTime = new Date().toISOString();
+      userData.schoolName = user?.user?.schoolName || '';
+      userData.memberName = user?.user?.memberName || '';
+      userData.teamId = user?.user?.teamId || '';
+      userData.teamName = user?.user?.teamName || '';
+      localStorage.setItem('userData', JSON.stringify(userData));
+    }
+  }, [user]);
   // Fetch quiz data
   useEffect(() => {
+    console.log("calling ");
+
     const fetchQuiz = async (id: number) => {
+      console.log("calling 2", id);
+
       try {
+
+
         const api = await createStudentApi({ token: user.user?.authToken || '' });
         const response: any = await api.get(`/quizzes/${id}`);
         setQuizData(transformQuizApiResponse(response.data.quiz));
@@ -392,15 +413,40 @@ export default function Quiz(): React.JSX.Element | null {
         console.error('Fetch quiz error:', error);
       }
     };
+    const quizid = getQuizId(user.user);
 
-    setQuizId(user?.user?.number || 1);
-    fetchQuiz(user?.user?.number || 1);
-  }, [setQuizId, user.user?.authToken]);
 
-  // Debug user context
-  useEffect(() => {
-    console.log('User context data:', user);
-  }, [user]);
+
+    setQuizId(quizid);
+    fetchQuiz(quizid);
+  }, []);
+
+
+  const getQuizId = (user: any | null): number => {
+    // Defensive access: user may come from different shapes, coerce values
+    const userId = Number((user as any)?.id ?? (user as any)?.number ?? 1);
+    const isEnglish = Boolean((user as any)?.medium === "E");
+    console.log(user)
+    console.log(userId, "user id");
+    console.log(isEnglish, "is English");
+
+
+    switch (userId) {
+      case 1:
+        return isEnglish ? 1 : 5;
+      case 2:
+        return isEnglish ? 2 : 6;
+      case 3:
+        return isEnglish ? 3 : 7;
+      case 4:
+        return isEnglish ? 4 : 8;
+      default:
+        return 1;
+    }
+  };
+
+
+
 
   // Inactivity tracking setup
   useEffect(() => {
@@ -656,13 +702,13 @@ export default function Quiz(): React.JSX.Element | null {
   };
 
   const handleNext = (): void => {
-   
+
     setCurrentQuestion((prev) => Math.min(prev + 1, totalQuestions - 1));
     // updateSelectedAnswers(currentQuestion, selectedAnswers[currentQuestion]);
   };
 
   const handlePrevious = (): void => {
-  
+
     setCurrentQuestion((prev) => Math.max(prev - 1, 0));
     // updateSelectedAnswers(currentQuestion, selectedAnswers[currentQuestion]);
   };
@@ -672,7 +718,7 @@ export default function Quiz(): React.JSX.Element | null {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
- 
+
 
   const handleReEnterFullscreen = async (): Promise<void> => {
     setShowFullscreenPrompt(false);
@@ -775,11 +821,11 @@ export default function Quiz(): React.JSX.Element | null {
             </div>
           </div>
         </div>
-        
+
 
         {/* Progress and Question Card */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-          
+
 
           {/* Question Card */}
           <div className="my-8">

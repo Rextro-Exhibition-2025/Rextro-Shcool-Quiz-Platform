@@ -31,7 +31,7 @@ const OptionSchema: Schema = new Schema({
 // Pre-validation hooks don't execute for subdocuments in arrays
 
 const QuestionSchema: Schema = new Schema({
-        quizId: { type: Number, required: true , enum: [1,2,3,4]},
+        quizId: { type: Number, required: true , enum: [1,2,3,4,5,6,7,8]},
     question: { type: String, required: true },
     questionImage: { type: String, required: false },
     questionImagePublicId: { type: String, required: false },
