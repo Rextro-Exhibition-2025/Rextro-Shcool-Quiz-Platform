@@ -275,7 +275,7 @@ export default function Quiz(): React.JSX.Element | null {
 
   // Update user quiz state in backend
   const updateQuizState = async (studentData: StudentData): Promise<void> => {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/update-state`;
+    const url = `${process.env.NEXT_SUPPORT_BACKEND_URL}/auth/update-state`;
     const response = await fetch(url, {
       method: 'PUT',
       headers: {

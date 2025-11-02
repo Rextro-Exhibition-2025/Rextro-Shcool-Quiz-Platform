@@ -81,7 +81,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                     return;
                 }
 
-                const response = await axios.get<ApiResponse>(`${process.env.NEXT_PUBLIC_SERVER_API_URL}/auth/me`, {
+                const response = await axios.get<ApiResponse>(`${process.env.NEXT_SUPPORT_BACKEND_URL}/auth/me`, {
                     headers: {
                         Authorization: `Bearer ${token}`
                     }
@@ -90,7 +90,7 @@ export const UserProvider = ({ children }: { children: React.ReactNode }) => {
                 if (response.data.success && mounted) {
                     const userData = response.data.data;
                     setUser(userData);
-   
+
                 }
             } catch (err) {
                 if (mounted) {

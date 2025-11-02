@@ -62,7 +62,7 @@ const Leaderboard: React.FC = () => {
   useEffect(() => {
     const checkPublishedStatus = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes/check-quiz-published-status`);
+        const response = await fetch(`${process.env.NEXT_SUPPORT_BACKEND_URL}/quizzes/check-quiz-published-status`);
         const data = await response.json();
         setPublished(data?.isPublished ?? false);
       } catch (error) {

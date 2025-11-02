@@ -59,7 +59,7 @@ export default function LoginPage() {
     const fetchSchools = async () => {
       try {
 
-        const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
+        const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_SUPPORT_BACKEND_URL}/school-teams`);
 
         console.log('Fetched schools:', response.data);
 
@@ -79,7 +79,7 @@ export default function LoginPage() {
   useEffect(() => {
     const checkPublishedStatus = async () => {
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes/check-quiz-published-status`);
+        const response = await fetch(`${process.env.NEXT_SUPPORT_BACKEND_URL}/quizzes/check-quiz-published-status`);
         const data = await response.json();
         setPublished(data?.isPublished ?? false);
       } catch (error) {
@@ -115,7 +115,7 @@ export default function LoginPage() {
     try {
       // You can add your authentication logic here
       // For now, we'll simulate a successful login after 1 second
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
+      const url = `${process.env.NEXT_SUPPORT_BACKEND_URL}/auth/login`;
 
       const studentId = formData.memberName;
 
@@ -183,7 +183,7 @@ export default function LoginPage() {
     const fetchSchools = async () => {
       try {
 
-        const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
+        const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_SUPPORT_BACKEND_URL}/school-teams`);
 
         console.log('Fetched schools:', response.data);
 
