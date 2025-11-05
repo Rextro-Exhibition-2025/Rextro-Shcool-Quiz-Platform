@@ -95,24 +95,84 @@ export const submitQuiz = async (req: Request, res: Response) => {
 
     try {
 
+      // Find the team and member first
+      const team = await SchoolTeam.findOne({ 
+        schoolName, 
+        "members.name": memberName 
+      });
 
-  const team =  await SchoolTeam.findOneAndUpdate(
+      if (!team) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Team or member not found' 
+        });
+      }
+
+      const member = team.members.find((m: any) => m.name === memberName);
+      
+      if (!member) {
+        return res.status(404).json({ 
+          success: false, 
+          message: 'Member not found' 
+        });
+      }
+
+      // Initialize submissionHistory if it doesn't exist
+      if (!member.submissionHistory) {
+        member.submissionHistory = [];
+      }
+
+      // Check if already submitted 3 times
+      if (member.submissionHistory.length >= 3) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Maximum submission attempts (3) reached' 
+        });
+      }
+
+      // Add new submission to history and update marks to the latest score
+      // Also mark hasEndedQuiz as true on first submission
+      const updateFields: any = {
+        $set: { 
+          "members.$.marks": score,
+          "members.$.hasEndedQuiz": true  // Mark quiz as ended on any submission
+        },
+        $push: { 
+          "members.$.submissionHistory": { 
+            score: score, 
+            submittedAt: new Date() 
+          } 
+        }
+      };
+
+      const updatedTeam = await SchoolTeam.findOneAndUpdate(
         { schoolName, "members.name": memberName },
-        { $set: { "members.$.marks": score } },
+        updateFields,
         { new: true }
       );
 
+      if (!updatedTeam) {
+        return res.status(500).json({ 
+          success: false, 
+          message: 'Failed to update quiz submission' 
+        });
+      }
 
-      
+      const updatedMember = updatedTeam.members.find((m: any) => m.name === memberName);
+      const submissionCount = updatedMember?.submissionHistory?.length || 0;
 
-
-      
+      console.log(`Quiz submitted successfully. Attempt ${submissionCount}/3 for ${memberName}`);
    
       
 
     } catch (error) {
 
       console.error("Error submitting quiz:", error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating member data',
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
       
     }
 

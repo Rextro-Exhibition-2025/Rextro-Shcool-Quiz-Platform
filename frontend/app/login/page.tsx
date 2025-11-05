@@ -16,6 +16,7 @@ interface LoginFormResponse {
     teamName: string;
     authToken: string;
     number: number;
+    hasEndedQuiz?: boolean;
   };
   message?: string;
 }
@@ -154,6 +155,14 @@ export default function LoginPage() {
       //   await document.documentElement.requestFullscreen();
       // }
       if (response.ok && responseData.success) {
+        
+        // Check if user has already completed the quiz
+        if (responseData.data.hasEndedQuiz) {
+          setError('You have already completed the quiz. Thank you for participating!');
+          setLoading(false);
+          return;
+        }
+
         localStorage.setItem('authToken', responseData.data.authToken);
 
         setUser({
