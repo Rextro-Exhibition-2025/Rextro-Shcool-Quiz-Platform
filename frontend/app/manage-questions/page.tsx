@@ -152,7 +152,7 @@ useEffect(() => {
 								className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321] bg-white"
 							>
 								{['set1', 'set2', 'set3', 'set4','set5', 'set6', 'set7', 'set8'].map((set, idx) => (
-									<option key={set} value={set}>{`Quiz ${idx + 1} - ${countsBySet[set] ?? 0}/${totalQuestions}`}</option>
+									<option key={set} value={set}>{`Quiz ${idx + 1} - ${countsBySet[set] ?? 0}/20`}</option>
 								))}
 							</select>
 						</div>
@@ -165,6 +165,22 @@ useEffect(() => {
 					</div>
 				</div>
 
+				{/* Helper text showing publish status */}
+				<div className={`mb-4 p-3 rounded-lg ${published ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+					<p className={`text-sm font-medium ${published ? 'text-green-800' : 'text-yellow-800'}`}>
+						{published ? (
+							<>
+								<span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+								Quiz is currently <strong>Published</strong> - Students can access and take the quiz
+							</>
+						) : (
+							<>
+								<span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+								Quiz is currently <strong>Unpublished</strong> - Only Team Rextro members can access the quiz for testing
+							</>
+						)}
+					</p>
+				</div>
 
 				{/* Panel content for the selected quiz set */}
 				<div className="bg-white rounded-2xl shadow-lg p-6">

@@ -34,12 +34,12 @@ export const createQuestion = async (req: Request, res: Response): Promise<any> 
       return;
     }
 
-    // Check if quiz already has 40 or more questions
+    // Check if quiz already has 20 or more questions
     const currentQuestionCount = quiz.questions?.length || 0;
-    if (currentQuestionCount >= 40) {
+    if (currentQuestionCount >= 20) {
       res.status(400).json({
         success: false,
-        message: `Quiz ${req.body.quizId} already has the maximum number of questions (15). Cannot add more questions.`,
+        message: `Quiz ${req.body.quizId} already has the maximum number of questions (20). Cannot add more questions.`,
         currentQuestionCount: currentQuestionCount
       });
       return;
