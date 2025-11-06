@@ -86,24 +86,14 @@ useEffect(() => {
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16">
             <button
-              disabled={!published}
-              className="group bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:from-[#df7500]/80 hover:to-[#651321]/80 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:from-[#df7500]/80 hover:to-[#651321]/80 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
               onClick={() => {
                 router.push('/login');
               }}
             >
               <Zap className="w-5 h-5 group-hover:animate-pulse" />
-              {published ? 'Start Quiz' : 'Comming Soon'}
+              Start Quiz
               <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </button>
-
-            <button
-              disabled={!published}
-              className="group bg-[#df7500]/10 backdrop-blur-sm text-[#651321] px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:bg-[#df7500]/20 transition-all duration-300 transform hover:scale-105 border border-[#df7500]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={() => router.push('/leaderboard')}
-            >
-              <Trophy className="w-5 h-5 group-hover:animate-bounce text-[#df7500]" />
-              View Leaderboard
             </button>
           </div>
         </div>

@@ -55,7 +55,7 @@ interface CompletionData {
 }
 
 // Constants
-const QUIZ_DURATION = 45 * 60; // 45 minutes in seconds
+const QUIZ_DURATION = 20 * 60; // 20 minutes in seconds
 
 // Simple device fingerprint generation
 const getDeviceFingerprint = (): string => {
@@ -757,7 +757,7 @@ export default function Quiz(): React.JSX.Element | null {
   // Event handlers
   const handleGoToLeaderboard = (): void => {
     setShowCompletionCard(false);
-    router.push('/leaderboard');
+    router.push('/landingpage');
   };
 
   const handleAnswerSelect = (answerId: string): void => {
@@ -1067,7 +1067,7 @@ export default function Quiz(): React.JSX.Element | null {
                     onClick={handleGoToLeaderboard}
                     className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white py-3 px-8 rounded-full font-semibold text-lg hover:opacity-90 transition-all duration-300 transform hover:scale-105 shadow-lg"
                   >
-                    View Leaderboard
+                    Go to Home
                   </button>
                 </div>
               </div>

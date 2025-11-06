@@ -10,6 +10,10 @@ export interface IStudent extends Document {
     authToken?: string;
     hasEndedQuiz?: boolean;
     number: number;
+    submissionHistory?: Array<{
+        score: number;
+        submittedAt: Date;
+    }>;
 }
 
 export interface ISchoolTeam extends Document {
@@ -42,6 +46,10 @@ const schoolTeamSchema: Schema = new Schema({
             authToken: { type: String },
             hasEndedQuiz: { type: Boolean, default: false },
             number: { type: Number, required: [true, "Member must have a number"] },
+            submissionHistory: [{
+                score: { type: Number, default: 0 },
+                submittedAt: { type: Date, default: Date.now }
+            }]
         },
     ],
 }, { timestamps: true });

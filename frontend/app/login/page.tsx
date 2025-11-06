@@ -16,6 +16,7 @@ interface LoginFormResponse {
     teamName: string;
     authToken: string;
     number: number;
+    hasEndedQuiz?: boolean;
   };
   message?: string;
 }
@@ -154,6 +155,14 @@ export default function LoginPage() {
       //   await document.documentElement.requestFullscreen();
       // }
       if (response.ok && responseData.success) {
+        
+        // Check if user has already completed the quiz
+        if (responseData.data.hasEndedQuiz) {
+          setError('You have already completed the quiz. Thank you for participating!');
+          setLoading(false);
+          return;
+        }
+
         localStorage.setItem('authToken', responseData.data.authToken);
 
         setUser({
@@ -167,7 +176,18 @@ export default function LoginPage() {
         });
         console.log(user);
 
-        router.push('/quiz');
+        // Check if quiz is published OR if user is from Team Rextro
+        const isTeamRextro = responseData.data.teamName === "Team Rextro" && 
+                             responseData.data.schoolName === "Faculty of Engineering";
+        
+        if (published || isTeamRextro) {
+          router.push('/quiz');
+        } else {
+          // Clear the login data since quiz is not available
+          localStorage.removeItem('authToken');
+          setUser(null);
+          setError('Quiz is not yet published. Please check back later.');
+        }
       } else {
         setError('Login failed. Please check your credentials.');
       }
@@ -200,17 +220,6 @@ export default function LoginPage() {
     fetchSchools();
   }, []);
 
-
-  if (!published) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="text-center">
-          <div className="text-3xl font-bold text-[#651321] mb-4">Quiz Coming Soon</div>
-          <div className="text-gray-600">The quiz is not yet published. Please check back later.</div>
-        </div>
-      </div>
-    );
-  }
 
   return checkingAuth ? (
     <div className="min-h-screen flex items-center justify-center bg-white">
