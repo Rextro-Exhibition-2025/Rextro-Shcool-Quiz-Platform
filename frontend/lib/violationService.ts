@@ -52,7 +52,7 @@ export const reportViolation = async (violationData: ViolationData): Promise<voi
 
 export const fetchAllViolations = async (): Promise<FetchedViolationData[]> => {
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_SERVER_API_URL}/violations/get-all`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_VERCEL_SERVER_URL}/violations/get-all`, {
             method: 'GET',
         });
 
