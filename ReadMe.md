@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Faculty of Engineering Logo](public/t_Final logo_light_h.png)
+![Faculty of Engineering Logo](public/logo_rextro.png)
 
 **A Comprehensive Quiz Competition Management System for Educational Institutions**
 
