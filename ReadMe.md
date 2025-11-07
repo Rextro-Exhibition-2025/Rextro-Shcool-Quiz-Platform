@@ -2,9 +2,11 @@
 
 <div align="center">
 
-![Rextro Logo](public/Container.png)
+![Faculty of Engineering Logo](public/t_Final logo_light_h.png)
 
 **A Comprehensive Quiz Competition Management System for Educational Institutions**
+
+**Developed at University of Ruhuna | Faculty of Engineering**
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
@@ -35,13 +37,14 @@
 - [Development Workflow](#-development-workflow)
 - [Deployment](#-deployment)
 - [Contributing](#-contributing)
+- [Acknowledgments](#-acknowledgments)
 - [License](#-license)
 
 ---
 
 ## 🌟 Overview
 
-The **Rextro School Quiz Platform** is an advanced, real-time quiz competition management system designed to facilitate inter-school academic competitions. Built with modern web technologies, it provides a seamless experience for administrators, teachers, and students while maintaining the highest standards of academic integrity through comprehensive anti-cheating mechanisms.
+The **Rextro School Quiz Platform** is an advanced, real-time quiz competition management system designed to facilitate inter-school academic competitions. Built with modern web technologies at the **University of Ruhuna Faculty of Engineering**, it provides a seamless experience for administrators, teachers, and students while maintaining the highest standards of academic integrity through comprehensive anti-cheating mechanisms.
 
 ### 🎯 Mission
 
@@ -148,7 +151,8 @@ A full-stack web application that addresses all challenges through:
 │  │              Next.js Frontend (SSR/CSR)              │   │
 │  │  • React Components  • Context API  • Interceptors   │   │
 │  └──────────────────────────────────────────────────────┘   │
-│                                                               │
+│                                                             │  │
+│                                                             │
 │  ┌──────────────────────────────────────────────────────┐   │
 │  │          Express.js Backend (REST API)               │   │
 │  │  • Controllers  • Routes  • Middleware  • Services   │   │
@@ -221,6 +225,13 @@ Quiz Start → Fullscreen Mode → Answer Selection → Violation Check
 - **Loading States**: Smooth transitions and loading indicators
 - **Error Handling**: User-friendly error messages
 - **Accessibility**: Keyboard navigation and screen reader support
+
+### ⚡ Performance & Caching
+
+- **Support Backend Layer**: Dedicated caching server to reduce main backend load
+- **Response Caching**: Intelligent caching of quiz data, questions, and leaderboards
+- **Optimized API Calls**: Reduces redundant database queries
+- **Scalable Architecture**: Easy horizontal scaling with caching layer
 
 ### 📱 Admin Dashboard
 
@@ -304,6 +315,15 @@ Quiz Start → Fullscreen Mode → Answer Selection → Violation Check
 | **JWT** | Authentication | Latest |
 | **Bcrypt** | Password Hashing | Latest |
 
+### Support Backend (Caching Layer)
+
+| Technology | Purpose | Version |
+|------------|---------|---------|
+| **Node.js** | Runtime Environment | 20+ |
+| **Express.js** | Web Framework | 5.x |
+| **TypeScript** | Type Safety | 5.x |
+| **node-cache** | In-Memory Caching | 5.x |
+
 ### DevOps & Tools
 
 | Tool | Purpose |
@@ -345,6 +365,8 @@ Rextro-School-Quiz-Platform/
 │   │   ├── 📄 questionController.ts
 │   │   ├── 📄 quizController.ts
 │   │   ├── 📄 schoolTeamController.ts
+│   │   ├── 📄 uploadController.ts
+│   │   ├── 📄 userController.ts
 │   │   └── 📄 violationController.ts
 │   ├── 📂 models/               # Mongoose schemas
 │   │   ├── 📄 SchoolTeam.ts
@@ -511,13 +533,27 @@ Content-Type: application/json
 
 #### Logout Member
 ```http
-POST /api/auth/logout
+GET /api/auth/logout
+Content-Type: application/json
+Authorization: Bearer <token>
+```
+
+#### Get Current User
+```http
+GET /api/auth/me
+Authorization: Bearer <token>
+```
+
+#### Update Member State
+```http
+PUT /api/auth/update-state
 Content-Type: application/json
 Authorization: Bearer <token>
 
 {
   "schoolName": "Sunrise High School",
-  "memberName": "Alice"
+  "memberName": "Alice",
+  "hasEndedQuiz": true
 }
 ```
 
@@ -573,43 +609,29 @@ GET /api/school-teams
 }
 ```
 
-### Violation Endpoints
+### Question Endpoints
 
-#### Report Violation
+#### Get All Questions
 ```http
-POST /api/violations
+GET /api/questions
+Authorization: Bearer <token>
+```
+
+#### Create Question
+```http
+POST /api/questions
 Content-Type: application/json
 Authorization: Bearer <token>
 
 {
-  "teamId": "68bf02d2004d8f942bdf2c45",
-  "memberName": "Alice",
-  "violationType": "escaping full screen"
-}
-```
-
-#### Get All Violations with School Details
-```http
-GET /api/violations/all/details
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "count": 15,
-  "data": [
-    {
-      "_id": "68ebb...",
-      "teamId": "68bf02d2004d8f942bdf2c45",
-      "memberName": "Alice",
-      "violationType": "copy & paste",
-      "schoolName": "Sunrise High School",
-      "teamName": "Alpha Innovators",
-      "educationalZone": "Central District",
-      "createdAt": "2025-10-15T10:30:00.000Z"
-    }
-  ]
+  "question": "What is the capital of France?",
+  "image": null,
+  "answers": [
+    { "id": "a", "text": "Paris", "image": null },
+    { "id": "b", "text": "London", "image": null },
+    { "id": "c", "text": "Berlin", "image": null }
+  ],
+  "correctAnswer": "a"
 }
 ```
 
@@ -617,13 +639,13 @@ GET /api/violations/all/details
 
 #### Get Quiz by ID
 ```http
-GET /api/quizzes/1
+GET /api/quizzes/{id}
 Authorization: Bearer <token>
 ```
 
 #### Submit Quiz
 ```http
-POST /api/quizzes/submit
+POST /api/quizzes/submit-quiz
 Content-Type: application/json
 Authorization: Bearer <token>
 
@@ -635,6 +657,56 @@ Authorization: Bearer <token>
     "2": "c"
   }
 }
+```
+
+#### Get Leaderboard
+```http
+GET /api/quizzes/get-leaderboard
+```
+
+#### Check Quiz Published Status
+```http
+GET /api/quizzes/check-quiz-published-status
+```
+
+### Violation Endpoints
+
+#### Report Violation
+```http
+POST /api/violations
+Content-Type: application/json
+
+{
+  "teamId": "68bf02d2004d8f942bdf2c45",
+  "memberName": "Alice",
+  "violationType": "copy & paste"
+}
+```
+
+#### Get Violations for Team
+```http
+GET /api/violations
+Content-Type: application/json
+
+{
+  "teamId": "68bf02d2004d8f942bdf2c45"
+}
+```
+
+#### Get Violation Count for Team Member
+```http
+GET /api/violations/count
+Content-Type: application/json
+
+{
+  "teamId": "68bf02d2004d8f942bdf2c45",
+  "memberName": "Alice"
+}
+```
+
+#### Get All Violations with School Details
+```http
+GET /api/violations/get-all
 ```
 
 For complete API documentation, visit the Swagger UI at `http://localhost:5000/api-docs`
@@ -670,9 +742,10 @@ For complete API documentation, visit the Swagger UI at `http://localhost:5000/a
 
 - **Environment Variables**: Sensitive data stored in `.env` files
 - **Input Validation**: Server-side validation for all inputs
-- **SQL Injection Prevention**: Mongoose ODM protects against NoSQL injection
+- **NoSQL Injection Prevention**: Mongoose ODM protects against NoSQL injection
 - **XSS Protection**: React's built-in XSS protection
 - **CORS Configuration**: Controlled cross-origin resource sharing
+- **Rate Limiting**: Support backend caching reduces attack surface
 
 ---
 
@@ -766,6 +839,12 @@ npm run build
 
 # Start production server
 NODE_ENV=production npm start
+
+# Build TypeScript
+npm run build
+
+# Start production server
+NODE_ENV=production npm start
 ```
 
 #### Frontend Deployment
@@ -813,15 +892,10 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) before contributing.
 
 ---
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
 ## 🙏 Acknowledgments
 
-- University of Ruhuna Faculty of Engineering
+- **University of Ruhuna** - Faculty of Engineering
+- **25 Years of Innovation & Excellence** 
 - All contributors and testers
 - Open-source community for amazing tools and libraries
 
@@ -832,8 +906,15 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 For support, questions, or feedback:
 
 - **Email**: rextro2025@eng.ruh.ac.lk
+- **Institution**: University of Ruhuna, Faculty of Engineering
 - **Issues**: [GitHub Issues](https://github.com/yourusername/Rextro-School-Quiz-Platform/issues)
 - **Documentation**: [Wiki](https://github.com/yourusername/Rextro-School-Quiz-Platform/wiki)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -845,6 +926,7 @@ For support, questions, or feedback:
 - ✅ Team registration
 - ✅ Basic violation detection
 - ✅ Leaderboard
+- ✅ Support Backend with caching
 
 ### Phase 2 - Enhanced Features (In Progress)
 - 🔄 Advanced analytics dashboard
@@ -857,6 +939,7 @@ For support, questions, or feedback:
 - 📝 Video proctoring
 - 📝 Multi-language support
 - 📝 Customizable themes
+- 📝 Redis-based distributed caching
 
 ---
 
@@ -865,6 +948,8 @@ For support, questions, or feedback:
 ## 🎓 Rextro 2025 - Empowering Engineering Excellence
 
 **University of Ruhuna | Faculty of Engineering**
+
+**25 Years of Innovation & Excellence (2000-2025)**
 
 🏗️ **Built with ❤️ by the Rextro Development Team**
 
