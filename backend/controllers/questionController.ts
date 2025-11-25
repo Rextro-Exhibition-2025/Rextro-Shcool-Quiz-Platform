@@ -1,8 +1,8 @@
-
 import jwt from "jsonwebtoken";
 import Question from "../models/Question.js";
 import Quiz from "../models/Quiz.js";
 import type { Request, Response } from "express";
+import SchoolTeam from "../models/SchoolTeam.js";
 
 
 
@@ -10,7 +10,7 @@ export const createQuestion = async (req: Request, res: Response): Promise<any> 
   try {
 
 
-console.log("request body", req.body);
+    console.log("request body", req.body);
 
 
 
@@ -76,8 +76,8 @@ console.log("request body", req.body);
   }
 };
 
-export const editQuestion =  async (req: Request, res: Response): Promise<any> => {
-  try{
+export const editQuestion = async (req: Request, res: Response): Promise<any> => {
+  try {
     const questionId = req.params.questionId;
     const updatedData = req.body;
 
@@ -96,7 +96,7 @@ export const editQuestion =  async (req: Request, res: Response): Promise<any> =
     }
 
     const question = await Question.findByIdAndUpdate(questionId, updatedData, { new: true });
-    if(!question){
+    if (!question) {
       return res.status(404).json({ success: false, message: `Question with ID ${questionId} not found.` });
     }
     res.status(200).json({ success: true, data: question });
@@ -110,7 +110,7 @@ export const editQuestion =  async (req: Request, res: Response): Promise<any> =
   }
 };
 
-export const deleteQuestion = async (req: Request, res: Response): Promise<any> => { 
+export const deleteQuestion = async (req: Request, res: Response): Promise<any> => {
 
   try {
     const questionId = req.params.questionId;
@@ -119,7 +119,7 @@ export const deleteQuestion = async (req: Request, res: Response): Promise<any> 
       return res.status(404).json({ success: false, message: `Question with ID ${questionId} not found.` });
     }
 
-  
+
     // Also remove the question from any quizzes that reference it
     await Quiz.updateMany(
       { questions: question._id },
@@ -143,7 +143,7 @@ export const getAllQuestions = async (req: Request, res: Response): Promise<any>
 
     const questions = await Question.find();
     res.status(200).json({ success: true, data: questions });
-    
+
   } catch (error) {
 
     console.error('❌ Error fetching questions:', error);
@@ -152,7 +152,7 @@ export const getAllQuestions = async (req: Request, res: Response): Promise<any>
       message: "Error Fetching Questions",
       error: error instanceof Error ? error.message : "Unknown error",
     });
-    
+
   }
 
 }
@@ -164,10 +164,10 @@ export const getQuestionById = async (req: Request, res: Response) => {
     console.log("Fetching question with ID:", questionId);
 
     const question = await Question.findById(questionId);
-    if(!question){
+    if (!question) {
       res.status(404).json({ success: false, message: `Question with ID ${questionId} not found.` });
     }
-   res.status(200).json({ success: true, data: question });
+    res.status(200).json({ success: true, data: question });
   } catch (error) {
     console.error('❌ Error fetching question by ID:', error);
     res.status(400).json({
@@ -177,3 +177,76 @@ export const getQuestionById = async (req: Request, res: Response) => {
     });
   }
 }
+
+export const submitAnswer = async (req: Request, res: Response) => {
+  try {
+
+    // console.log(req.body)
+
+    const { answer, timeSpent, questionId } = req.body;
+    console.log(`Received answer submission for question ID: ${questionId}, answer ID: ${answer}, time spent: ${timeSpent} seconds`);
+    const schoolName = req.user?.schoolName;
+
+
+
+    const question = await Question.findById(questionId);
+    if (!question) {
+      return res.status(404).json({ success: false, message: `Question with ID ${questionId} not found.` });
+    }
+
+    const team = await SchoolTeam.findOne({ schoolName });
+
+    if (!team) {
+      return res.status(404).json({ success: false, message: `School team with name ${schoolName} not found.` });
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    const isCorrect = question.correctOption.toString() === answer;
+    console.log(`Answer is ${isCorrect ? 'correct' : 'incorrect'}`);
+
+    // Calculate score logic
+    // Example: max score 100, min score 10, linear decrease up to 30 seconds
+    let score = 0;
+    if (isCorrect) {
+      const maxScore = 100;
+      const minScore = 10;
+      const maxTime = 30; // seconds
+      // Clamp timeSpent to maxTime
+      const time = Math.max(0, Math.min(Number(timeSpent), maxTime));
+      // Linear interpolation: faster = higher score
+      score = Math.round(maxScore - ((maxScore - minScore) * (time / maxTime)));
+    }
+
+    console.log(`Answer is ${isCorrect ? 'correct' : 'incorrect'} score is ${score}`);
+
+    if (team.finalRoundScore === undefined) {
+      team.finalRoundScore = score;
+    }
+    else {
+      team.finalRoundScore += score;
+    }
+
+    const totalScore = team.finalRoundScore || 0;
+
+    await team.save();
+
+    res.status(200).json({ success: true, isCorrect, score, totalScore });
+  } catch (error) {
+    console.error('❌ Error submitting answer:', error);
+    res.status(400).json({
+      success: false,
+      message: "Error Submitting Answer",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};

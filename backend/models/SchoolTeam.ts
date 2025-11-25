@@ -25,6 +25,7 @@ export interface ISchoolTeam extends Document {
     educationalZone?: string;
     teacherInCharge?: string;
     teacherContact?: string;
+    finalRoundScore?: number;
     comparePassword(candidatePassword: string): Promise<boolean>;
     generateAuthTokenForMember(memberName: string): string;
 }
@@ -34,6 +35,7 @@ const schoolTeamSchema: Schema = new Schema({
     schoolName: { type: String, required: [true, "School name is required"] },
     password: { type: String, required: [true, "Password is required"], minlength: 6 },
     totalMarks: { type: Number, default: 0 },
+    finalRoundScore: { type: Number, default: 0 },
     educationalZone: { type: String },
     teacherInCharge: { type: String },
     teacherContact: { type: String },

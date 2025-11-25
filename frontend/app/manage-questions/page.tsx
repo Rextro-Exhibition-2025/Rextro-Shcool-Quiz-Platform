@@ -120,7 +120,7 @@ useEffect(() => {
 				setPublished(false);
 
 			}else{
-				console.log("publishiingggggggggggg");
+		
 				await api.post('/quizzes/publish-all-quizzes');
 				setPublished(true);
 			}

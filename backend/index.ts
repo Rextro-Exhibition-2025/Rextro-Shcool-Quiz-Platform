@@ -31,15 +31,22 @@ io.on("connection", (socket) => {
   console.log("a user connected: " + socket.id);
 
   socket.on('publish_question', (data) => {
-    console.log(`Question published: ${data.questionId} by socket ${socket.id}`);
+    console.log(`Question published: ${data.question} by socket ${socket.id}`);
     // You can fetch the question data from DB if needed, here just echoing back
     // For demo, let's send back the questionId and a dummy question text
     // In real use, fetch the question from DB using data.questionId
-    const publishedQuestion = {
-      questionId: data.questionId,
-      question: `Question with ID ${data.questionId} published!` // Replace with real question data
-    };
-    io.emit('new_question_published', publishedQuestion);
+   
+    io.emit('new_question_published', data.question);
+  });
+
+
+   socket.on('unpublish_question', () => {
+    console.log(`Question unpublished by socket ${socket.id}`);
+    // You can fetch the question data from DB if needed, here just echoing back
+    // For demo, let's send back the questionId and a dummy question text
+    // In real use, fetch the question from DB using data.questionId
+   
+    io.emit('unpublish_current_question');
   });
 });
 
