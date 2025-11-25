@@ -7,8 +7,8 @@ export const getQuizWithQuestions = async (req: Request, res: Response) => {
   
   try {
     const quizId = Number(req.params.quizId);
-    if (![1, 2, 3, 4, 5, 6, 7, 8].includes(quizId)) {
-      return res.status(400).json({ success: false, message: 'Invalid quizId. Must be 1, 2, 3, 4, 5, 6, 7, or 8.' });
+    if (![1, 2, 3, 4, 5, 6, 7, 8,9].includes(quizId)) {
+      return res.status(400).json({ success: false, message: 'Invalid quizId. Must be 1, 2, 3, 4, 5, 6, 7, 8, or 9.' });
     }
 
     // Find the quiz and populate questions

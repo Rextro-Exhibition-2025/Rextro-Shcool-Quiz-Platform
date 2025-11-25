@@ -8,7 +8,11 @@ import type { Request, Response } from "express";
 
 export const createQuestion = async (req: Request, res: Response): Promise<any> => {
   try {
-    console.log('📝 Received question data:', JSON.stringify(req.body, null, 2));
+
+
+console.log("request body", req.body);
+
+
 
     // Validate that each option has either text or image
     if (req.body.options && Array.isArray(req.body.options)) {

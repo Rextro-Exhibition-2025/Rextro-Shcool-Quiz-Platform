@@ -9,14 +9,13 @@ import Providers from "@/components/Providers";
 import { usePathname } from "next/navigation";
 import { UserProvider } from '@/contexts/UserContext';
 import { QuizProvider } from "@/contexts/QuizContext";
-
+import { SocketProvider } from '@/contexts/SocketContext';
 
 const poppins = Poppins({
   weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
   variable: "--font-poppins",
 });
-
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -29,16 +28,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }, []);
   return (
     <html lang="en">
-  <body className={`${poppins.variable} antialiased`}>
-        <Providers>
-          <UserProvider>
-            <QuizProvider>
-              {!hideNavAndFooter && <NavBar />}
-              {children}
-              {!hideNavAndFooter && <Footer />}
-            </QuizProvider>
-          </UserProvider>
-        </Providers>
+      <body className={`${poppins.variable} antialiased`}>
+        <SocketProvider>
+          <Providers>
+            <UserProvider>
+              <QuizProvider>
+                {!hideNavAndFooter && <NavBar />}
+                {children}
+                {!hideNavAndFooter && <Footer />}
+              </QuizProvider>
+            </UserProvider>
+          </Providers>
+        </SocketProvider>
       </body>
     </html>
   );
