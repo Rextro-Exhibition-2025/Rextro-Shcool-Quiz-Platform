@@ -14,10 +14,45 @@ import AuthRouter from "./routes/authRoutes.js";
 import SchoolTeamRouter from "./routes/schoolTeamRoutes.js";
 import ViolationRouter from "./routes/violationRoutes.js";
 import UploadRouter from "./routes/uploadRoutes.js";
+import { Server } from "socket.io";
+import http from "http";
 
 dotenv.config();
 
 const app: Application = express();
+const server = http.createServer(app);
+const io = new Server(server,{
+  cors: {
+    origin: "*",
+  }
+});
+
+io.on("connection", (socket) => {
+  console.log("a user connected: " + socket.id);
+
+  socket.on('publish_question', (data) => {
+    console.log(`Question published: ${data.question} by socket ${socket.id}`);
+    // You can fetch the question data from DB if needed, here just echoing back
+    // For demo, let's send back the questionId and a dummy question text
+    // In real use, fetch the question from DB using data.questionId
+   
+    io.emit('new_question_published', data.question);
+  });
+
+
+   socket.on('unpublish_question', () => {
+    console.log(`Question unpublished by socket ${socket.id}`);
+    // You can fetch the question data from DB if needed, here just echoing back
+    // For demo, let's send back the questionId and a dummy question text
+    // In real use, fetch the question from DB using data.questionId
+   
+    io.emit('unpublish_current_question');
+  });
+});
+
+server.listen(4000, () => {
+  console.log("✅ Socket.io server running on port 4000");
+});
 
 // Get __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);

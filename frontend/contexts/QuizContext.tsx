@@ -9,6 +9,8 @@ interface QuizContextType {
     setQuizId: (id: number) => void;
     submitQuiz: () => Promise<void>;
     score?: number;
+    submitQuestion: ( questionAnswer: { questionId: number; answer: string , timeSpent: number } | null) => Promise<void>;
+
 }
 
 
@@ -19,7 +21,8 @@ const quizContext = createContext<QuizContextType>({
     quizId: null,
     setQuizId: () => null,
     submitQuiz: async () => { },
-    score: 0
+    score: 0,
+    submitQuestion: async () => { }
 })
 
 
@@ -70,8 +73,29 @@ export const QuizProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }
 
+
+
+    const submitQuestion = async ( questionAnswer: { questionId: number; answer: string , timeSpent: number } | null) => {
+
+        try {
+         
+            const api = await createStudentApi({ token: user.user?.authToken || '' });
+            const response: any = await api.post('/questions/submit', {
+                questionId: questionAnswer?.questionId,
+                answer: questionAnswer?.answer,
+                timeSpent: questionAnswer?.timeSpent
+            });
+
+            console.log("Question submitted successfully:", response.data);
+           
+           
+        } catch (error) {
+            console.error("Error submitting quiz:", error);
+        }
+    }
+
     return (
-        <quizContext.Provider value={{ selectedAnswers, updateSelectedAnswers, quizId, setQuizId, submitQuiz, score }}>
+        <quizContext.Provider value={{ selectedAnswers, updateSelectedAnswers, quizId, setQuizId, submitQuiz, score , submitQuestion }}>
             {children}
         </quizContext.Provider>
     )

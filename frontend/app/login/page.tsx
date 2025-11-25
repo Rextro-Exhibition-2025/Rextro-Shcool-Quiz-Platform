@@ -16,6 +16,7 @@ interface LoginFormResponse {
     teamName: string;
     authToken: string;
     number: number;
+    hasEndedQuiz?: boolean;
   };
   message?: string;
 }
@@ -38,6 +39,7 @@ export default function LoginPage() {
   const [checkingAuth, setCheckingAuth] = useState<boolean>(true);
   // Use shared hook to redirect and handle checking state
   const { checking } = useRedirectToQuizIfAuthenticated();
+  const [published, setPublished] = useState<boolean>(false);
 
   // Keep local checkingAuth in sync for rendering decisions below
   useEffect(() => {
@@ -73,6 +75,19 @@ export default function LoginPage() {
     }
 
     fetchSchools();
+  }, []);
+
+  useEffect(() => {
+    const checkPublishedStatus = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes/check-quiz-published-status`);
+        const data = await response.json();
+        setPublished(data?.isPublished ?? false);
+      } catch (error) {
+        setPublished(false);
+      }
+    };
+    checkPublishedStatus();
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -131,7 +146,7 @@ export default function LoginPage() {
         memberName: formData.memberName,
         schoolName: formData.schoolName,
         medium: formData.medium,
-        
+
         loginTime: new Date().toISOString()
       }));
 
@@ -140,6 +155,14 @@ export default function LoginPage() {
       //   await document.documentElement.requestFullscreen();
       // }
       if (response.ok && responseData.success) {
+        
+        // Check if user has already completed the quiz
+        if (responseData.data.hasEndedQuiz) {
+          setError('You have already completed the quiz. Thank you for participating!');
+          setLoading(false);
+          return;
+        }
+
         localStorage.setItem('authToken', responseData.data.authToken);
 
         setUser({
@@ -153,7 +176,18 @@ export default function LoginPage() {
         });
         console.log(user);
 
-        router.push('/quiz');
+        // Check if quiz is published OR if user is from Team Rextro
+        const isTeamRextro = responseData.data.teamName === "Team Rextro" && 
+                             responseData.data.schoolName === "Faculty of Engineering";
+        
+        if (published || isTeamRextro) {
+          router.push('/quiz');
+        } else {
+          // Clear the login data since quiz is not available
+          localStorage.removeItem('authToken');
+          setUser(null);
+          setError('Quiz is not yet published. Please check back later.');
+        }
       } else {
         setError('Login failed. Please check your credentials.');
       }

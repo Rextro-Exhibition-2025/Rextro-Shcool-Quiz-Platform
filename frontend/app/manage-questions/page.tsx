@@ -21,6 +21,9 @@ export default function ManageQuestions() {
 	const [isLoadingTab, setIsLoadingTab] = useState(false);
 	const [loadingQuestionId, setLoadingQuestionId] = useState<string | null>(null);
 	const [published, setPublished] = useState<boolean>(false);
+	const [quizApiData, setQuizApiData] = useState<QuizApiResponse | null>(null);
+	const [publishedQuestionsMap, setPublishedQuestionsMap] = useState<Record<string, boolean>>({});
+	const [quizIdToLoad, setQuizIdToLoad] = useState<number>(1);
 
 useEffect(() => {
 	const checkPublishedStatus = async () => {
@@ -117,7 +120,7 @@ useEffect(() => {
 				setPublished(false);
 
 			}else{
-				console.log("publishiingggggggggggg");
+		
 				await api.post('/quizzes/publish-all-quizzes');
 				setPublished(true);
 			}
@@ -130,7 +133,7 @@ useEffect(() => {
 		<div className="min-h-screen bg-gradient-to-br p-4 relative" style={{ backgroundImage: 'url("/Container.png")', backgroundSize: 'cover', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
 			<div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(255,255,255,0.6)', zIndex: 1 }} />
 			<div className="max-w-4xl mx-auto relative z-10">
-				<div className="flex items-center justify-between mb-6">
+				<div className="flex items-center flex-col gap-y-5 justify-between mb-6">
 					<h1 className="text-2xl font-bold text-gray-800">Manage Questions</h1>
 					<div className="flex items-center gap-3">
 						<button
@@ -151,8 +154,8 @@ useEffect(() => {
 								disabled={isLoadingTab}
 								className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321] bg-white"
 							>
-								{['set1', 'set2', 'set3', 'set4','set5', 'set6', 'set7', 'set8'].map((set, idx) => (
-									<option key={set} value={set}>{`Quiz ${idx + 1} - ${countsBySet[set] ?? 0}/${totalQuestions}`}</option>
+								{['set1', 'set2', 'set3', 'set4','set5', 'set6', 'set7', 'set8' ].map((set, idx) => (
+									<option key={set} value={set}>{`Quiz ${idx + 1} - ${countsBySet[set] ?? 0}/20`}</option>
 								))}
 							</select>
 						</div>
@@ -162,9 +165,31 @@ useEffect(() => {
 						>
 							<Plus size={18} /> Add New Question
 						</button>
+						<button
+							onClick={() => router.push("/realtime-questions")}
+							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+						>
+							Realtime Questions
+						</button>
 					</div>
 				</div>
 
+				{/* Helper text showing publish status */}
+				<div className={`mb-4 p-3 rounded-lg ${published ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}`}>
+					<p className={`text-sm font-medium ${published ? 'text-green-800' : 'text-yellow-800'}`}>
+						{published ? (
+							<>
+								<span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+								Quiz is currently <strong>Published</strong> - Students can access and take the quiz
+							</>
+						) : (
+							<>
+								<span className="inline-block w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
+								Quiz is currently <strong>Unpublished</strong> - Only Team Rextro members can access the quiz for testing
+							</>
+						)}
+					</p>
+				</div>
 
 				{/* Panel content for the selected quiz set */}
 				<div className="bg-white rounded-2xl shadow-lg p-6">
