@@ -490,6 +490,7 @@ export default function AddQuestion(): React.ReactElement | null {
               <option value="6">Set 6</option>
               <option value="7">Set 7</option>
               <option value="8">Set 8</option>
+              <option value="9">Realtime Question</option>
             </select>
           </div>
           {/* Question Text */}

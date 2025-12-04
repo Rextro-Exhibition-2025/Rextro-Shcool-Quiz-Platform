@@ -25,11 +25,12 @@ const Leaderboard: React.FC = () => {
   const [selectedSchool, setSelectedSchool] = useState<SchoolData | null>(null);
   // const [userQuizResult, setUserQuizResult] = useState<any>(null);
   const [schools, setSchools] = useState<SchoolData[]>([]);
+  const [published, setPublished] = useState<boolean>(false);
   const user = useUser();
 
   useEffect(() => {
     console.log("callingggggggg");
-    
+
     // Fetch leaderboard data from backend API
     const fetchLeaderboard = async () => {
 
@@ -38,7 +39,7 @@ const Leaderboard: React.FC = () => {
         const api = await createStudentApi({ token: user.user?.authToken || '' });
         const response: any = await api.get(`/quizzes/get-leaderboard`);
 
-        
+
         setSchools(transformLeaderboard(response.data.data));
 
       } catch (error) {
@@ -48,14 +49,27 @@ const Leaderboard: React.FC = () => {
       }
 
 
-  
 
-    
+
+
 
 
     }
 
     fetchLeaderboard();
+  }, []);
+
+  useEffect(() => {
+    const checkPublishedStatus = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/quizzes/check-quiz-published-status`);
+        const data = await response.json();
+        setPublished(data?.isPublished ?? false);
+      } catch (error) {
+        setPublished(false);
+      }
+    };
+    checkPublishedStatus();
   }, []);
 
   // React.useEffect(() => {
@@ -265,6 +279,17 @@ const Leaderboard: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white">
         <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#df7500]"></div>
+      </div>
+    );
+  }
+
+  if (!published) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="text-3xl font-bold text-[#651321] mb-4">Leaderboard Coming Soon</div>
+          <div className="text-gray-600">The leaderboard will be available once the quiz is published.</div>
+        </div>
       </div>
     );
   }

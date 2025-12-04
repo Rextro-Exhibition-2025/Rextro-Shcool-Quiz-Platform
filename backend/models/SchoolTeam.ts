@@ -10,6 +10,10 @@ export interface IStudent extends Document {
     authToken?: string;
     hasEndedQuiz?: boolean;
     number: number;
+    submissionHistory?: Array<{
+        score: number;
+        submittedAt: Date;
+    }>;
 }
 
 export interface ISchoolTeam extends Document {
@@ -21,6 +25,7 @@ export interface ISchoolTeam extends Document {
     educationalZone?: string;
     teacherInCharge?: string;
     teacherContact?: string;
+    finalRoundScore?: number;
     comparePassword(candidatePassword: string): Promise<boolean>;
     generateAuthTokenForMember(memberName: string): string;
 }
@@ -30,6 +35,7 @@ const schoolTeamSchema: Schema = new Schema({
     schoolName: { type: String, required: [true, "School name is required"] },
     password: { type: String, required: [true, "Password is required"], minlength: 6 },
     totalMarks: { type: Number, default: 0 },
+    finalRoundScore: { type: Number, default: 0 },
     educationalZone: { type: String },
     teacherInCharge: { type: String },
     teacherContact: { type: String },
@@ -42,6 +48,10 @@ const schoolTeamSchema: Schema = new Schema({
             authToken: { type: String },
             hasEndedQuiz: { type: Boolean, default: false },
             number: { type: Number, required: [true, "Member must have a number"] },
+            submissionHistory: [{
+                score: { type: Number, default: 0 },
+                submittedAt: { type: Date, default: Date.now }
+            }]
         },
     ],
 }, { timestamps: true });
