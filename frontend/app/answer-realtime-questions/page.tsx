@@ -1,9 +1,11 @@
 'use client'
 import React, { useEffect, useState, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSocket } from '@/contexts/SocketContext';
 import { useQuiz } from '@/contexts/QuizContext';
 
 const page = () => {
+  const router = useRouter();
   const { socket } = useSocket();
   const [currentQuestion, setCurrentQuestion] = useState<any | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -94,6 +96,13 @@ const page = () => {
   return (
     <div className='min-h-screen bg-white text-black p-8'>
       <h1 className='text-2xl font-bold mb-6'>Answer Realtime Questions</h1>
+      <button
+        onClick={() => router.push('/leaderboard')}
+        className="px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200"
+        style={{ backgroundColor: '#651321' }}
+      >
+        Go to Leaderboard
+      </button>
       {currentQuestion ? (
         <div className='border rounded-lg p-6 bg-gray-50 shadow-md mb-4'>
           <h2 className='text-xl font-semibold mb-4'>{currentQuestion.question}</h2>
