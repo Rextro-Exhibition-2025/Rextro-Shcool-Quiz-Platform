@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { checkQuizzesPublishedStatus, getLeaderBoard, getQuizWithQuestions, publishAllQuizzes, submitQuiz, unpublishAllQuizzes } from "../controllers/quizController.js";
+import { checkQuizzesPublishedStatus, getFinalRoundLeaderBoard, getLeaderBoard, getQuizWithQuestions, publishAllQuizzes, submitQuiz, unpublishAllQuizzes, updateLeaderBoardManually } from "../controllers/quizController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { adminOnly } from "../middleware/adminAuthMiddleware.js";
 
@@ -25,10 +25,17 @@ QuizRouter.route("/publish-all-quizzes")
 QuizRouter.route("/unpublish-all-quizzes")
 .post(adminOnly, unpublishAllQuizzes);
 
+QuizRouter.route("/get-final-leaderboard").get(getFinalRoundLeaderBoard);
 
+
+QuizRouter.route("/update-leaderboard-manually")
+.post(adminOnly, updateLeaderBoardManually);
 
 QuizRouter.route("/:quizId")
   .get(getQuizWithQuestions);
+
+
+
 
 export default QuizRouter;
 
