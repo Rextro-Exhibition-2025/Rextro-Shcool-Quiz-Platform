@@ -55,7 +55,7 @@ interface CompletionData {
 }
 
 // Constants
-const QUIZ_DURATION = 20 * 60; // 20 minutes in seconds
+const QUIZ_DURATION = 25 * 60; // 20 minutes in seconds
 
 // Simple device fingerprint generation
 const getDeviceFingerprint = (): string => {

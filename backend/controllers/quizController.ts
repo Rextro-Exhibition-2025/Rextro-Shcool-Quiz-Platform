@@ -7,8 +7,8 @@ export const getQuizWithQuestions = async (req: Request, res: Response) => {
   
   try {
     const quizId = Number(req.params.quizId);
-    if (![1, 2, 3, 4, 5, 6, 7, 8].includes(quizId)) {
-      return res.status(400).json({ success: false, message: 'Invalid quizId. Must be 1, 2, 3, 4, 5, 6, 7, or 8.' });
+    if (![1, 2, 3, 4, 5, 6, 7, 8,9].includes(quizId)) {
+      return res.status(400).json({ success: false, message: 'Invalid quizId. Must be 1, 2, 3, 4, 5, 6, 7, 8, or 9.' });
     }
 
     // Find the quiz and populate questions
@@ -250,7 +250,6 @@ export const getLeaderBoard = async (req: Request, res: Response) => {
 }
 
 export const publishAllQuizzes = async (req: Request, res: Response) => {
-console.log("huuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu");
 
   try {
     const result = await Quiz.updateMany({}, { $set: { isPublished: true } });
@@ -301,3 +300,78 @@ export const checkQuizzesPublishedStatus = async (req: Request, res: Response) =
     });
   }
 }
+
+
+export const getFinalRoundLeaderBoard = async (req: Request, res: Response) => {
+
+
+  
+
+  try {
+
+    const schools = await SchoolTeam.find().lean();
+    const schoolsWithScores = schools.map(school => {
+      const totalScore = school.finalRoundScore || 0;
+      return {
+        schoolName: school.schoolName,
+        totalScore,
+      
+      };
+    });
+
+    // Sort schools by total score
+    schoolsWithScores.sort((a, b) => b.totalScore - a.totalScore);
+
+    return res.status(200).json({
+      success: true,
+      data: schoolsWithScores
+    });
+  } catch (error) {
+
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching leaderboard',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    
+  }
+}
+
+
+export const updateLeaderBoardManually = async (req: Request, res: Response) => {
+  try {
+    const { schoolName, newScore } = req.body;
+    const schoolTeam = await SchoolTeam.findOne({ schoolName });
+    if (!schoolTeam) {
+      return res.status(404).json({
+        success: false,
+        message: 'School team not found',
+      });
+    }
+    const newMarks = schoolTeam.finalRoundScore + newScore;
+    const updatedTeam = await SchoolTeam.findOneAndUpdate(
+      { schoolName },
+      { finalRoundScore: newMarks },
+      { new: true }
+    );
+    if (!updatedTeam) {
+      return res.status(404).json({
+        success: false,
+        message: 'School team not found',
+      });
+    }
+    return res.status(200).json({
+      success: true,
+      message: 'Leaderboard updated successfully',
+      data: updatedTeam
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error updating leaderboard',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}
+
+
