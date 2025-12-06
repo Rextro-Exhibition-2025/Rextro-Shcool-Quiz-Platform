@@ -74,6 +74,7 @@ const page = () => {
 
   const handleSelect = (option: any) => {
     setSelectedOption(option);
+    handleSubmit();
   };
 
   const handleSubmit = () => {
@@ -219,7 +220,7 @@ const page = () => {
             </div>
 
             {/* Submit Button */}
-            <div className="mt-6 flex justify-start">
+            {/* <div className="mt-6 flex justify-start">
               <button
                 onClick={handleSubmit}
                 disabled={!selectedOption}
@@ -230,7 +231,7 @@ const page = () => {
               >
                 Submit Answer
               </button>
-            </div>
+            </div> */}
 
             {/* Exit Button */}
             <div className="mt-6 flex justify-start">
