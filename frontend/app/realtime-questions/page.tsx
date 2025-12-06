@@ -70,7 +70,7 @@ const page = () => {
                     <div className="flex items-center justify-between">
                         <h1 className="text-xl md:text-2xl font-bold text-gray-800">Realtime Questions</h1>
                         <button
-                            className="px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                            className="px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl active:scale-95 active:shadow-md transition-all duration-200"
                             style={{ backgroundColor: '#dc2626' }}
                             onClick={() => handleUnpublish()}
                         >
@@ -127,7 +127,7 @@ const page = () => {
 
                                     <div className="ml-6">
                                         <button
-                                            className="px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                                            className="px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl active:scale-95 active:shadow-md transition-all duration-200"
                                             style={{ backgroundColor: '#651321' }}
                                             onClick={() => handlePublish(q)}
                                         >
