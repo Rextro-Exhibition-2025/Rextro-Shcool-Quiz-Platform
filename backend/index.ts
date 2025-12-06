@@ -4,8 +4,8 @@ import type { Application } from "express";
 import express from "express";
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import connectDB from "./config/db.js";
 import UserRouter from "./routes/userRoutes.js";
 import QuestionRouter from "./routes/questionRoute.js";
@@ -15,20 +15,28 @@ import SchoolTeamRouter from "./routes/schoolTeamRoutes.js";
 import ViolationRouter from "./routes/violationRoutes.js";
 import UploadRouter from "./routes/uploadRoutes.js";
 import { Server } from "socket.io";
-import http from "http";
+import http from "node:http";
 
 dotenv.config();
 
 const app: Application = express();
 const server = http.createServer(app);
 const io = new Server(server,{
+  path: '/socket.io',
   cors: {
-    origin: "*",
-  }
+    origin: ['http://localhost:3001', 'http://localhost:3000', 'https://rextro-shcool-quiz-platform.vercel.app', 'https://mathquest.rextro.lk', 'https://rextro-shcool-quiz-platform-mk9quv3jh.vercel.app'],
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+  transports: ['polling', 'websocket'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
 });
 
 io.on("connection", (socket) => {
-  console.log("a user connected: " + socket.id);
+  console.log("✅ Socket.IO: User connected -", socket.id);
+  console.log("📊 Total connections:", io.engine.clientsCount);
 
   socket.on('publish_question', (data) => {
     console.log(`Question published: ${data.question} by socket ${socket.id}`);
@@ -48,10 +56,10 @@ io.on("connection", (socket) => {
    
     io.emit('unpublish_current_question');
   });
-});
 
-server.listen(4000, () => {
-  console.log("✅ Socket.io server running on port 4000");
+  socket.on('disconnect', (reason) => {
+    console.log(`🔌 Socket.IO: User disconnected - ${socket.id}, Reason: ${reason}`);
+  });
 });
 
 // Get __dirname equivalent for ES modules
@@ -117,9 +125,12 @@ app.use("/api/school-teams", SchoolTeamRouter);
 app.use("/api/violations", ViolationRouter);
 app.use("/api/upload", UploadRouter);
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
+// Start the server (handles both HTTP and Socket.IO)
+const PORT = Number(process.env.PORT) || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
+server.listen(PORT, HOST, () => {
+  console.log(`✅ Server running on ${HOST}:${PORT}`);
+  console.log(`🔌 Socket.io enabled`);
   console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
   console.log(`📄 OpenAPI JSON: http://localhost:${PORT}/api-docs.json`);
 });
