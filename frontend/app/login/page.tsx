@@ -181,7 +181,7 @@ export default function LoginPage() {
                              responseData.data.schoolName === "Faculty of Engineering";
         
         if (published || isTeamRextro) {
-          router.push('/quiz');
+          router.push('/answer-realtime-questions');
         } else {
           // Clear the login data since quiz is not available
           localStorage.removeItem('authToken');
