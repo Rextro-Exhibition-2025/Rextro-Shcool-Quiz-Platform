@@ -514,7 +514,79 @@ useEffect(() => {
             boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
           }}
         >
-          <div className="text-center">
+          {/* Hover shade overlay */}
+          <motion.div
+            className="absolute inset-0 bg-[#df7500]/8 rounded-3xl pointer-events-none"
+            initial={{ opacity: 0 }}
+            whileHover={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+          />
+          {/* Decorative floating elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <motion.div
+              className="absolute top-8 left-8 text-[#df7500]/20"
+              animate={{
+                y: [0, -10, 0],
+                rotate: [0, 5, 0],
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+            >
+              <Brain className="w-12 h-12" />
+            </motion.div>
+            <motion.div
+              className="absolute top-12 right-12 text-[#651321]/15"
+              animate={{
+                y: [0, 10, 0],
+                rotate: [0, -5, 0],
+                scale: [1, 0.9, 1],
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 1
+              }}
+            >
+              <Trophy className="w-10 h-10" />
+            </motion.div>
+            <motion.div
+              className="absolute bottom-16 left-12 text-[#df7500]/25"
+              animate={{
+                x: [0, 5, 0],
+                rotate: [0, 10, 0],
+              }}
+              transition={{
+                duration: 6,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 2
+              }}
+            >
+              <Star className="w-8 h-8" />
+            </motion.div>
+            <motion.div
+              className="absolute bottom-12 right-8 text-[#651321]/20"
+              animate={{
+                y: [0, -8, 0],
+                scale: [1, 1.2, 1],
+              }}
+              transition={{
+                duration: 4.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.5
+              }}
+            >
+              <Target className="w-11 h-11" />
+            </motion.div>
+          </div>
+
+          <div className="text-center relative z-10">
             <motion.h1
               className="text-6xl md:text-7xl font-bold text-[#651321] mb-6 leading-tight"
               initial={{ y: 30, opacity: 0 }}
@@ -558,7 +630,7 @@ useEffect(() => {
               transition={{ duration: 0.8, delay: 1.1 }}
             >
               <motion.button
-                className="group bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:from-[#df7500]/80 hover:to-[#651321]/80 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl"
+                className="group bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-8 py-4 rounded-full font-semibold text-lg flex items-center gap-3 hover:from-[#df7500]/80 hover:to-[#651321]/80 transition-all duration-300 transform hover:scale-105 hover:shadow-2xl cursor-pointer"
                 onClick={() => {
                   router.push('/login');
                 }}

@@ -12,4 +12,6 @@
 - [x] Implement unique animations for each icon with mouse/scroll reactivity
 - [x] Increase icon density and opacity for visibility through glass card
 - [x] Remove glassmorphism effect from hero card
+- [x] Add gradient background and floating decorative icons to hero card
+- [x] Add hover shade overlay to hero card
 - [x] Test animations for smooth performance and responsiveness
