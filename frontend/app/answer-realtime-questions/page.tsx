@@ -9,7 +9,7 @@ const page = () => {
   const router = useRouter();
   const { socket } = useSocket();
   const [currentQuestion, setCurrentQuestion] = useState<any | null>(null);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [selectedOption, setSelectedOption] = useState<any | null>(null);
   const [timer, setTimer] = useState<number>(0);
   const [lastResult, setLastResult] = useState<{
     timeSpent: number;
@@ -73,24 +73,25 @@ const page = () => {
   }, [socket]);
 
   const handleSelect = (option: any) => {
-    setSelectedOption(option.option);
+    setSelectedOption(option);
+  };
+
+  const handleSubmit = () => {
+    if (!selectedOption || !currentQuestion || !startTimeRef.current) return;
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    if (currentQuestion && startTimeRef.current) {
-      const timeSpent = Number(((performance.now() - startTimeRef.current) / 1000).toFixed(3));
-      // Fix: use option.optionText and option.optionImage directly from the selected option
-      setLastResult({
-        timeSpent,
-        optionId: option.option,
-        optionText: option.optionText || '',
-        optionImage: option.optionImage ? option.optionImage : undefined,
-        questionText: currentQuestion.question,
-        questionImage: currentQuestion.questionImage,
-      });
-      submitQuestion({ questionId: currentQuestion._id, answer: option.option, timeSpent });
-    }
+    const timeSpent = Number(((performance.now() - startTimeRef.current) / 1000).toFixed(3));
+    setLastResult({
+      timeSpent,
+      optionId: selectedOption.option,
+      optionText: selectedOption.optionText || '',
+      optionImage: selectedOption.optionImage ? selectedOption.optionImage : undefined,
+      questionText: currentQuestion.question,
+      questionImage: currentQuestion.questionImage,
+    });
+    submitQuestion({ questionId: currentQuestion._id, answer: selectedOption.option, timeSpent });
     setTimeout(() => setCurrentQuestion(null), 100); // Hide question after short delay
   };
 
@@ -124,7 +125,7 @@ const page = () => {
               className="px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200"
               style={{ backgroundColor: '#651321' }}
             >
-              Go to Leaderboard
+              Leaderboard
             </button>
           </div>
         </div>
@@ -157,27 +158,27 @@ const page = () => {
                 <button
                   key={opt._id}
                   onClick={() => handleSelect(opt)}
-                  className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${selectedOption === opt._id
+                  className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${selectedOption && selectedOption._id === opt._id
                     ? 'shadow-md'
                     : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                     }`}
-                  style={selectedOption === opt._id ? {
+                  style={selectedOption && selectedOption._id === opt._id ? {
                     borderColor: '#DF7500',
                     backgroundColor: '#DF7500008'
                   } : {}}
                 >
                   <div className="flex items-center space-x-4">
                     <div
-                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedOption === opt._id
+                      className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${selectedOption && selectedOption._id === opt._id
                         ? 'text-white'
                         : 'border-gray-300'
                         }`}
-                      style={selectedOption === opt._id ? {
+                      style={selectedOption && selectedOption._id === opt._id ? {
                         borderColor: '#DF7500',
                         backgroundColor: '#DF7500'
                       } : {}}
                     >
-                      {selectedOption === opt._id && (
+                      {selectedOption && selectedOption._id === opt._id && (
                         <Check size={16} className="text-white" />
                       )}
                     </div>
@@ -216,6 +217,31 @@ const page = () => {
                 </button>
               ))}
             </div>
+
+            {/* Submit Button */}
+            <div className="mt-6 flex justify-start">
+              <button
+                onClick={handleSubmit}
+                disabled={!selectedOption}
+                className={`px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200 ${
+                  selectedOption ? 'hover:opacity-90' : 'opacity-50 cursor-not-allowed'
+                }`}
+                style={{ backgroundColor: selectedOption ? '#651321' : '#ccc' }}
+              >
+                Submit Answer
+              </button>
+            </div>
+
+            {/* Exit Button */}
+            <div className="mt-6 flex justify-start">
+              <button
+                onClick={() => router.push('/')}
+                className="px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200"
+                style={{ backgroundColor: '#651321' }}
+              >
+                Exit
+              </button>
+            </div>
           </div>
         ) : lastResult ? (
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
@@ -225,7 +251,7 @@ const page = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                 </svg>
               </div>
-              <h2 className="text-2xl font-bold text-[#651321] mb-4">Answer Submitted!</h2>
+              <h2 className="text-2xl font-bold text-[#651321] mb-4">Answer Submitted ! Wait for the next question</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto mb-6">

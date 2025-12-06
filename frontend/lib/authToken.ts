@@ -40,7 +40,7 @@ export const useRedirectToQuizIfAuthenticated = (): { checking: boolean } => {
       const currentPath = window.location.pathname;
 
       // Don't redirect if already on quiz-related pages
-      const quizPaths = ['/quiz', '/answer-realtime-questions', '/leaderboard'];
+      const quizPaths = ['/quiz', '/answer-realtime-questions', '/leaderboard','/','/login'];
       if (quizPaths.includes(currentPath)) {
         setChecking(false);
         return;
