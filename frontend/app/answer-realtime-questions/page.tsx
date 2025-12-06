@@ -234,13 +234,13 @@ const page = () => {
 
             {/* Exit Button */}
             <div className="mt-6 flex justify-start">
-              <button
+              {/* <button
                 onClick={() => router.push('/')}
                 className="px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200"
                 style={{ backgroundColor: '#651321' }}
               >
                 Exit
-              </button>
+              </button> */}
             </div>
           </div>
         ) : lastResult ? (

@@ -61,7 +61,7 @@ const Leaderboard: React.FC = () => {
       try {
 
         const api = await createStudentApi({ token: user.user?.authToken || '' });
-        const response: any = await api.get(`/quizzes/get-leaderboard`);
+        const response: any = await api.get(`/quizzes/get-final-round-leaderboard`);
 
 
         setSchools(transformLeaderboard(response.data.data));
