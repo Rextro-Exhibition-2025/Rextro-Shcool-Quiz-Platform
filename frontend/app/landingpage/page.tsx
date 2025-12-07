@@ -495,7 +495,7 @@ useEffect(() => {
       {/* Hero Section */}
       <div className={`relative z-10 max-w-7xl mx-auto px-6 py-20 transition-all duration-1000 delay-300 ${isLoaded ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
         <motion.div
-          className="bg-gradient-to-br from-white via-gray-50 to-blue-50/30 border border-gray-200/50 rounded-3xl p-12 shadow-2xl mx-auto max-w-4xl relative overflow-hidden"
+          className="bg-gradient-to-br from-white via-gray-50 to-blue-50/30 border border-gray-200/50 rounded-3xl p-4 sm:p-6 md:p-8 lg:p-12 shadow-2xl mx-auto max-w-4xl relative overflow-hidden"
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{
             scale: 1,
@@ -588,7 +588,7 @@ useEffect(() => {
 
           <div className="text-center relative z-10">
             <motion.h1
-              className="text-6xl md:text-7xl font-bold text-[#651321] mb-6 leading-tight"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-[#651321] mb-6 leading-tight"
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.7 }}
@@ -613,7 +613,7 @@ useEffect(() => {
             </motion.h1>
 
             <motion.p
-              className="text-xl text-[#651321] mb-12 max-w-2xl mx-auto leading-relaxed"
+              className="text-lg sm:text-xl md:text-xl text-[#651321] mb-12 max-w-2xl mx-auto leading-relaxed"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.9 }}

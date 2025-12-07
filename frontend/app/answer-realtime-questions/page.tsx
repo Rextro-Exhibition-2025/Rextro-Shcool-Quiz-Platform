@@ -73,8 +73,11 @@ const page = () => {
   }, [socket]);
 
   const handleSelect = (option: any) => {
-    setSelectedOption(option);
-    handleSubmit();
+    if (selectedOption && selectedOption._id === option._id) {
+      handleSubmit();
+    } else {
+      setSelectedOption(option);
+    }
   };
 
   const handleSubmit = () => {

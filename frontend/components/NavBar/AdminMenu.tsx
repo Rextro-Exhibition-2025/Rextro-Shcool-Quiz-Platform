@@ -57,7 +57,7 @@ const AdminMenu: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
         Leaderboard
       </Link>
       <Link
-        href="/admin/logs"
+        href="/leaderboard"
         className="block px-4 py-2 text-gray-700 hover:bg-gray-100"
         onClick={handleMenuClick}
       >

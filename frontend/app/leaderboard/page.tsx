@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Trophy, Star, Menu, ChevronDown, X, ChevronLeft } from 'lucide-react';
 import { createStudentApi } from '@/interceptors/student';
+import { createAdminApi } from '@/interceptors/admins';
 import { useUser } from '@/contexts/UserContext';
 import { transformLeaderboard } from './leaderboardTransformer';
 import { isTokenValid } from '@/lib/authToken';
@@ -30,27 +31,32 @@ const Leaderboard: React.FC = () => {
   const [published, setPublished] = useState<boolean>(false);
   const user = useUser();
 
-  useEffect(() => {
-    // Check if user is authenticated (same logic as quiz page)
-    const authToken = localStorage.getItem('authToken');
-    const studentData = localStorage.getItem('studentData');
+  // useEffect(() => {
+  //   // Check if user is authenticated (allow students or admins)
+  //   const authToken = localStorage.getItem('authToken');
+  //   const studentData = localStorage.getItem('studentData');
+  //   const userData = localStorage.getItem('userData');
 
-    if (!authToken || !studentData) {
-      router.push('/login');
-      return;
-    }
+  //   // if (!authToken || (!studentData && !userData)) {
+  //   //   router.push('/login');
+  //   //   return;
+  //   // }
 
-    try {
-      const parsedData = JSON.parse(studentData);
-      if (!parsedData.memberName || !parsedData.schoolName) {
-        router.push('/login');
-        return;
-      }
-    } catch (error) {
-      router.push('/login');
-      return;
-    }
-  }, [router]);
+  //   // For students, check required fields
+  //   if (studentData) {
+  //     try {
+  //       const parsedData = JSON.parse(studentData);
+  //       if (!parsedData.memberName || !parsedData.schoolName) {
+  //         router.push('/login');
+  //         return;
+  //       }
+  //     } catch (error) {
+  //       router.push('/login');
+  //       return;
+  //     }
+  //   }
+  //   // For admins (userData), no additional checks needed
+  // }, [router]);
 
   useEffect(() => {
     console.log("callingggggggg");
@@ -60,8 +66,9 @@ const Leaderboard: React.FC = () => {
 
       try {
 
-        const api = await createStudentApi({ token: user.user?.authToken || '' });
-        const response: any = await api.get(`/quizzes/get-final-round-leaderboard`);
+        const isAdmin = !!localStorage.getItem('userData') && !localStorage.getItem('studentData');
+        const api = isAdmin ? await createAdminApi() : await createStudentApi({ token: user.user?.authToken || '' });
+        const response: any = await api.get(`/quizzes/get-final-leaderboard`);
 
 
         setSchools(transformLeaderboard(response.data.data));
@@ -71,8 +78,6 @@ const Leaderboard: React.FC = () => {
         console.error('Error fetching leaderboard data:', error);
 
       }
-
-
 
 
 
