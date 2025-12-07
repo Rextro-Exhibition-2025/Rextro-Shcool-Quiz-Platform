@@ -53,7 +53,7 @@ const Leaderboard: React.FC = () => {
   }, [router]);
 
   useEffect(() => {
-    console.log("callingggggggg");
+
 
     // Fetch leaderboard data from backend API
     const fetchLeaderboard = async () => {
@@ -61,7 +61,7 @@ const Leaderboard: React.FC = () => {
       try {
 
         const api = await createStudentApi({ token: user.user?.authToken || '' });
-        const response: any = await api.get(`/quizzes/get-final-round-leaderboard`);
+        const response: any = await api.get(`/quizzes/get-final-leaderboard`);
 
 
         setSchools(transformLeaderboard(response.data.data));
