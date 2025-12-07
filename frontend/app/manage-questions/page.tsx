@@ -154,7 +154,7 @@ useEffect(() => {
 								disabled={isLoadingTab}
 								className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321] bg-white"
 							>
-								{['set1', 'set2', 'set3', 'set4','set5', 'set6', 'set7', 'set8' ].map((set, idx) => (
+								{['set1', 'set2', 'set3', 'set4','set5', 'set6', 'set7', 'set8' , 'set9'].map((set, idx) => (
 									<option key={set} value={set}>{`Quiz ${idx + 1} - ${countsBySet[set] ?? 0}/20`}</option>
 								))}
 							</select>

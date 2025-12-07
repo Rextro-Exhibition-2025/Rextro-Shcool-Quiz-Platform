@@ -59,7 +59,7 @@ const Leaderboard: React.FC = () => {
   // }, [router]);
 
   useEffect(() => {
-    console.log("callingggggggg");
+
 
     // Fetch leaderboard data from backend API
     const fetchLeaderboard = async () => {
