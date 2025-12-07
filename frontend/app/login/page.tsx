@@ -157,11 +157,11 @@ export default function LoginPage() {
       if (response.ok && responseData.success) {
         
         // Check if user has already completed the quiz
-        if (responseData.data.hasEndedQuiz) {
-          setError('You have already completed the quiz. Thank you for participating!');
-          setLoading(false);
-          return;
-        }
+        // if (responseData.data.hasEndedQuiz) {
+        //   setError('You have already completed the quiz. Thank you for participating!');
+        //   setLoading(false);
+        //   return;
+        // }
 
         localStorage.setItem('authToken', responseData.data.authToken);
 
@@ -181,7 +181,7 @@ export default function LoginPage() {
                              responseData.data.schoolName === "Faculty of Engineering";
         
         if (published || isTeamRextro) {
-          router.push('/quiz');
+          router.push('/answer-realtime-questions');
         } else {
           // Clear the login data since quiz is not available
           localStorage.removeItem('authToken');

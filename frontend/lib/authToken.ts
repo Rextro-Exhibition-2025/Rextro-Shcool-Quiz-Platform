@@ -37,6 +37,15 @@ export const useRedirectToQuizIfAuthenticated = (): { checking: boolean } => {
     try {
       const token = localStorage.getItem('authToken');
       const studentData = localStorage.getItem('studentData') || localStorage.getItem('userData');
+      const currentPath = window.location.pathname;
+
+      // Don't redirect if already on quiz-related pages
+      const quizPaths = ['/quiz', '/answer-realtime-questions', '/leaderboard','/','/login'];
+      if (quizPaths.includes(currentPath)) {
+        setChecking(false);
+        return;
+      }
+
       if (token && studentData && isTokenValid(token)) {
         // Use replace so history isn't polluted
         router.replace('/quiz');
