@@ -8,7 +8,7 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         // Check if user is authenticated for protected routes
-        if (req.nextUrl.pathname.startsWith('/add-question')) {
+        if (req.nextUrl.pathname.startsWith('/add-questionn')) {
           return !!token;
         }
         return true;
