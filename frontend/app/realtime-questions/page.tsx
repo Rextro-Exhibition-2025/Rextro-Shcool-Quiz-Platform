@@ -1,6 +1,7 @@
 'use client';
 import { createAdminApi } from '@/interceptors/admins';
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useSocket } from '@/contexts/SocketContext';
 import { Question } from '../add-question/page';
 

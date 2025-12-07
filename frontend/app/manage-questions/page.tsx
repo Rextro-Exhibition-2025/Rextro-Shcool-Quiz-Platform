@@ -177,6 +177,12 @@ useEffect(() => {
 						>
 							Update Scoreboard
 						</button>
+						<button
+							onClick={() => router.push("/leaderboard")}
+							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-lg transition-all duration-200 cursor-pointer"
+						>
+							Leaderboard
+						</button>
 					</div>
 				</div>
 
