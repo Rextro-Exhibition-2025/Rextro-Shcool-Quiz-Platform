@@ -1,10 +1,12 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Trophy, Star, Menu, ChevronDown, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Trophy, Star, Menu, ChevronDown, X, ChevronLeft } from 'lucide-react';
 import { createStudentApi } from '@/interceptors/student';
 import { useUser } from '@/contexts/UserContext';
 import { transformLeaderboard } from './leaderboardTransformer';
-import { useRedirectToQuizIfAuthenticated } from '@/lib/authToken';
+import { isTokenValid } from '@/lib/authToken';
+
 
 interface StudentData {
   id: number;
@@ -21,12 +23,34 @@ interface SchoolData {
 }
 
 const Leaderboard: React.FC = () => {
-  const { checking } = useRedirectToQuizIfAuthenticated();
+  const router = useRouter();
   const [selectedSchool, setSelectedSchool] = useState<SchoolData | null>(null);
   // const [userQuizResult, setUserQuizResult] = useState<any>(null);
   const [schools, setSchools] = useState<SchoolData[]>([]);
   const [published, setPublished] = useState<boolean>(false);
   const user = useUser();
+
+  useEffect(() => {
+    // Check if user is authenticated (same logic as quiz page)
+    const authToken = localStorage.getItem('authToken');
+    const studentData = localStorage.getItem('studentData');
+
+    if (!authToken || !studentData) {
+      router.push('/login');
+      return;
+    }
+
+    try {
+      const parsedData = JSON.parse(studentData);
+      if (!parsedData.memberName || !parsedData.schoolName) {
+        router.push('/login');
+        return;
+      }
+    } catch (error) {
+      router.push('/login');
+      return;
+    }
+  }, [router]);
 
   useEffect(() => {
     console.log("callingggggggg");
@@ -37,7 +61,7 @@ const Leaderboard: React.FC = () => {
       try {
 
         const api = await createStudentApi({ token: user.user?.authToken || '' });
-        const response: any = await api.get(`/quizzes/get-leaderboard`);
+        const response: any = await api.get(`/quizzes/get-final-round-leaderboard`);
 
 
         setSchools(transformLeaderboard(response.data.data));
@@ -275,13 +299,7 @@ const Leaderboard: React.FC = () => {
     };
   }, [selectedSchool]);
 
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#df7500]"></div>
-      </div>
-    );
-  }
+
 
   if (!published) {
     return (
@@ -340,9 +358,19 @@ const Leaderboard: React.FC = () => {
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
         {/* Header */}
         <div className=" mb-8">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: '#651321' }}>
-            Leaderboard
-          </h1>
+          <div className="flex items-center mb-4">
+            <button
+              onClick={() => router.push('/answer-realtime-questions')}
+              className="flex items-center space-x-2 px-4 py-2 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200 mr-4"
+              style={{ backgroundColor: '#651321' }}
+            >
+              <ChevronLeft size={20} />
+              <span>Back to Quiz</span>
+            </button>
+            <h1 className="text-4xl font-bold" style={{ color: '#651321' }}>
+              Leaderboard
+            </h1>
+          </div>
           <p className="text-gray-600">Quiz Rankings</p>
         </div>
 
