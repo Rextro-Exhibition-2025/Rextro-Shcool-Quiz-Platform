@@ -27,25 +27,27 @@ const NavBar = () => {
     <nav className="w-full border-b border-gray-200 bg-white">
       <div className="flex items-center justify-between px-4 md:px-8 py-2">
         {/* Logo Section */}
-        <div className="flex items-center gap-2 md:gap-4">
-          <Image
-            src="/t_Final logo_light_v.svg"
-            alt="Faculty of Engineering Logo"
-            width={80}
-            height={40}
-            className="md:w-[120px] md:h-[60px]"
-            style={{ objectFit: "contain" }}
-          />
-          <div className="flex flex-col leading-tight">
-            <span className="text-[10px] md:text-xs text-[#a67c52] font-semibold">
-              25 Years of Innovation & Excellence
-            </span>
-            <span className="text-sm md:text-lg font-semibold text-[#4b2e83]">
-              Faculty of Engineering
-            </span>
-            <span className="text-xs md:text-sm text-[#4b2e83]">University of Ruhuna</span>
+        <Link href="/">
+          <div className="flex items-center gap-2 md:gap-4 cursor-pointer">
+            <Image
+              src="/t_Final logo_light_v.svg"
+              alt="Faculty of Engineering Logo"
+              width={80}
+              height={40}
+              className="md:w-[120px] md:h-[60px]"
+              style={{ objectFit: "contain" }}
+            />
+            <div className="flex flex-col leading-tight">
+              <span className="text-[10px] md:text-xs text-[#a67c52] font-semibold">
+                25 Years of Innovation & Excellence
+              </span>
+              <span className="text-sm md:text-lg font-semibold text-[#4b2e83]">
+                Faculty of Engineering
+              </span>
+              <span className="text-xs md:text-sm text-[#4b2e83]">University of Ruhuna</span>
+            </div>
           </div>
-        </div>
+        </Link>
 
         {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center gap-8">

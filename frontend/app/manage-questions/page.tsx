@@ -138,7 +138,7 @@ useEffect(() => {
 					<div className="flex items-center gap-3">
 						<button
 							onClick={handlePublish}
-							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-white text-[#651321] border border-[#dfd7d0] shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-white text-[#651321] border border-[#dfd7d0] shadow-sm hover:scale-105 hover:shadow-lg transition-all duration-200 cursor-pointer"
 							aria-label="Publish Quizzers"
 						>
 							{/* simple publish label; use icon if desired */}
@@ -161,15 +161,21 @@ useEffect(() => {
 						</div>
 						<button
 							onClick={() => router.push("/add-question")}
-							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-lg transition-all duration-200 cursor-pointer"
 						>
 							<Plus size={18} /> Add New Question
 						</button>
 						<button
 							onClick={() => router.push("/realtime-questions")}
-							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200"
+							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-lg transition-all duration-200 cursor-pointer"
 						>
 							Realtime Questions
+						</button>
+						<button
+							onClick={() => router.push("/update-scoreboard")}
+							className="flex items-center gap-2 px-4 py-2 rounded-lg font-semibold bg-gradient-to-r from-[#df7500] to-[#651321] text-white shadow-sm hover:scale-105 hover:shadow-lg transition-all duration-200 cursor-pointer"
+						>
+							Update Scoreboard
 						</button>
 					</div>
 				</div>
@@ -219,7 +225,7 @@ useEffect(() => {
 												<button
 													onClick={() => handleEdit(q.id)}
 													disabled={loadingQuestionId === q.id}
-													className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm hover:scale-105 hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+													className="bg-gradient-to-r from-[#df7500] to-[#651321] text-white px-3 py-1 rounded-lg font-semibold flex items-center gap-1 shadow-sm hover:scale-105 hover:shadow-lg transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
 													title="Edit"
 												>
 													{loadingQuestionId === q.id ? (
