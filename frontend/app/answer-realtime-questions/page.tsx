@@ -73,11 +73,11 @@ const page = () => {
   }, [socket]);
 
   const handleSelect = (option: any) => {
-    if (selectedOption && selectedOption._id === option._id) {
-      handleSubmit();
-    } else {
+    // if (selectedOption && selectedOption._id === option._id) {
+    //   handleSubmit();
+    // } else 
       setSelectedOption(option);
-    }
+    
   };
 
   const handleSubmit = () => {
@@ -124,13 +124,13 @@ const page = () => {
         <div className="sticky top-0 z-10 bg-white rounded-2xl shadow-lg p-4 mb-6">
           <div className="flex items-center justify-between">
             <h1 className="text-xl md:text-2xl font-bold text-gray-800">Answer Realtime Questions</h1>
-            <button
+            {/* <button
               onClick={() => router.push('/leaderboard')}
               className="px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200"
               style={{ backgroundColor: '#651321' }}
             >
               Leaderboard
-            </button>
+            </button> */}
           </div>
         </div>
 
@@ -223,7 +223,7 @@ const page = () => {
             </div>
 
             {/* Submit Button */}
-            {/* <div className="mt-6 flex justify-start">
+            <div className="mt-6 flex justify-start">
               <button
                 onClick={handleSubmit}
                 disabled={!selectedOption}
@@ -234,7 +234,7 @@ const page = () => {
               >
                 Submit Answer
               </button>
-            </div> */}
+            </div>
 
             {/* Exit Button */}
             <div className="mt-6 flex justify-start">
