@@ -20,7 +20,7 @@ const page = () => {
     questionImage?: string;
   } | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number | null>(null);
+  const timerRef = useRef<number>(0);
   const {  submitQuestion } = useQuiz(); 
 
   useEffect(() => {
@@ -37,11 +37,19 @@ const page = () => {
       console.log('New question published:', data);
       setCurrentQuestion(data);
       setSelectedOption(null); // Reset selection for new question
-      setTimer(0);
+      timerRef.current = 120;
+      setTimer(120);
       if (intervalRef.current) clearInterval(intervalRef.current);
-      startTimeRef.current = performance.now();
       intervalRef.current = setInterval(() => {
-        setTimer(Number(((performance.now() - (startTimeRef.current || performance.now())) / 1000).toFixed(3)));
+        timerRef.current -= 0.01;
+        if (timerRef.current <= 0) {
+          timerRef.current = 0;
+          setTimer(0);
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        } else {
+          setTimer(Number(timerRef.current.toFixed(3)));
+        }
       }, 10); // update every 10ms for better accuracy
     };
 
@@ -54,9 +62,6 @@ const page = () => {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-
-
-
     };
 
     socket.on('connect', onConnect);
@@ -81,12 +86,12 @@ const page = () => {
   };
 
   const handleSubmit = () => {
-    if (!selectedOption || !currentQuestion || !startTimeRef.current) return;
-    if (intervalRef.current) {
+    if (!selectedOption || !currentQuestion) return;
+    if (intervalRef.current !== null) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    const timeSpent = Number(((performance.now() - startTimeRef.current) / 1000).toFixed(3));
+    const timeSpent = 120 - timerRef.current;
     setLastResult({
       timeSpent,
       optionId: selectedOption.option,
@@ -152,8 +157,8 @@ const page = () => {
               </div>
             )}
 
-            <div className="mb-6 text-lg font-mono" style={{ color: '#651321' }}>
-              Time: {timer.toFixed(3)} s
+            <div className={`mb-6 text-lg font-mono ${timer <= 30 ? 'text-red-500' : ''} ${timer <= 0 ? 'animate-pulse' : ''}`} style={{ color: timer > 30 ? '#651321' : undefined }}>
+              Time: {Math.floor(timer / 60).toString().padStart(2, '0')}:{Math.floor(timer % 60).toString().padStart(2, '0')}
             </div>
 
             {/* Answers */}

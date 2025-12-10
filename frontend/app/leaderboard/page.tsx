@@ -69,9 +69,35 @@ const Leaderboard: React.FC = () => {
         const isAdmin = !!localStorage.getItem('userData') && !localStorage.getItem('studentData');
         const api = isAdmin ? await createAdminApi() : await createStudentApi({ token: user.user?.authToken || '' });
         const response: any = await api.get(`/quizzes/get-final-leaderboard`);
+        //console.log(response)
 
+        // Define the list of allowed schools
+        const allowedSchools = [
+          "Ananda College",
+          "Defence Services College,Colombo 02",
+          "G/Dharmasoka College",
+          "Harischandra National College ,Negombo",
+          "Jaffna Hindu College",
+          "Mahinda Collage - Galle",
+          "Nalanda Collage, Colombo 10",
+          "Panadura Balika Maha Vidyalaya",
+          "Rahula College",
+          "Royal College, Colombo 07",
+          "St. John's College, Jaffna",
+          "BT/St.Michael's College National School",
+          "St.Servatius College",
+          "MR/ST Thomas' Girls High School Matara",
+          "Visakha College Colombo",
+          "Km/Km/ Vipulananda Central college"
+        ];
 
-        setSchools(transformLeaderboard(response.data.data));
+        
+
+        // Filter the data to include only allowed schools
+        
+        const filteredData = response.data.data.filter((school: any) => allowedSchools.includes(school.schoolName));
+
+        setSchools(transformLeaderboard(filteredData));
 
       } catch (error) {
 
@@ -441,47 +467,90 @@ const Leaderboard: React.FC = () => {
             <h2 className="text-xl font-bold text-white">Ranks</h2>
           </div>
 
-          {/* Add a max height and make it scrollable */}
-          <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
-            {schools.map((school, index) => (
-              <div
-                key={school.id}
-                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
-                onClick={() => setSelectedSchool(school)}
-              >
-                <div className="flex items-center space-x-4">
-                  {/* Rank Badge */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm${school.rank <= 3 ? '' : ' ' + getRankBadgeStyle(school.rank)}`}>
-                    {school.rank === 1 ? (
-                      <img src="/Rank_1.png" alt="1st Place" className="w-8 h-8 object-contain" />
-                    ) : school.rank === 2 ? (
-                      <img src="/Rank_2.png" alt="2nd Place" className="w-8 h-8 object-contain" />
-                    ) : school.rank === 3 ? (
-                      <img src="/Rank_3.png" alt="3rd Place" className="w-8 h-8 object-contain" />
-                    ) : (
-                      school.rank
-                    )}
+          {/* Split into two columns */}
+          <div className="grid grid-cols-2 divide-x divide-gray-100">
+            <div className="divide-y divide-gray-100">
+              {schools.slice(0, 8).map((school, index) => (
+                <div
+                  key={school.id}
+                  className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
+                  onClick={() => setSelectedSchool(school)}
+                >
+                  <div className="flex items-center space-x-4">
+                    {/* Rank Badge */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm${school.rank <= 3 ? '' : ' ' + getRankBadgeStyle(school.rank)}`}>
+                      {school.rank === 1 ? (
+                        <img src="/Rank_1.png" alt="1st Place" className="w-8 h-8 object-contain" />
+                      ) : school.rank === 2 ? (
+                        <img src="/Rank_2.png" alt="2nd Place" className="w-8 h-8 object-contain" />
+                      ) : school.rank === 3 ? (
+                        <img src="/Rank_3.png" alt="3rd Place" className="w-8 h-8 object-contain" />
+                      ) : (
+                        school.rank
+                      )}
+                    </div>
+
+                    {/* School Name */}
+                    <div>
+                      <h3 className="font-semibold text-gray-800 group-hover:text-orange-600 transition-colors">
+                        {school.rank}. {school.name}
+                      </h3>
+                    </div>
                   </div>
 
-                  {/* School Name */}
-                  <div>
-                    <h3 className="font-semibold text-gray-800 group-hover:text-orange-600 transition-colors">
-                      {school.name}
-                    </h3>
+                  <div className="flex items-center space-x-4">
+                    {/* Score */}
+                    <div className="text-right">
+                      <span className="text-2xl font-bold" style={{ color: '#df7500' }}>
+                        {school.score}
+                      </span>
+                    </div>
+
                   </div>
                 </div>
+              ))}
+            </div>
+            <div className="divide-y divide-gray-100">
+              {schools.slice(8, 16).map((school, index) => (
+                <div
+                  key={school.id}
+                  className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
+                  onClick={() => setSelectedSchool(school)}
+                >
+                  <div className="flex items-center space-x-4">
+                    {/* Rank Badge */}
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm${school.rank <= 3 ? '' : ' ' + getRankBadgeStyle(school.rank)}`}>
+                      {school.rank === 1 ? (
+                        <img src="/Rank_1.png" alt="1st Place" className="w-8 h-8 object-contain" />
+                      ) : school.rank === 2 ? (
+                        <img src="/Rank_2.png" alt="2nd Place" className="w-8 h-8 object-contain" />
+                      ) : school.rank === 3 ? (
+                        <img src="/Rank_3.png" alt="3rd Place" className="w-8 h-8 object-contain" />
+                      ) : (
+                        school.rank
+                      )}
+                    </div>
 
-                <div className="flex items-center space-x-4">
-                  {/* Score */}
-                  <div className="text-right">
-                    <span className="text-2xl font-bold" style={{ color: '#df7500' }}>
-                      {school.score}
-                    </span>
+                    {/* School Name */}
+                    <div>
+                      <h3 className="font-semibold text-gray-800 group-hover:text-orange-600 transition-colors">
+                        {school.rank}. {school.name}
+                      </h3>
+                    </div>
                   </div>
 
+                  <div className="flex items-center space-x-4">
+                    {/* Score */}
+                    <div className="text-right">
+                      <span className="text-2xl font-bold" style={{ color: '#df7500' }}>
+                        {school.score}
+                      </span>
+                    </div>
+
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
