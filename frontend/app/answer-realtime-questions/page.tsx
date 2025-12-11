@@ -20,7 +20,7 @@ const page = () => {
     questionImage?: string;
   } | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number | null>(null);
+  const timerRef = useRef<number>(0);
   const {  submitQuestion } = useQuiz(); 
 
   useEffect(() => {
@@ -37,11 +37,21 @@ const page = () => {
       console.log('New question published:', data);
       setCurrentQuestion(data);
       setSelectedOption(null); // Reset selection for new question
-      setTimer(0);
+      timerRef.current = 120;
+      setTimer(120);
       if (intervalRef.current) clearInterval(intervalRef.current);
-      startTimeRef.current = performance.now();
       intervalRef.current = setInterval(() => {
-        setTimer(Number(((performance.now() - (startTimeRef.current || performance.now())) / 1000).toFixed(3)));
+        timerRef.current -= 0.01;
+        if (timerRef.current <= 0) {
+          timerRef.current = 0;
+          setTimer(0);
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+          }
+          intervalRef.current = null;
+        } else {
+          setTimer(Number(timerRef.current.toFixed(3)));
+        }
       }, 10); // update every 10ms for better accuracy
     };
 
@@ -54,9 +64,6 @@ const page = () => {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-
-
-
     };
 
     socket.on('connect', onConnect);
@@ -73,20 +80,20 @@ const page = () => {
   }, [socket]);
 
   const handleSelect = (option: any) => {
-    if (selectedOption && selectedOption._id === option._id) {
-      handleSubmit();
-    } else {
+    // if (selectedOption && selectedOption._id === option._id) {
+    //   handleSubmit();
+    // } else 
       setSelectedOption(option);
-    }
+    
   };
 
   const handleSubmit = () => {
-    if (!selectedOption || !currentQuestion || !startTimeRef.current) return;
+    if (!selectedOption || !currentQuestion) return;
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    const timeSpent = Number(((performance.now() - startTimeRef.current) / 1000).toFixed(3));
+    const timeSpent = 120 - timerRef.current;
     setLastResult({
       timeSpent,
       optionId: selectedOption.option,
@@ -124,13 +131,13 @@ const page = () => {
         <div className="sticky top-0 z-10 bg-white rounded-2xl shadow-lg p-4 mb-6">
           <div className="flex items-center justify-between">
             <h1 className="text-xl md:text-2xl font-bold text-gray-800">Answer Realtime Questions</h1>
-            <button
+            {/* <button
               onClick={() => router.push('/leaderboard')}
               className="px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200"
               style={{ backgroundColor: '#651321' }}
             >
               Leaderboard
-            </button>
+            </button> */}
           </div>
         </div>
 
@@ -152,8 +159,8 @@ const page = () => {
               </div>
             )}
 
-            <div className="mb-6 text-lg font-mono" style={{ color: '#651321' }}>
-              Time: {timer.toFixed(3)} s
+            <div className={`mb-6 text-lg font-mono ${timer <= 30 ? 'text-red-500' : ''} ${timer <= 0 ? 'animate-pulse' : ''}`} style={{ color: timer > 30 ? '#651321' : undefined }}>
+              Time: {Math.floor(timer / 60).toString().padStart(2, '0')}:{Math.floor(timer % 60).toString().padStart(2, '0')}
             </div>
 
             {/* Answers */}
@@ -223,7 +230,7 @@ const page = () => {
             </div>
 
             {/* Submit Button */}
-            {/* <div className="mt-6 flex justify-start">
+            <div className="mt-6 flex justify-start">
               <button
                 onClick={handleSubmit}
                 disabled={!selectedOption}
@@ -234,7 +241,7 @@ const page = () => {
               >
                 Submit Answer
               </button>
-            </div> */}
+            </div>
 
             {/* Exit Button */}
             <div className="mt-6 flex justify-start">
