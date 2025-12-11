@@ -7,6 +7,7 @@ import { createAdminApi } from '@/interceptors/admins';
 import { useUser } from '@/contexts/UserContext';
 import { transformLeaderboard } from './leaderboardTransformer';
 import { isTokenValid } from '@/lib/authToken';
+import { allowedSchools } from '@/lib/constants';
 
 
 interface StudentData {
@@ -72,24 +73,7 @@ const Leaderboard: React.FC = () => {
         //console.log(response)
 
         // Define the list of allowed schools
-        const allowedSchools = [
-          "Ananda College",
-          "Defence Services College,Colombo 02",
-          "G/Dharmasoka College",
-          "Harischandra National College ,Negombo",
-          "Jaffna Hindu College",
-          "Mahinda Collage - Galle",
-          "Nalanda Collage, Colombo 10",
-          "Panadura Balika Maha Vidyalaya",
-          "Rahula College",
-          "Royal College, Colombo 07",
-          "St. John's College, Jaffna",
-          "BT/St.Michael's College National School",
-          "St.Servatius College",
-          "MR/ST Thomas' Girls High School Matara",
-          "Visakha College Colombo",
-          "Km/Km/ Vipulananda Central college"
-        ];
+      
 
         
 
@@ -389,27 +373,27 @@ const Leaderboard: React.FC = () => {
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
         {/* Header */}
         <div className=" mb-8">
-          <div className="flex items-center mb-4">
-            <button
+          <div className="flex items-center justify-center  my-4">
+            {/* <button
               onClick={() => router.push('/answer-realtime-questions')}
               className="flex items-center space-x-2 px-4 py-2 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200 mr-4"
               style={{ backgroundColor: '#651321' }}
             >
               <ChevronLeft size={20} />
               <span>Back to Quiz</span>
-            </button>
-            <h1 className="text-4xl font-bold" style={{ color: '#651321' }}>
+            </button> */}
+            <h1 className="text-4xl font-bold text-center" style={{ color: '#651321' }}>
               Leaderboard
             </h1>
           </div>
-          <p className="text-gray-600">Quiz Rankings</p>
+       
         </div>
 
 
 
         {/* Top 3 Podium */}
-        <div className="flex justify-center items-end mb-12 space-x-6">
-          {/* Second Place */}
+        {/* <div className="flex justify-center items-end mb-12 space-x-6">
+
           <div className="text-center bg-white p-8 shadow-lg flex flex-col items-center justify-center w-44 md:w-56" style={{ borderRadius: '50px' }}>
             <div className="relative flex items-center justify-center">
               <img
@@ -426,7 +410,7 @@ const Leaderboard: React.FC = () => {
             </h3>
           </div>
 
-          {/* First Place */}
+     
           <div className="text-center mb-10 p-10 bg-white shadow-xl flex flex-col items-center justify-center w-56 md:w-72" style={{ borderRadius: '50px' }}>
             <div className="relative flex items-center justify-center">
               <img
@@ -443,7 +427,7 @@ const Leaderboard: React.FC = () => {
             </h3>
           </div>
 
-          {/* Third Place */}
+         
           <div className="text-center bg-white p-8 shadow-lg flex flex-col items-center justify-center w-44 md:w-56" style={{ borderRadius: '50px' }}>
             <div className="relative flex items-center justify-center">
               <img
@@ -459,7 +443,7 @@ const Leaderboard: React.FC = () => {
               {schools[2]?.name}
             </h3>
           </div>
-        </div>
+        </div> */}
 
         {/* Full Rankings Table */}
         <div className="bg-white rounded-xl shadow-xl overflow-hidden">

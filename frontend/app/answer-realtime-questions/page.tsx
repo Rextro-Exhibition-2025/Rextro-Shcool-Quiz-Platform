@@ -45,7 +45,9 @@ const page = () => {
         if (timerRef.current <= 0) {
           timerRef.current = 0;
           setTimer(0);
-          clearInterval(intervalRef.current);
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+          }
           intervalRef.current = null;
         } else {
           setTimer(Number(timerRef.current.toFixed(3)));
@@ -87,7 +89,7 @@ const page = () => {
 
   const handleSubmit = () => {
     if (!selectedOption || !currentQuestion) return;
-    if (intervalRef.current !== null) {
+    if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
