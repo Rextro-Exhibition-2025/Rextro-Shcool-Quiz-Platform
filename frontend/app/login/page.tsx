@@ -6,6 +6,7 @@ import { useUser } from '@/contexts/UserContext';
 import axios from 'axios';
 import { useRedirectToQuizIfAuthenticated } from '@/lib/authToken';
 import { SchoolsApiResponse, SchoolTeam } from '@/types/schools';
+import { allowedSchools } from '@/lib/constants';
 
 interface LoginFormResponse {
   success: boolean;
@@ -62,9 +63,36 @@ export default function LoginPage() {
 
         const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
 
-        console.log('Fetched schools:', response.data);
+        
+        // Define the list of allowed schools
+        const allowedSchools = [
+          "Ananda College",
+          "Defence Services College,Colombo 02",
+          "G/Dharmasoka College",
+          "Harischandra National College ,Negombo",
+          "Jaffna Hindu College",
+          "Mahinda Collage - Galle",
+          "Nalanda Collage, Colombo 10",
+          "Panadura Balika Maha Vidyalaya",
+          "Rahula College",
+          "Royal College, Colombo 07",
+          "St. John's College, Jaffna",
+          "BT/St.Michael's College National School",
+          "St.Servatius College",
+          "MR/ST Thomas' Girls High School Matara",
+          "Visakha College Colombo",
+          "Km/Km/ Vipulananda Central college"
+        ];
 
-        setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
+        
+
+        // Filter the data to include only allowed schools
+        
+        const filteredData = response.data.data.filter((school: any) => allowedSchools.includes(school.schoolName));
+
+        //console.log('Fetched schools:', filteredData);
+
+        setSchools(['Select your school', ...filteredData.map((s: SchoolTeam) => s.schoolName)]);
 
 
       } catch (error) {
@@ -105,7 +133,7 @@ export default function LoginPage() {
     setError('');
 
     // Basic validation
-    if (!formData.memberName || !formData.password || !formData.schoolName || !formData.medium) {
+    if ( !formData.password || !formData.schoolName ) {
       setError('Please fill in all fields');
       setLoading(false);
       return;
@@ -118,13 +146,9 @@ export default function LoginPage() {
       // For now, we'll simulate a successful login after 1 second
       const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
 
-      const studentId = formData.memberName;
+     
 
-      if (studentId.length !== 9) {
-        setError('Student ID must be exactly 9 characters. Check for ending/starting spaces.');
-        setLoading(false);
-        return;
-      }
+   
 
 
       const response = await fetch(url, {
@@ -134,9 +158,9 @@ export default function LoginPage() {
         },
         body: JSON.stringify({
           schoolName: formData.schoolName, // Backend expects 'teamName'
-          studentId: formData.memberName,
+          
           password: formData.password,
-          medium: formData.medium
+          
         })
       });
 
@@ -205,10 +229,21 @@ export default function LoginPage() {
 
         const response = await axios.get<SchoolsApiResponse>(`${process.env.NEXT_PUBLIC_API_URL}/school-teams`);
 
-        console.log('Fetched schools:', response.data);
+        //console.log('Fetched schools:', response.data);
 
-        setSchools(['Select your school', ...response.data.data.map((s: SchoolTeam) => s.schoolName)]);
 
+        
+
+        
+
+        // Filter the data to include only allowed schools
+        
+        const filteredData = response.data.data.filter((school: any) => allowedSchools.includes(school.schoolName));
+
+        //console.log('Fetched schools:', filteredData);
+
+
+        setSchools(['Select your school', ...filteredData.map((s: SchoolTeam) => s.schoolName)]);
 
       } catch (error) {
 
@@ -274,7 +309,7 @@ export default function LoginPage() {
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Student ID */}
-            <div>
+            {/* <div>
               <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-2">
                 Student ID
               </label>
@@ -293,7 +328,7 @@ export default function LoginPage() {
                   required
                 />
               </div>
-            </div>
+            </div> */}
 
             {/* School Selection */}
             <div>
@@ -322,7 +357,7 @@ export default function LoginPage() {
             </div>
 
             {/* Medium Selection */}
-            <div>
+            {/* <div>
               <label htmlFor="medium" className="block text-sm font-medium text-gray-700 mb-2">
                 Medium
               </label>
@@ -338,7 +373,7 @@ export default function LoginPage() {
                 <option value="S">සිංහල</option>
                 <option value="E">English</option>
               </select>
-            </div>
+            </div> */}
 
             {/* Password */}
             <div>

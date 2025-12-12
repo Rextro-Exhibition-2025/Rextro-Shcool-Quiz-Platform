@@ -1,6 +1,6 @@
 'use client';
 import { createAdminApi } from '@/interceptors/admins';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSocket } from '@/contexts/SocketContext';
 import { Question } from '../add-question/page';
@@ -8,6 +8,8 @@ import { Question } from '../add-question/page';
 const page = () => {
     const [questions, setQuestions] = useState<any>();
     const [scrollY, setScrollY] = useState(0);
+    const [timer, setTimer] = useState<number>(0);
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const { socket } = useSocket();
 
     useEffect(() => {
@@ -24,23 +26,41 @@ const page = () => {
     }, []);
 
     const handlePublish = async (question: Question) => {
-     
-        
+
+
         if (socket) {
-     
+
             socket.emit('publish_question', { question });
         }
-        // alert(`Publish question with ID: ${questionId}`);
+        // Start timer when publishing (countdown from 120 seconds)
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setTimer(120);
+        intervalRef.current = setInterval(() => {
+            setTimer(prev => {
+                if (prev <= 1) {
+                    clearInterval(intervalRef.current!);
+                    intervalRef.current = null;
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
     };
 
 
     const handleUnpublish = async () => {
-     
-        
+
+
         if (socket) {
-     
+
             socket.emit('unpublish_question');
         }
+        // Stop timer when unpublishing
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+        setTimer(0);
 
     };
 
@@ -70,13 +90,18 @@ const page = () => {
                 <div className="sticky top-0 z-10 bg-white rounded-2xl shadow-lg p-4 mb-6">
                     <div className="flex items-center justify-between">
                         <h1 className="text-xl md:text-2xl font-bold text-gray-800">Realtime Questions</h1>
-                        <button
-                            className="px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl active:scale-95 active:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 hover:bg-red-600"
-                            style={{ backgroundColor: '#dc2626' }}
-                            onClick={() => handleUnpublish()}
-                        >
-                            Unpublish
-                        </button>
+                        <div className="flex items-center space-x-4">
+                            <div className={`text-lg font-mono ${timer <= 30 ? 'text-red-500' : ''} ${timer <= 0 ? 'animate-pulse' : ''}`} style={{ color: timer > 30 ? '#651321' : undefined }}>
+                                Time: {Math.floor(timer / 60).toString().padStart(2, '0')}:{Math.floor(timer % 60).toString().padStart(2, '0')}
+                            </div>
+                            <button
+                                className="px-6 py-3 rounded-xl font-medium text-white shadow-lg hover:shadow-xl active:scale-95 active:shadow-md transition-all duration-200 cursor-pointer hover:scale-105 hover:bg-red-600"
+                                style={{ backgroundColor: '#dc2626' }}
+                                onClick={() => handleUnpublish()}
+                            >
+                                Unpublish
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -87,11 +112,11 @@ const page = () => {
                             <div key={q._id} className="bg-white rounded-2xl shadow-lg p-6">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex-1">
-                                        <div className="flex items-center space-x-3 mb-3">
-                                            <span className="bg-[#651321] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+                                        <div className="flex items-start space-x-3 mb-3">
+                                            <span className="bg-[#651321] text-white w-8 h-8 min-w-[32px] min-h-[32px] rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">
                                                 {idx + 1}
                                             </span>
-                                            <h3 className="text-lg md:text-xl font-semibold text-gray-800">
+                                            <h3 className="text-lg md:text-xl font-semibold text-gray-800 flex-1">
                                                 {q.question}
                                             </h3>
                                         </div>
