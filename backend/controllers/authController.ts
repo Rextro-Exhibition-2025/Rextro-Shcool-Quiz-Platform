@@ -3,7 +3,7 @@ import SchoolTeam from "../models/SchoolTeam.js";
 
 export const loginMember = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { schoolName, password, studentId } = req.body;
+        const { schoolName, password } = req.body;
    
 
         if (!schoolName || !password) {
@@ -43,10 +43,11 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
 
         // Generate auth token for the member
         const authToken = schoolTeam.generateAuthTokenForMember(member.name);
+      
 
         // Update only the matched member using positional operator to avoid full-document validation
         const updatedTeam = await SchoolTeam.findOneAndUpdate(
-            { _id: schoolTeam._id, "members.studentId": studentId },
+            { _id: schoolTeam._id, "members.studentId": member.studentId },
             {
                 $set: {
                     "members.$.isLoggedIn": true,
@@ -57,7 +58,7 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
         );
 
         // Find updated member for response
-        const updatedMember = updatedTeam?.members.find((m) => m.studentId === studentId) || member;
+        const updatedMember = updatedTeam?.members[0]  || member;
 
         res.status(200).json({
             success: true,

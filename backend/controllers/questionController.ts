@@ -218,9 +218,9 @@ export const submitAnswer = async (req: Request, res: Response) => {
     // Example: max score 100, min score 10, linear decrease up to 30 seconds
     let score = 0;
     if (isCorrect) {
-      const maxScore = 100;
-      const minScore = 10;
-      const maxTime = 30; // seconds
+      const maxScore = 10;
+      const minScore = 3;
+      const maxTime = 120; // seconds
       // Clamp timeSpent to maxTime
       const time = Math.max(0, Math.min(Number(timeSpent), maxTime));
       // Linear interpolation: faster = higher score

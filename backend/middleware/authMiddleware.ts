@@ -31,6 +31,7 @@ export const protect = async (
             req.headers.authorization.startsWith('Bearer')
         ) {
             token = req.headers.authorization.split(' ')[1];
+
         }
 
         // Check if token exists
@@ -76,7 +77,7 @@ export const protect = async (
             console.log("Team found:", team.teamName);
 
             // Find the member in the team
-            const member = team.members.find(m => m.name === decoded.memberName);
+            const member = team.members[0];
 
             if (!member) {
                 console.log("Member not found:", decoded.memberName);
@@ -87,11 +88,15 @@ export const protect = async (
                 return;
             }
 
+            
+
             // Check if member is logged in and has matching token
             if (!member.isLoggedIn || member.authToken !== token) {
                 console.log("Member not logged in or token mismatch");
                 console.log("Member isLoggedIn:", member.isLoggedIn);
                 console.log("Stored token matches:", member.authToken === token);
+                console.log("Stored token:", member.authToken);
+                console.log("Provided token:", token);
                 res.status(401).json({
                     success: false,
                     message: 'Not authorized - member not logged in or token mismatch'
