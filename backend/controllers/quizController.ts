@@ -266,11 +266,7 @@ export const checkQuizzesPublishedStatus = async (req: Request, res: Response) =
 
 
 export const getFinalRoundLeaderBoard = async (req: Request, res: Response) => {
-
-
-  
-
-  try {
+try {
 
     const schools = await SchoolTeam.find().lean();
     const schoolsWithScores = schools.map(school => {
