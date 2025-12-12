@@ -372,8 +372,8 @@ const Leaderboard: React.FC = () => {
       }} />
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
         {/* Header */}
-        <div className=" mb-8">
-          <div className="flex items-center justify-center  my-4">
+        <div className=" mb-3">
+          <div className="flex items-center justify-center  my-2">
             {/* <button
               onClick={() => router.push('/answer-realtime-questions')}
               className="flex items-center space-x-2 px-4 py-2 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200 mr-4"
@@ -382,7 +382,7 @@ const Leaderboard: React.FC = () => {
               <ChevronLeft size={20} />
               <span>Back to Quiz</span>
             </button> */}
-            <h1 className="text-4xl font-bold text-center" style={{ color: '#651321' }}>
+            <h1 className="text-2xl font-bold text-center" style={{ color: '#651321' }}>
               Leaderboard
             </h1>
           </div>
@@ -447,28 +447,28 @@ const Leaderboard: React.FC = () => {
 
         {/* Full Rankings Table */}
         <div className="bg-white rounded-xl shadow-xl overflow-hidden">
-          <div className="p-6 border-b flex justify-center items-center" style={{ backgroundColor: '#651321' }}>
-            <h2 className="text-xl font-bold text-white">Ranks</h2>
+          <div className="p-2 border-b flex justify-center items-center" style={{ backgroundColor: '#651321' }}>
+            <h2 className="text-lg font-bold text-white">Ranks</h2>
           </div>
 
           {/* Split into two columns */}
           <div className="grid grid-cols-2 divide-x divide-gray-100">
             <div className="divide-y divide-gray-100">
-              {schools.slice(0, 8).map((school, index) => (
+              {schools.slice(0, Math.ceil(schools.length / 2)).map((school, index) => (
                 <div
                   key={school.id}
-                  className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
+                  className="flex items-center justify-between p-2 hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
                   onClick={() => setSelectedSchool(school)}
                 >
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
                     {/* Rank Badge */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm${school.rank <= 3 ? '' : ' ' + getRankBadgeStyle(school.rank)}`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm${school.rank <= 3 ? '' : ' ' + getRankBadgeStyle(school.rank)}`}>
                       {school.rank === 1 ? (
-                        <img src="/Rank_1.png" alt="1st Place" className="w-8 h-8 object-contain" />
+                        <img src="/Rank_1.png" alt="1st Place" className="w-5 h-5 object-contain" />
                       ) : school.rank === 2 ? (
-                        <img src="/Rank_2.png" alt="2nd Place" className="w-8 h-8 object-contain" />
+                        <img src="/Rank_2.png" alt="2nd Place" className="w-5 h-5 object-contain" />
                       ) : school.rank === 3 ? (
-                        <img src="/Rank_3.png" alt="3rd Place" className="w-8 h-8 object-contain" />
+                        <img src="/Rank_3.png" alt="3rd Place" className="w-5 h-5 object-contain" />
                       ) : (
                         school.rank
                       )}
@@ -476,40 +476,39 @@ const Leaderboard: React.FC = () => {
 
                     {/* School Name */}
                     <div>
-                      <h3 className="font-semibold text-gray-800 group-hover:text-orange-600 transition-colors">
+                      <h3 className="font-semibold text-sm text-gray-800 group-hover:text-orange-600 transition-colors">
                         {school.rank}. {school.name}
                       </h3>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
                     {/* Score */}
                     <div className="text-right">
-                      <span className="text-2xl font-bold" style={{ color: '#df7500' }}>
+                      <span className="text-base font-bold" style={{ color: '#df7500' }}>
                         {school.score}
                       </span>
                     </div>
-
                   </div>
                 </div>
               ))}
             </div>
             <div className="divide-y divide-gray-100">
-              {schools.slice(8, 16).map((school, index) => (
+              {schools.slice(Math.ceil(schools.length / 2)).map((school, index) => (
                 <div
                   key={school.id}
-                  className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
+                  className="flex items-center justify-between p-2 hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
                   onClick={() => setSelectedSchool(school)}
                 >
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
                     {/* Rank Badge */}
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm${school.rank <= 3 ? '' : ' ' + getRankBadgeStyle(school.rank)}`}>
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm${school.rank <= 3 ? '' : ' ' + getRankBadgeStyle(school.rank)}`}>
                       {school.rank === 1 ? (
-                        <img src="/Rank_1.png" alt="1st Place" className="w-8 h-8 object-contain" />
+                        <img src="/Rank_1.png" alt="1st Place" className="w-5 h-5 object-contain" />
                       ) : school.rank === 2 ? (
-                        <img src="/Rank_2.png" alt="2nd Place" className="w-8 h-8 object-contain" />
+                        <img src="/Rank_2.png" alt="2nd Place" className="w-5 h-5 object-contain" />
                       ) : school.rank === 3 ? (
-                        <img src="/Rank_3.png" alt="3rd Place" className="w-8 h-8 object-contain" />
+                        <img src="/Rank_3.png" alt="3rd Place" className="w-5 h-5 object-contain" />
                       ) : (
                         school.rank
                       )}
@@ -517,16 +516,16 @@ const Leaderboard: React.FC = () => {
 
                     {/* School Name */}
                     <div>
-                      <h3 className="font-semibold text-gray-800 group-hover:text-orange-600 transition-colors">
+                      <h3 className="font-semibold text-sm text-gray-800 group-hover:text-orange-600 transition-colors">
                         {school.rank}. {school.name}
                       </h3>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2">
                     {/* Score */}
                     <div className="text-right">
-                      <span className="text-2xl font-bold" style={{ color: '#df7500' }}>
+                      <span className="text-base font-bold" style={{ color: '#df7500' }}>
                         {school.score}
                       </span>
                     </div>
