@@ -133,7 +133,7 @@ export default function LoginPage() {
     setError('');
 
     // Basic validation
-    if (!formData.memberName || !formData.password || !formData.schoolName || !formData.medium) {
+    if ( !formData.password || !formData.schoolName ) {
       setError('Please fill in all fields');
       setLoading(false);
       return;
@@ -146,13 +146,9 @@ export default function LoginPage() {
       // For now, we'll simulate a successful login after 1 second
       const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/login`;
 
-      const studentId = formData.memberName;
+     
 
-      if (studentId.length !== 9) {
-        setError('Student ID must be exactly 9 characters. Check for ending/starting spaces.');
-        setLoading(false);
-        return;
-      }
+   
 
 
       const response = await fetch(url, {
@@ -162,9 +158,9 @@ export default function LoginPage() {
         },
         body: JSON.stringify({
           schoolName: formData.schoolName, // Backend expects 'teamName'
-          studentId: formData.memberName,
+          
           password: formData.password,
-          medium: formData.medium
+          
         })
       });
 
@@ -313,7 +309,7 @@ export default function LoginPage() {
           {/* Login Form */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Student ID */}
-            <div>
+            {/* <div>
               <label htmlFor="studentId" className="block text-sm font-medium text-gray-700 mb-2">
                 Student ID
               </label>
@@ -332,7 +328,7 @@ export default function LoginPage() {
                   required
                 />
               </div>
-            </div>
+            </div> */}
 
             {/* School Selection */}
             <div>
@@ -361,7 +357,7 @@ export default function LoginPage() {
             </div>
 
             {/* Medium Selection */}
-            <div>
+            {/* <div>
               <label htmlFor="medium" className="block text-sm font-medium text-gray-700 mb-2">
                 Medium
               </label>
@@ -377,7 +373,7 @@ export default function LoginPage() {
                 <option value="S">සිංහල</option>
                 <option value="E">English</option>
               </select>
-            </div>
+            </div> */}
 
             {/* Password */}
             <div>
