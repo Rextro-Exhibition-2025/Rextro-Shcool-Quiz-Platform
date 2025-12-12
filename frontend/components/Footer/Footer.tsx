@@ -74,7 +74,7 @@ const Footer = () => {
             <span className="font-semibold text-sm md:text-base">Follow us:</span>
             <div className="flex gap-3 md:gap-4 text-xl md:text-2xl text-[#4b2e83]">
               <a
-                href="https://facebook.com"
+                href="https://www.facebook.com/rextro25"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:text-[#a67c52] transition-colors"
