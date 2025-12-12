@@ -112,11 +112,11 @@ const page = () => {
                             <div key={q._id} className="bg-white rounded-2xl shadow-lg p-6">
                                 <div className="flex items-start justify-between mb-4">
                                     <div className="flex-1">
-                                        <div className="flex items-center space-x-3 mb-3">
-                                            <span className="bg-[#651321] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+                                        <div className="flex items-start space-x-3 mb-3">
+                                            <span className="bg-[#651321] text-white w-8 h-8 min-w-[32px] min-h-[32px] rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">
                                                 {idx + 1}
                                             </span>
-                                            <h3 className="text-lg md:text-xl font-semibold text-gray-800">
+                                            <h3 className="text-lg md:text-xl font-semibold text-gray-800 flex-1">
                                                 {q.question}
                                             </h3>
                                         </div>

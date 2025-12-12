@@ -6,10 +6,10 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
         const { schoolName, password, studentId } = req.body;
    
 
-        if (!schoolName || !password || !studentId) {
+        if (!schoolName || !password) {
             res.status(400).json({
                 success: false,
-                message: "School name, password, and student ID are required",
+                message: "School name and password are required",
             });
             return;
         }
@@ -32,7 +32,7 @@ export const loginMember = async (req: Request, res: Response): Promise<void> =>
             return;
         }
 
-        const member = schoolTeam.members.find((m) => m.studentId === studentId);
+        const member = schoolTeam.members[0]
         if (!member) {
             res.status(404).json({
                 success: false,
