@@ -30,7 +30,7 @@ const NavBar = () => {
         <Link href="/">
           <div className="flex items-center gap-2 md:gap-4 cursor-pointer">
             <Image
-              src="/t_Final logo_light_v.svg"
+              src="/v1.png"
               alt="Faculty of Engineering Logo"
               width={80}
               height={40}
