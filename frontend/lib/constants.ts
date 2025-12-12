@@ -15,5 +15,7 @@
           "MR/ST Thomas' Girls High School Matara",
           "Visakha College Colombo",
           "Km/Km/ Vipulananda Central college",
-          "Faculty of Engineering"
+          "Faculty of Engineering",
+          "Sujatha Vidyalaya , Matara"
+
         ];

@@ -1,6 +1,7 @@
 "use client";
 import { createAdminApi } from "@/interceptors/admins";
 import { SchoolsApiResponse, SchoolTeam } from "@/types/schools";
+import { allowedSchools } from "@/lib/constants";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -27,7 +28,10 @@ export default function UpdateScoreboard() {
       try {
         const api = await createAdminApi();
         const response = await api.get<SchoolsApiResponse>("/school-teams");
-        setSchools(response.data.data);
+        const filteredSchools = response.data.data.filter((school: SchoolTeam) => 
+          allowedSchools.includes(school.schoolName)
+        );
+        setSchools(filteredSchools);
       } catch (error) {
         console.error("Error fetching schools:", error);
         setError("Failed to load schools");
@@ -46,8 +50,8 @@ export default function UpdateScoreboard() {
     }
 
     const scoreNum = parseInt(newScore);
-    if (isNaN(scoreNum) || scoreNum < 0) {
-      setError("Please enter a valid positive number for score");
+    if (isNaN(scoreNum)) {
+      setError("Please enter a valid number for score");
       return;
     }
 
@@ -149,8 +153,7 @@ export default function UpdateScoreboard() {
                 value={newScore}
                 onChange={(e) => setNewScore(e.target.value)}
                 className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#df7500] focus:border-transparent text-[#651321] placeholder-gray-500"
-                placeholder="Enter new total score"
-                min="0"
+                placeholder="Enter new total score (can be negative)"
                 required
               />
             </div>
