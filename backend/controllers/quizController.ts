@@ -2,44 +2,7 @@ import Quiz from '../models/Quiz.js';
 import type { Request, Response } from 'express';
 import SchoolTeam from '../models/SchoolTeam.js';
 
-export const getQuizWithQuestions = async (req: Request, res: Response) => {
 
-  
-  try {
-    const quizId = Number(req.params.quizId);
-    if (![1, 2, 3, 4, 5, 6, 7, 8,9].includes(quizId)) {
-      return res.status(400).json({ success: false, message: 'Invalid quizId. Must be 1, 2, 3, 4, 5, 6, 7, 8, or 9.' });
-    }
-
-    // Find the quiz and populate questions
-    const quiz = await Quiz.findOne({ quizId }).populate('questions');
-    if (!quiz) {
-      return res.status(404).json({ success: false, message: `Quiz with quizId ${quizId} not found.` });
-    }
-
-
-    
-    
-
-    // Remove correctOption from each question
-    const quizObj = quiz.toObject();
-    quizObj.questions = (quizObj.questions || []).map((q: any) => {
-      const { correctOption, ...rest } = q;
-      return rest;
-    });
-
-    return res.status(200).json({
-      success: true,
-      quiz: quizObj,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Error fetching quiz',
-      error: error instanceof Error ? error.message : 'Unknown error',
-    });
-  }
-};
 
 
 function countCorrectAnswers(submittedAnswers: { questionId: number, answer: string }[], correctAnswers: { questionId: number, correctOption: string }[]): number {
@@ -303,11 +266,7 @@ export const checkQuizzesPublishedStatus = async (req: Request, res: Response) =
 
 
 export const getFinalRoundLeaderBoard = async (req: Request, res: Response) => {
-
-
-  
-
-  try {
+try {
 
     const schools = await SchoolTeam.find().lean();
     const schoolsWithScores = schools.map(school => {
@@ -373,5 +332,44 @@ export const updateLeaderBoardManually = async (req: Request, res: Response) => 
     });
   }
 }
+
+export const getQuizWithQuestions = async (req: Request, res: Response) => {
+
+  
+  try {
+    const quizId = Number(req.params.quizId);
+    if (![1, 2, 3, 4, 5, 6, 7, 8,9].includes(quizId)) {
+      return res.status(400).json({ success: false, message: 'Invalid quizId. Must be 1, 2, 3, 4, 5, 6, 7, 8, or 9.' });
+    }
+
+    // Find the quiz and populate questions
+    const quiz = await Quiz.findOne({ quizId }).populate('questions');
+    if (!quiz) {
+      return res.status(404).json({ success: false, message: `Quiz with quizId ${quizId} not found.` });
+    }
+
+
+    
+    
+
+    // Remove correctOption from each question
+    const quizObj = quiz.toObject();
+    quizObj.questions = (quizObj.questions || []).map((q: any) => {
+      const { correctOption, ...rest } = q;
+      return rest;
+    });
+
+    return res.status(200).json({
+      success: true,
+      quiz: quizObj,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Error fetching quiz',
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+};
 
 

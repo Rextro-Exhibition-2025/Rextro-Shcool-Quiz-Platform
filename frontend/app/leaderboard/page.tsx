@@ -1,10 +1,14 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { Trophy, Star, Menu, ChevronDown, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Trophy, Star, Menu, ChevronDown, X, ChevronLeft } from 'lucide-react';
 import { createStudentApi } from '@/interceptors/student';
+import { createAdminApi } from '@/interceptors/admins';
 import { useUser } from '@/contexts/UserContext';
 import { transformLeaderboard } from './leaderboardTransformer';
-import { useRedirectToQuizIfAuthenticated } from '@/lib/authToken';
+import { isTokenValid } from '@/lib/authToken';
+import { allowedSchools } from '@/lib/constants';
+
 
 interface StudentData {
   id: number;
@@ -21,34 +25,69 @@ interface SchoolData {
 }
 
 const Leaderboard: React.FC = () => {
-  const { checking } = useRedirectToQuizIfAuthenticated();
+  const router = useRouter();
   const [selectedSchool, setSelectedSchool] = useState<SchoolData | null>(null);
   // const [userQuizResult, setUserQuizResult] = useState<any>(null);
   const [schools, setSchools] = useState<SchoolData[]>([]);
   const [published, setPublished] = useState<boolean>(false);
   const user = useUser();
 
+  // useEffect(() => {
+  //   // Check if user is authenticated (allow students or admins)
+  //   const authToken = localStorage.getItem('authToken');
+  //   const studentData = localStorage.getItem('studentData');
+  //   const userData = localStorage.getItem('userData');
+
+  //   // if (!authToken || (!studentData && !userData)) {
+  //   //   router.push('/login');
+  //   //   return;
+  //   // }
+
+  //   // For students, check required fields
+  //   if (studentData) {
+  //     try {
+  //       const parsedData = JSON.parse(studentData);
+  //       if (!parsedData.memberName || !parsedData.schoolName) {
+  //         router.push('/login');
+  //         return;
+  //       }
+  //     } catch (error) {
+  //       router.push('/login');
+  //       return;
+  //     }
+  //   }
+  //   // For admins (userData), no additional checks needed
+  // }, [router]);
+
   useEffect(() => {
-    console.log("callingggggggg");
+
 
     // Fetch leaderboard data from backend API
     const fetchLeaderboard = async () => {
 
       try {
 
-        const api = await createStudentApi({ token: user.user?.authToken || '' });
-        const response: any = await api.get(`/quizzes/get-leaderboard`);
+        const isAdmin = !!localStorage.getItem('userData') && !localStorage.getItem('studentData');
+        const api = isAdmin ? await createAdminApi() : await createStudentApi({ token: user.user?.authToken || '' });
+        const response: any = await api.get(`/quizzes/get-final-leaderboard`);
+        //console.log(response)
 
+        // Define the list of allowed schools
+      
 
-        setSchools(transformLeaderboard(response.data.data));
+        
+
+        // Filter the data to include only allowed schools
+        
+        const filteredData = response.data.data.filter((school: any) => allowedSchools.includes(school.schoolName));
+
+        setSchools(transformLeaderboard(filteredData));
 
       } catch (error) {
 
         console.error('Error fetching leaderboard data:', error);
 
       }
-
-
 
 
 
@@ -275,13 +314,7 @@ const Leaderboard: React.FC = () => {
     };
   }, [selectedSchool]);
 
-  if (checking) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
-        <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#df7500]"></div>
-      </div>
-    );
-  }
+
 
   if (!published) {
     return (
@@ -339,18 +372,28 @@ const Leaderboard: React.FC = () => {
       }} />
       <div className="max-w-4xl mx-auto" style={{ position: 'relative', zIndex: 2 }}>
         {/* Header */}
-        <div className=" mb-8">
-          <h1 className="text-4xl font-bold mb-2" style={{ color: '#651321' }}>
-            Leaderboard
-          </h1>
-          <p className="text-gray-600">Quiz Rankings</p>
+        <div className=" mb-3">
+          <div className="flex items-center justify-center  my-2">
+            {/* <button
+              onClick={() => router.push('/answer-realtime-questions')}
+              className="flex items-center space-x-2 px-4 py-2 rounded-xl font-medium text-white shadow-lg hover:shadow-xl transition-all duration-200 mr-4"
+              style={{ backgroundColor: '#651321' }}
+            >
+              <ChevronLeft size={20} />
+              <span>Back to Quiz</span>
+            </button> */}
+            <h1 className="text-2xl font-bold text-center" style={{ color: '#651321' }}>
+              Leaderboard
+            </h1>
+          </div>
+       
         </div>
 
 
 
         {/* Top 3 Podium */}
-        <div className="flex justify-center items-end mb-12 space-x-6">
-          {/* Second Place */}
+        {/* <div className="flex justify-center items-end mb-12 space-x-6">
+
           <div className="text-center bg-white p-8 shadow-lg flex flex-col items-center justify-center w-44 md:w-56" style={{ borderRadius: '50px' }}>
             <div className="relative flex items-center justify-center">
               <img
@@ -367,7 +410,7 @@ const Leaderboard: React.FC = () => {
             </h3>
           </div>
 
-          {/* First Place */}
+     
           <div className="text-center mb-10 p-10 bg-white shadow-xl flex flex-col items-center justify-center w-56 md:w-72" style={{ borderRadius: '50px' }}>
             <div className="relative flex items-center justify-center">
               <img
@@ -384,7 +427,7 @@ const Leaderboard: React.FC = () => {
             </h3>
           </div>
 
-          {/* Third Place */}
+         
           <div className="text-center bg-white p-8 shadow-lg flex flex-col items-center justify-center w-44 md:w-56" style={{ borderRadius: '50px' }}>
             <div className="relative flex items-center justify-center">
               <img
@@ -400,55 +443,97 @@ const Leaderboard: React.FC = () => {
               {schools[2]?.name}
             </h3>
           </div>
-        </div>
+        </div> */}
 
         {/* Full Rankings Table */}
         <div className="bg-white rounded-xl shadow-xl overflow-hidden">
-          <div className="p-6 border-b flex justify-center items-center" style={{ backgroundColor: '#651321' }}>
-            <h2 className="text-xl font-bold text-white">Ranks</h2>
+          <div className="p-2 border-b flex justify-center items-center" style={{ backgroundColor: '#651321' }}>
+            <h2 className="text-lg font-bold text-white">Ranks</h2>
           </div>
 
-          {/* Add a max height and make it scrollable */}
-          <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
-            {schools.map((school, index) => (
-              <div
-                key={school.id}
-                className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
-                onClick={() => setSelectedSchool(school)}
-              >
-                <div className="flex items-center space-x-4">
-                  {/* Rank Badge */}
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm${school.rank <= 3 ? '' : ' ' + getRankBadgeStyle(school.rank)}`}>
-                    {school.rank === 1 ? (
-                      <img src="/Rank_1.png" alt="1st Place" className="w-8 h-8 object-contain" />
-                    ) : school.rank === 2 ? (
-                      <img src="/Rank_2.png" alt="2nd Place" className="w-8 h-8 object-contain" />
-                    ) : school.rank === 3 ? (
-                      <img src="/Rank_3.png" alt="3rd Place" className="w-8 h-8 object-contain" />
-                    ) : (
-                      school.rank
-                    )}
+          {/* Split into two columns */}
+          <div className="grid grid-cols-2 divide-x divide-gray-100">
+            <div className="divide-y divide-gray-100">
+              {schools.slice(0, Math.ceil(schools.length / 2)).map((school, index) => (
+                <div
+                  key={school.id}
+                  className="flex items-center justify-between p-2 hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
+                  onClick={() => setSelectedSchool(school)}
+                >
+                  <div className="flex items-center space-x-2">
+                    {/* Rank Badge */}
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm${school.rank <= 3 ? '' : ' ' + getRankBadgeStyle(school.rank)}`}>
+                      {school.rank === 1 ? (
+                        <img src="/Rank_1.png" alt="1st Place" className="w-5 h-5 object-contain" />
+                      ) : school.rank === 2 ? (
+                        <img src="/Rank_2.png" alt="2nd Place" className="w-5 h-5 object-contain" />
+                      ) : school.rank === 3 ? (
+                        <img src="/Rank_3.png" alt="3rd Place" className="w-5 h-5 object-contain" />
+                      ) : (
+                        school.rank
+                      )}
+                    </div>
+
+                    {/* School Name */}
+                    <div>
+                      <h3 className="font-semibold text-sm text-gray-800 group-hover:text-orange-600 transition-colors">
+                        {school.rank}. {school.name}
+                      </h3>
+                    </div>
                   </div>
 
-                  {/* School Name */}
-                  <div>
-                    <h3 className="font-semibold text-gray-800 group-hover:text-orange-600 transition-colors">
-                      {school.name}
-                    </h3>
+                  <div className="flex items-center space-x-2">
+                    {/* Score */}
+                    <div className="text-right">
+                      <span className="text-base font-bold" style={{ color: '#df7500' }}>
+                        {school.score}
+                      </span>
+                    </div>
                   </div>
                 </div>
+              ))}
+            </div>
+            <div className="divide-y divide-gray-100">
+              {schools.slice(Math.ceil(schools.length / 2)).map((school, index) => (
+                <div
+                  key={school.id}
+                  className="flex items-center justify-between p-2 hover:bg-gray-50 transition-colors duration-200 group cursor-pointer"
+                  onClick={() => setSelectedSchool(school)}
+                >
+                  <div className="flex items-center space-x-2">
+                    {/* Rank Badge */}
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm${school.rank <= 3 ? '' : ' ' + getRankBadgeStyle(school.rank)}`}>
+                      {school.rank === 1 ? (
+                        <img src="/Rank_1.png" alt="1st Place" className="w-5 h-5 object-contain" />
+                      ) : school.rank === 2 ? (
+                        <img src="/Rank_2.png" alt="2nd Place" className="w-5 h-5 object-contain" />
+                      ) : school.rank === 3 ? (
+                        <img src="/Rank_3.png" alt="3rd Place" className="w-5 h-5 object-contain" />
+                      ) : (
+                        school.rank
+                      )}
+                    </div>
 
-                <div className="flex items-center space-x-4">
-                  {/* Score */}
-                  <div className="text-right">
-                    <span className="text-2xl font-bold" style={{ color: '#df7500' }}>
-                      {school.score}
-                    </span>
+                    {/* School Name */}
+                    <div>
+                      <h3 className="font-semibold text-sm text-gray-800 group-hover:text-orange-600 transition-colors">
+                        {school.rank}. {school.name}
+                      </h3>
+                    </div>
                   </div>
 
+                  <div className="flex items-center space-x-2">
+                    {/* Score */}
+                    <div className="text-right">
+                      <span className="text-base font-bold" style={{ color: '#df7500' }}>
+                        {school.score}
+                      </span>
+                    </div>
+
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
