@@ -64,6 +64,7 @@ const Leaderboard: React.FC = () => {
 
     // Fetch leaderboard data from backend API
     const fetchLeaderboard = async () => {
+      console.log("leaderboard is fetching")
       try {
         const isAdmin = !!localStorage.getItem('userData') && !localStorage.getItem('studentData');
         const api = isAdmin ? await createAdminApi() : await createStudentApi({ token: user.user?.authToken || '' });
