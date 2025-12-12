@@ -60,30 +60,43 @@ const Leaderboard: React.FC = () => {
   // }, [router]);
 
   useEffect(() => {
-    let intervalId: NodeJS.Timeout;
+
 
     // Fetch leaderboard data from backend API
     const fetchLeaderboard = async () => {
-      console.log("leaderboard is fetching")
+
       try {
+
         const isAdmin = !!localStorage.getItem('userData') && !localStorage.getItem('studentData');
         const api = isAdmin ? await createAdminApi() : await createStudentApi({ token: user.user?.authToken || '' });
         const response: any = await api.get(`/quizzes/get-final-leaderboard`);
+        //console.log(response)
+
+        // Define the list of allowed schools
+      
+
+        
+
+        // Filter the data to include only allowed schools
+        
         const filteredData = response.data.data.filter((school: any) => allowedSchools.includes(school.schoolName));
+
         setSchools(transformLeaderboard(filteredData));
+
       } catch (error) {
+
         console.error('Error fetching leaderboard data:', error);
+
       }
-    };
 
-    fetchLeaderboard(); // Initial fetch
 
-    // Set up interval to fetch leaderboard every 10 seconds
-    intervalId = setInterval(fetchLeaderboard, 10000);
 
-    // Cleanup on unmount
-    return () => clearInterval(intervalId);
-  }, [user.user?.authToken]);
+
+
+    }
+
+    fetchLeaderboard();
+  }, []);
 
   useEffect(() => {
     const checkPublishedStatus = async () => {
